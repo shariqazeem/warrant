@@ -18,7 +18,8 @@
     "keeper": "tsx scripts/keeper.ts",
     "router-addresses": "tsx scripts/router-addresses.ts",
     "deploy": "cd contracts && forge script script/Deploy.s.sol --rpc-url $NEXT_PUBLIC_XLAYER_RPC --broadcast",
-    "prove-fork": "tsx scripts/prove-route-fork.ts"
+    "prove-fork": "tsx scripts/prove-route-fork.ts",
+    "prove-run": "tsx scripts/prove-run-fork.ts"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",
