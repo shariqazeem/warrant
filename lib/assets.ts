@@ -62,18 +62,44 @@ export const ASSETS: readonly Asset[] = [
 ] as const;
 
 /**
- * THE ISSUER DISCLOSURE, per asset, shown on the row where someone decides to be paid in
- * it — never as a banner. One sentence, the same for every xStock because the same thing
- * is true of every one of them.
+ * THE ISSUER DISCLOSURE, per asset, on the row where someone decides to be paid in it —
+ * never as a banner.
  *
- * TODO before submission: replace with the powers named in the issuer's own terms, cited.
- * Do not guess them.
+ * NOT GUESSED, AND NOT TAKEN FROM MARKETING COPY. Every claim below was read off X Layer
+ * by `npm run check-issuer`: the proxy, its implementation, its owner, and which powers
+ * that implementation's bytecode actually carries. A disclosure is a claim about a third
+ * party and is held to the same rule as any other figure here — the chain has to confirm
+ * it. Re-run the check before submission; the contract is upgradeable.
  */
 export const ISSUER_NOTE =
   "A tokenized stock issued by a third party, not by Warrant and not by OKX. It gives " +
   "economic exposure to the underlying price. It does not make the holder a shareholder " +
-  "and carries no voting rights. The issuer handles corporate actions inside the token's " +
-  "own balance and retains powers over it that Warrant cannot prevent.";
+  "and carries no voting rights.";
+
+/** The specific powers, in the order they would matter to someone being paid in it. */
+export const ISSUER_POWERS = [
+  "destroy units held by any address, including yours",
+  "create new units",
+  "replace the contract's code, because it is upgradeable",
+  "hand all of the above to another address",
+] as const;
+
+/**
+ * All three assets sit behind ONE implementation with ONE owner. Warrant cannot prevent
+ * any of this, and says so rather than leaving it to be discovered.
+ */
+export const ISSUER = {
+  owner: "0x49754062E35f7591B93cc4F9915965be89643a65",
+  implementation: "0x65c40d624af3b18c109fbf87b7deff34cdc5f19b",
+  checkedOn: "2026-09-19",
+  /** Probed for and not found. Absence of a selector is weaker evidence than presence. */
+  noSignOf: ["pause", "blacklist", "freeze", "forceTransfer", "seize", "rebase"],
+} as const;
+
+/** One sentence naming who holds those powers, for a row that has space for it. */
+export const ISSUER_OWNER_NOTE =
+  `All three sit behind one upgradeable contract with one owner, ${ISSUER.owner}, ` +
+  `which can ${ISSUER_POWERS[0]}. Read from X Layer on ${ISSUER.checkedOn}.`;
 
 export function assetByAddress(address: string): Asset | undefined {
   return ASSETS.find((a) => a.address.toLowerCase() === address.toLowerCase());

@@ -3,7 +3,7 @@ import {createPublicClient, erc20Abi, http} from "viem";
 import {Stub} from "@/components/stub/stub";
 import {CopyText} from "@/components/app/copy-text";
 import {EXPLORER_ADDRESS, EXPLORER_TX, STABLE, xLayer} from "@/lib/chain";
-import {ISSUER_NOTE, assetByAddress} from "@/lib/assets";
+import {ISSUER_NOTE, ISSUER_OWNER_NOTE, assetByAddress} from "@/lib/assets";
 import {paidInTransaction, type Receipt} from "@/lib/receipts";
 import {reasonFor} from "@/lib/db";
 import {runLabel, settledUnitPrice, short, stampUTC, unitsFromRaw, usdt} from "@/lib/format";
@@ -99,7 +99,9 @@ function AssetIdentity({address, symbol}: {address: `0x${string}`; symbol: strin
       <a href={EXPLORER_ADDRESS(address)} className="wa-mono wa-r-asset-addr">
         {address}
       </a>
-      <span className="wa-r-asset-note">{ISSUER_NOTE}</span>
+      <span className="wa-r-asset-note">
+        {ISSUER_NOTE} {ISSUER_OWNER_NOTE}
+      </span>
     </span>
   );
 }

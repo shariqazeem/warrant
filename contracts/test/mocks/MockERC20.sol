@@ -21,6 +21,15 @@ contract MockERC20 {
         totalSupply += value;
     }
 
+    /// @notice What an xStock's issuer can do: burn from any address, without a transfer.
+    ///         Every xStock on X Layer carries burn(address,uint256) behind an upgradeable
+    ///         proxy with one owner, so this is not a hypothetical.
+    function burnFrom(address from, uint256 value) external {
+        require(balanceOf[from] >= value, "balance");
+        balanceOf[from] -= value;
+        totalSupply -= value;
+    }
+
     function approve(address spender, uint256 value) external returns (bool) {
         allowance[msg.sender][spender] = value;
         return true;

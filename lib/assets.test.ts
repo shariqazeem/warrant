@@ -4,7 +4,7 @@
  */
 import {getAddress, isAddress} from "viem";
 import {describe, expect, it} from "vitest";
-import {ASSETS, ISSUER_NOTE, assetByAddress, defaultAsset} from "./assets";
+import {ASSETS, ISSUER, ISSUER_NOTE, ISSUER_OWNER_NOTE, ISSUER_POWERS, assetByAddress, defaultAsset} from "./assets";
 import {STABLE} from "./chain";
 
 describe("the asset registry", () => {
@@ -67,5 +67,26 @@ describe("the asset registry", () => {
     // CLAUDE.md section 3.7: never "shareholder" or "equity ownership" as a claim.
     expect(ISSUER_NOTE).not.toMatch(/\bequity ownership\b/);
     expect(ISSUER_NOTE).toMatch(/does not make the holder a shareholder/);
+  });
+
+  it("names the powers that were actually found, strongest first", () => {
+    // The one that matters most to someone being paid leads.
+    expect(ISSUER_POWERS[0]).toMatch(/destroy units held by any address/);
+    expect(ISSUER_POWERS.some((p) => /upgradeable/.test(p))).toBe(true);
+    expect(ISSUER_POWERS.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("carries the owner and implementation it was checked against", () => {
+    expect(ISSUER.owner).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(ISSUER.implementation).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(ISSUER.checkedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(ISSUER_OWNER_NOTE).toContain(ISSUER.owner);
+    expect(ISSUER_OWNER_NOTE).toContain(ISSUER.checkedOn);
+  });
+
+  it("does not claim a power was ruled out, only that it was not found", () => {
+    // Absence of a selector is weak evidence. The wording must not overstate it.
+    expect(ISSUER.noSignOf.length).toBeGreaterThan(0);
+    expect(ISSUER_NOTE).not.toMatch(/cannot (pause|freeze|blacklist)/i);
   });
 });

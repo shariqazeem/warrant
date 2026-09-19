@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {EXPLORER_TX, STABLE} from "@/lib/chain";
-import {ASSETS, ISSUER_NOTE, defaultAsset} from "@/lib/assets";
+import {ASSETS, ISSUER, ISSUER_NOTE, ISSUER_POWERS, defaultAsset} from "@/lib/assets";
 import {recentPaid} from "@/lib/receipts";
 import {short, since, unitsFromRaw, usdt} from "@/lib/format";
 import "./landing.css";
@@ -126,10 +126,31 @@ export default async function Home() {
               {a.address === asset.address ? <em className="wa-default"> default</em> : null}
             </span>
             <p className="v">
-              {a.name}. {ISSUER_NOTE} Read the issuer&rsquo;s terms before being paid in it.
+              {a.name}. {ISSUER_NOTE}
             </p>
           </div>
         ))}
+        {/*
+          The powers, named. Read off the chain by `npm run check-issuer`, not taken from
+          anyone's marketing. All three assets sit behind one implementation with one owner.
+        */}
+        <div className="wa-rule-row">
+          <span className="k">What the issuer can do</span>
+          <p className="v">
+            All three sit behind one upgradeable contract with one owner,{" "}
+            <span className="wa-mono">{ISSUER.owner}</span>, which can{" "}
+            {ISSUER_POWERS.map((p, i) => (
+              <span key={p}>
+                {i === 0 ? "" : i === ISSUER_POWERS.length - 1 ? ", and " : ", "}
+                {p}
+              </span>
+            ))}
+            . Warrant cannot prevent any of it. Read from X Layer on {ISSUER.checkedOn};
+            there was no sign of {ISSUER.noSignOf.join(", ")}, though a power can hide
+            behind a proxy and absence is weaker evidence than presence.
+          </p>
+        </div>
+
         <div className="wa-rule-row">
           <span className="k">{STABLE.symbol}</span>
           <p className="v">
