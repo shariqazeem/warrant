@@ -169,3 +169,39 @@
 .wa-r-addr a {
   overflow-wrap: anywhere;
 }
+
+/* ── the asset, identified by its address ──────────────────────────── */
+
+.wa-r-asset {
+  display: block;
+}
+
+.wa-r-asset-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+
+.wa-r-asset-line strong {
+  font-weight: 500;
+}
+
+.wa-r-asset-name {
+  color: var(--ink-muted);
+}
+
+.wa-r-asset-addr {
+  display: block;
+  margin-top: var(--s-1);
+  overflow-wrap: anywhere;
+}
+
+/* Per-row disclosure, on the row it applies to. Never a banner. */
+.wa-r-asset-note {
+  display: block;
+  margin-top: var(--s-2);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-body);
+  color: var(--ink-faint);
+}

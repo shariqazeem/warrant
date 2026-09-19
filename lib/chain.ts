@@ -5,6 +5,7 @@
  * blog post. `npm run preflight` reads them again and refuses to agree quietly.
  */
 import {defineChain} from "viem";
+import {defaultAsset} from "./assets";
 
 export const xLayer = defineChain({
   id: 196,
@@ -22,13 +23,12 @@ export const STABLE = {
   decimals: 6,
 } as const;
 
-/** Wrapped NVIDIA xStock. EIGHTEEN decimals. Verified on chain. */
-export const DEFAULT_ASSET = {
-  address: (process.env.NEXT_PUBLIC_DEFAULT_ASSET ??
-    "0xa8ddb5cd96b5222afe198316e9a57caa642850d5") as `0x${string}`,
-  symbol: "wNVDAx",
-  decimals: 18,
-} as const;
+/**
+ * The asset a payment defaults to. xStocks are EIGHTEEN decimals, unlike the stablecoin's
+ * six. The list of what Warrant will pay in lives in lib/assets.ts and nowhere else; this
+ * re-exports the default so older call sites keep working.
+ */
+export const DEFAULT_ASSET = defaultAsset();
 
 export const EXPLORER_TX = (hash: string) => `https://www.oklink.com/x-layer/tx/${hash}`;
 export const EXPLORER_ADDRESS = (a: string) => `https://www.oklink.com/x-layer/address/${a}`;

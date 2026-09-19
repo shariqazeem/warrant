@@ -70,8 +70,45 @@ different prices:
 
 Do not assume a symbol identifies an asset here. The address does.
 
+## The asset this pays in, and why
+
+**SPYx is the default. NVDAx is the alternate shown second. QQQx is the env-flip fallback.**
+All three are in `lib/assets.ts`, which is the only list of them.
+
+Liquidity did not decide this and neither did gas. A run of eight people at $3 each is $24,
+which every one of the 46 routable assets carries without moving the price, and the 55,000
+gas between the routes is a rounding error on a chain at roughly $0.0005 a transaction. The
+only input that decides anything is what someone checking the work sees.
+
+- **Not wNVDAx**, which is what this repo defaulted to until 19 September. It is not in
+  OKX's `all-tokens`. In a hackathon judged by OKX, paying in an asset OKX's own tooling
+  cannot find is a self-inflicted wound — and the failure is worse than "not found": a
+  reader pastes the symbol, finds the listed NVDAx at $222.21, compares it to a receipt
+  showing $222.58, and believes they have caught a pricing error. That is the Q&A spent on
+  wrapped-versus-unwrapped addresses instead of on the product.
+- **Not NVDAx as the default.** Technically fine, but paying someone in a single stock
+  invites a question about concentration and suitability rather than about the rail.
+  "We paid eight people in the S&P 500" needs no defence.
+- **SPYx over QQQx**, despite QQQx's slightly better route (0.63% against 0.78% at
+  $10,000), because at $24 that difference does not exist and "the Nasdaq" is
+  tech-concentrated, which reintroduces the same question in a milder form.
+
+### The three checks run before committing to it
+
+| | |
+| --- | --- |
+| SPYx is in the aggregator's `all-tokens` | **yes** — as are NVDAx and QQQx |
+| SPYx settles end to end through `Payroll` | **yes** — $24 → 0.031458432483190153 SPYx, above the floor, contract kept nothing |
+| SPYx's hop count and whether it wraps | **4 hops**, `OkieSwap V3 → Uniswap V4 → Uniswap V3 → xStocks wrap V2` — the same shape as NVDAx |
+
+QQQx was proved the same way so the fallback is real: $24 → 0.033223006650472585 QQQx,
+679,508 gas. Only wNVDAx has a 3-hop route, because it is the underlying pool the others
+wrap out of.
+
 ## What this means for the demo
 
-A run of eight people at $3 each is $24. Every one of the 46 routable assets carries that
-without moving the price at all. The constraint is not liquidity; it is having eight real
-recipients.
+A run of eight people at $3 each is $24. The constraint is not liquidity; it is having
+eight real recipients.
+
+**Re-run `npm run probe` on the morning of 25 September and again on the morning of the
+demo.** Every number on this page is a market on a day.

@@ -3,6 +3,7 @@ import {createPublicClient, erc20Abi, http} from "viem";
 import {Stub} from "@/components/stub/stub";
 import {CopyText} from "@/components/app/copy-text";
 import {EXPLORER_ADDRESS, EXPLORER_TX, STABLE, xLayer} from "@/lib/chain";
+import {ISSUER_NOTE, assetByAddress} from "@/lib/assets";
 import {paidInTransaction, type Receipt} from "@/lib/receipts";
 import {reasonFor} from "@/lib/db";
 import {runLabel, settledUnitPrice, short, stampUTC, unitsFromRaw, usdt} from "@/lib/format";
@@ -78,6 +79,32 @@ function Sheet({title, children}: {title: string; children: React.ReactNode}) {
 }
 
 /**
+ * THE ASSET, IDENTIFIED BY ITS ADDRESS AND NOT BY ITS SYMBOL.
+ *
+ * X Layer carries wrapped and unwrapped twins of the same stock, at different addresses
+ * and different prices — NVDAx quotes around $222.21 and wNVDAx around $222.58. A reader
+ * who checks a symbol and finds the other one has found what looks like a pricing
+ * discrepancy on a receipt, which is the last thing a receipt should produce. So the
+ * address sits beside the symbol, and the issuer disclosure sits beside both, on the row
+ * where it matters rather than as a banner at the foot of the page.
+ */
+function AssetIdentity({address, symbol}: {address: `0x${string}`; symbol: string}) {
+  const known = assetByAddress(address);
+  return (
+    <span className="wa-r-asset">
+      <span className="wa-r-asset-line">
+        <strong>{symbol}</strong>
+        {known ? <span className="wa-r-asset-name">{known.name}</span> : null}
+      </span>
+      <a href={EXPLORER_ADDRESS(address)} className="wa-mono wa-r-asset-addr">
+        {address}
+      </a>
+      <span className="wa-r-asset-note">{ISSUER_NOTE}</span>
+    </span>
+  );
+}
+
+/**
  * An address, SHOWN. A copy button on its own reads "To: Copy", which is not a receipt —
  * the whole point of the page is that a stranger can see who was paid.
  */
@@ -129,6 +156,9 @@ function One({r, symbol, decimals}: {r: Receipt; symbol: string; decimals: numbe
         <Line k="Arrived">
           {unitsFromRaw(r.assetAmount, decimals)} {symbol}
         </Line>
+        <Line k="Which is">
+          <AssetIdentity address={r.asset} symbol={symbol} />
+        </Line>
         <Line k="At">
           {price === null ? "not computable" : `$${price.toFixed(2)} per whole ${symbol}`}
           <span className="wa-r-aside">
@@ -169,11 +199,7 @@ function One({r, symbol, decimals}: {r: Receipt; symbol: string; decimals: numbe
         </Line>
       </Sheet>
 
-      <p className="wa-r-issuer">
-        {symbol} is a tokenized stock issued by a third party, not by Warrant. It gives
-        economic exposure to the underlying share price. It does not make the holder a
-        shareholder and carries no voting rights.
-      </p>
+
     </article>
   );
 }

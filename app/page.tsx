@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
-import {DEFAULT_ASSET, EXPLORER_TX, STABLE} from "@/lib/chain";
+import {EXPLORER_TX, STABLE} from "@/lib/chain";
+import {ASSETS, ISSUER_NOTE, defaultAsset} from "@/lib/assets";
 import {recentPaid} from "@/lib/receipts";
 import {short, since, unitsFromRaw, usdt} from "@/lib/format";
 import "./landing.css";
@@ -18,6 +19,7 @@ export const revalidate = 15;
 
 export default async function Home() {
   const tape = await recentPaid(8);
+  const asset = defaultAsset();
 
   return (
     <div className="wa-landing">
@@ -49,7 +51,7 @@ export default async function Home() {
                 <li key={`${r.txHash}-${r.logIndex}`} className="wa-tape-row">
                   <span className="wa-mono">{short(r.recipient)}</span>
                   <span className="wa-tape-amt wa-mono">
-                    {unitsFromRaw(r.assetAmount, DEFAULT_ASSET.decimals)}
+                    {unitsFromRaw(r.assetAmount, asset.decimals)}
                   </span>
                   <span className="wa-tape-meta">
                     for {usdt(r.stableAmount)}
@@ -114,21 +116,20 @@ export default async function Home() {
         <p className="wa-kicker">What you are being paid in</p>
         {/*
           PER-ROW DISCLOSURE, NEVER A BANNER. An asset carries issuer powers and they belong
-          beside the asset, on the row where someone decides to be paid in it.
-
-          TODO before submission: replace the general sentence below with the specific
-          powers named in the issuer's own terms, cited. Do not guess them.
+          beside the asset, on the row where someone decides to be paid in it. One list, in
+          lib/assets.ts, so this page and a receipt cannot say different things.
         */}
-        <div className="wa-rule-row">
-          <span className="k">{DEFAULT_ASSET.symbol}</span>
-          <p className="v">
-            A tokenized stock, issued by a third party — not by Warrant and not by OKX. It
-            gives economic exposure to the underlying share price. It does not make the
-            holder a shareholder and carries no voting rights. The issuer handles corporate
-            actions inside the token&rsquo;s own balance and retains powers over it that
-            Warrant cannot prevent. Read the issuer&rsquo;s terms before being paid in it.
-          </p>
-        </div>
+        {ASSETS.map((a) => (
+          <div className="wa-rule-row" key={a.address}>
+            <span className="k">
+              {a.symbol}
+              {a.address === asset.address ? <em className="wa-default"> default</em> : null}
+            </span>
+            <p className="v">
+              {a.name}. {ISSUER_NOTE} Read the issuer&rsquo;s terms before being paid in it.
+            </p>
+          </div>
+        ))}
         <div className="wa-rule-row">
           <span className="k">{STABLE.symbol}</span>
           <p className="v">

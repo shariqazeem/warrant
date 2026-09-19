@@ -9,7 +9,8 @@ import {createPublicClient, erc20Abi, formatEther, formatUnits, http} from "viem
 import {privateKeyToAccount} from "viem/accounts";
 import {readFileSync, existsSync} from "node:fs";
 import {loadEnv} from "../lib/env";
-import {xLayer, STABLE, DEFAULT_ASSET} from "../lib/chain";
+import {xLayer, STABLE} from "../lib/chain";
+import {ASSETS, MEASURED_AT, defaultAsset} from "../lib/assets";
 import {credentials} from "../lib/okx";
 
 const tick = (b: boolean) => (b ? "ok  " : "MISS");
@@ -39,18 +40,23 @@ async function main() {
     console.log(`  ok   head block           ${block}`);
     console.log(`  ok   gas price            ${formatUnits(gasPrice, 9)} gwei`);
 
-    console.log(`\nASSETS, read from the chain rather than from docs/brief.md`);
-    for (const t of [STABLE, DEFAULT_ASSET]) {
+    // Every asset this repo will offer, checked against what the chain actually answers.
+    // A symbol does not identify an asset on X Layer — there are wrapped twins at
+    // different addresses and different prices — so the address is what is checked.
+    console.log(`\nASSETS, read from the chain rather than from any document here`);
+    const chosen = defaultAsset();
+    for (const t of [STABLE, ...ASSETS]) {
       const [symbol, decimals] = await Promise.all([
         rpc.readContract({address: t.address, abi: erc20Abi, functionName: "symbol"}),
         rpc.readContract({address: t.address, abi: erc20Abi, functionName: "decimals"}),
       ]);
       const agrees = symbol === t.symbol && decimals === t.decimals;
+      const mark = t.address === chosen.address ? " <- default" : "";
       console.log(
-        `  ${tick(agrees)} ${t.address}  chain says ${symbol}/${decimals}, ` +
-          `lib/chain.ts says ${t.symbol}/${t.decimals}`,
+        `  ${tick(agrees)} ${t.symbol.padEnd(6)} ${t.address}  chain says ${symbol}/${decimals}${mark}`,
       );
     }
+    console.log(`  --   depth last measured ${MEASURED_AT}; re-run: npm run probe`);
 
     if (payer) {
       const account = privateKeyToAccount((payer.startsWith("0x") ? payer : `0x${payer}`) as `0x${string}`);

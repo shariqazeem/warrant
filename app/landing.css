@@ -396,3 +396,9 @@
     width: 100%;
   }
 }
+
+/* Which asset a payment defaults to, marked on its own row. */
+.wa-default {
+  font-style: normal;
+  color: var(--accent);
+}
