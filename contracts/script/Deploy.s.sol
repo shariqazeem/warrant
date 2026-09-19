@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
 import {Payroll} from "../src/Payroll.sol";
+import {GrantEscrow} from "../src/GrantEscrow.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 
 /**
@@ -20,7 +21,7 @@ import {IERC20} from "../src/interfaces/IERC20.sol";
  *   forge script script/Deploy.s.sol --rpc-url $NEXT_PUBLIC_XLAYER_RPC --broadcast
  */
 contract Deploy is Script {
-    function run() external returns (Payroll payroll) {
+    function run() external returns (Payroll payroll, GrantEscrow escrow) {
         address stable = vm.envAddress("NEXT_PUBLIC_STABLE");
         address router = vm.envAddress("OKX_ROUTER");
         address spender = vm.envAddress("OKX_ROUTER_SPENDER");
@@ -36,9 +37,13 @@ contract Deploy is Script {
 
         vm.startBroadcast();
         payroll = new Payroll(IERC20(stable), router, spender);
+        escrow = new GrantEscrow(IERC20(stable), router, spender);
         vm.stopBroadcast();
 
-        console.log("Payroll", address(payroll));
-        console.log("Set NEXT_PUBLIC_PAYROLL_ADDRESS to that, then: npm run preflight");
+        console.log("");
+        console.log("NEXT_PUBLIC_PAYROLL_ADDRESS=", address(payroll));
+        console.log("NEXT_PUBLIC_GRANT_ESCROW_ADDRESS=", address(escrow));
+        console.log("");
+        console.log("Put both in .env.local, then: npm run preflight");
     }
 }

@@ -14,8 +14,17 @@ import {createTestClient, http, publicActions, walletActions, type Address} from
 import {xLayer} from "./chain";
 import {held, ok, type Outcome} from "./outcome";
 
+/**
+ * A generous timeout on purpose. A fork answers a cold storage read by fetching it from
+ * mainnet, and a four-hop swap touches a great many slots the fork has never seen — the
+ * first estimateGas against a fresh fork can take far longer than a normal RPC call.
+ */
 export const forkClient = (url = "http://127.0.0.1:8545") =>
-  createTestClient({chain: xLayer, mode: "anvil", transport: http(url)})
+  createTestClient({
+    chain: xLayer,
+    mode: "anvil",
+    transport: http(url, {timeout: 180_000, retryCount: 1}),
+  })
     .extend(publicActions)
     .extend(walletActions);
 

@@ -1,0 +1,168 @@
+/**
+ * grants.css — a grant, its schedule, and what can still be done to it.
+ * Aliases only; every value comes from styles/tokens.css.
+ */
+
+.wa-grants {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-7);
+}
+
+/* ── the schedule bar ──────────────────────────────────────────────── */
+
+.wa-sched {
+  margin: var(--s-4) 0 0;
+}
+
+.wa-sched-bar {
+  position: relative;
+  height: 10px;
+  border-radius: var(--r-sm);
+  background: var(--border);
+  overflow: hidden;
+}
+
+/* Vested: what time has earned. */
+.wa-sched-vested {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  background: var(--accent-border);
+}
+
+/* Released: what has actually been taken. Drawn over the vested band. */
+.wa-sched-released {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  background: var(--accent);
+}
+
+/* The cliff is a rule across the bar, not a dot: it is a date, not a quantity. */
+.wa-sched-cliff {
+  position: absolute;
+  inset-block: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink);
+  opacity: 0.55;
+}
+
+.wa-sched-cliff.is-past {
+  opacity: 0.2;
+}
+
+.wa-sched-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.wa-sched-legend .is-ahead {
+  color: var(--warn);
+}
+
+/* ── a grant ───────────────────────────────────────────────────────── */
+
+.wa-grant {
+  padding: var(--s-5) 0;
+  border-top: 1px solid var(--border);
+}
+
+.wa-grant-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-3);
+}
+
+.wa-grant-who {
+  font-size: var(--fs-body);
+  color: var(--ink);
+}
+
+.wa-grant-units {
+  margin-inline-start: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-units-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.wa-grant-units .sym {
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+  margin-inline-start: var(--s-2);
+}
+
+.wa-grant-why {
+  margin-top: var(--s-2);
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+}
+
+.wa-grant-rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-5);
+  margin-top: var(--s-4);
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+}
+
+.wa-grant-rows b {
+  display: block;
+  font-weight: 400;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.wa-grant-act {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+}
+
+/* ── chips: the only place --r-pill is used ────────────────────────── */
+
+.wa-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: 2px var(--s-3);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  font-size: var(--fs-caption);
+  color: var(--ink-muted);
+}
+
+.wa-chip.is-sealed {
+  border-color: var(--ok-border);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.wa-chip.is-revoked {
+  border-color: var(--err-border);
+  background: var(--err-soft);
+  color: var(--err);
+}
+
+.wa-chip.is-closed {
+  color: var(--ink-faint);
+}
+
+@media (max-width: 620px) {
+  .wa-grant-units {
+    margin-inline-start: 0;
+    width: 100%;
+  }
+}

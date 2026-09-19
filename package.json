@@ -21,7 +21,8 @@
     "prove-fork": "tsx scripts/prove-route-fork.ts",
     "prove-run": "tsx scripts/prove-run-fork.ts",
     "check-issuer": "tsx scripts/check-issuer.ts",
-    "check-permit": "tsx scripts/check-permit.ts"
+    "check-permit": "tsx scripts/check-permit.ts",
+    "prove-grant": "tsx scripts/prove-grant-fork.ts"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",

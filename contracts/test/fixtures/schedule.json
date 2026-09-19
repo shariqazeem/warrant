@@ -1,0 +1,26 @@
+{
+  "_why": "The vesting schedule exists in Solidity (GrantEscrow._vestedShares) and in TypeScript (lib/schedule.ts). If they disagree, a grant page draws a figure the contract will not honour. Both test suites read THIS file, and both assert the three arrays are the same length, so neither side can move alone.",
+  "shares": "1000000000000000000000",
+  "start": 1700000000,
+  "cliffSeconds": 7776000,
+  "durationSeconds": 126144000,
+  "at": [1700000000, 1707775999, 1707776000, 1731536000, 1763072000, 1826144000, 2826144000],
+  "vested": [
+    "0",
+    "0",
+    "61643835616438356164",
+    "250000000000000000000",
+    "500000000000000000000",
+    "1000000000000000000000",
+    "1000000000000000000000"
+  ],
+  "notes": [
+    "the moment it opens",
+    "one second before the cliff",
+    "the cliff pays the elapsed share at once",
+    "one year, a quarter",
+    "two years, half",
+    "four years, all of it",
+    "and never more than all of it"
+  ]
+}
