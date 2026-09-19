@@ -16,8 +16,9 @@ import "./site.css";
 export const DOORS = [
   {href: "/pay", label: "Pay"},
   {href: "/run", label: "Runs"},
-  {href: "/grants", label: "Grants"},
 ] as const;
+// Grants joins this list when /grants exists. A nav that links to a 404 is the same defect
+// as a page that renders a number nothing can confirm: it says something that is not so.
 
 export function SiteNav() {
   return (
