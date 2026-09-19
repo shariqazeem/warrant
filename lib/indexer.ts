@@ -1,0 +1,312 @@
+/**
+ * THE INDEXER. Walks the contracts' logs into SQLite so a page can read a company's whole
+ * history without asking the chain forty times.
+ *
+ * THREE RULES, ALL THREE LEARNED THE EXPENSIVE WAY ON THE OTHER PROJECT.
+ *
+ * 1. THE PUBLIC RPC REFUSES WIDE `eth_getLogs` RANGES. Every read is windowed, and the
+ *    window HALVES on a refusal rather than the walk dying — some endpoints refuse by
+ *    range and some by result count, and you cannot tell which from the error.
+ *
+ * 2. THE CURSOR ONLY ADVANCES WHEN A WINDOW WAS READ CLEANLY. A refused range leaves it
+ *    where it was. That is the difference between an indexer that is merely behind and one
+ *    that has silently skipped a payment nobody will ever look for again.
+ *
+ * 3. THE CHAIN IS THE SOURCE OF TRUTH, NOT THIS. Everything here is a copy for speed.
+ *    Delete var/warrant.db and it rebuilds; nothing is stored here that cannot be.
+ */
+import {createPublicClient, http, parseAbiItem, type Address} from "viem";
+import {LOG_WINDOW, xLayer} from "./chain";
+import {database, writeCursor, readCursor} from "./db";
+import {PAID_EVENT, payrollAddress} from "./receipts";
+import {escrowAddress} from "./grants";
+import {attempt, ok, type Outcome} from "./outcome";
+
+export const GRANT_OPENED_EVENT = parseAbiItem(
+  "event GrantOpened(uint256 indexed id, address indexed payer, address indexed beneficiary, address asset, uint256 units, uint256 shares, uint256 stableCost, uint64 start, uint64 cliff, uint64 duration, uint16 tipBps, bytes32 reasonHash)",
+);
+
+export const VESTED_EVENT = parseAbiItem(
+  "event Vested(uint256 indexed id, address indexed beneficiary, address indexed caller, address asset, uint256 unitsToBeneficiary, uint256 unitsToCaller, uint256 sharesReleased, uint256 sharesTotal)",
+);
+
+/**
+ * WHERE TO BEGIN WHEN A CONTRACT HAS NEVER BEEN INDEXED.
+ *
+ * Not block zero. X Layer is past 71 million blocks, and starting there means tens of
+ * thousands of windows of nothing before reaching the first payment — on a fork it simply
+ * hangs, and on mainnet it burns an afternoon of rate limit to learn what a binary search
+ * answers in about twenty-seven reads.
+ *
+ * So: find the first block at which the contract HAS code. `eth_getCode` at a historical
+ * block is cheap and monotonic — a contract that exists at block N exists at every block
+ * after it — which is exactly what a binary search needs.
+ *
+ * WARRANT_START_BLOCK overrides it, for an endpoint that will not serve historical state.
+ */
+async function findDeployBlock(address: Address, head: bigint): Promise<bigint> {
+  const configured = process.env.WARRANT_START_BLOCK?.trim();
+  if (configured) return BigInt(configured);
+
+  const rpc = client();
+  let low = 0n;
+  let high = head;
+
+  // If it has no code at the head it is not deployed; index nothing rather than everything.
+  const atHead = await rpc.getBytecode({address, blockNumber: head});
+  if (!atHead || atHead === "0x") return head;
+
+  while (low < high) {
+    const mid = (low + high) / 2n;
+    let code: `0x${string}` | undefined;
+    try {
+      code = await rpc.getBytecode({address, blockNumber: mid});
+    } catch {
+      // An endpoint that will not serve state that old cannot be searched. Fall back to
+      // the head, which indexes from now on rather than guessing at history.
+      return head;
+    }
+    if (code && code !== "0x") high = mid;
+    else low = mid + 1n;
+  }
+  return low;
+}
+
+const client = () => createPublicClient({chain: xLayer, transport: http()});
+
+export type IndexReport = {
+  contract: string;
+  /** True when this pass had to find the contract's deploy block first. */
+  cold: boolean;
+  from: number;
+  to: number;
+  windows: number;
+  narrowings: number;
+  rows: number;
+};
+
+type Walker = {
+  name: string;
+  address: Address;
+  /** Reads one window and writes whatever it found. Returns how many rows it wrote. */
+  read: (from: bigint, to: bigint) => Promise<number>;
+};
+
+/**
+ * Walk one contract forward to the head. `maxWindows` bounds a single pass so a cold start
+ * on a long chain makes progress and returns rather than running for an hour — the cursor
+ * is durable, so the next pass continues where this one stopped.
+ */
+async function walk(w: Walker, maxWindows = 400): Promise<Outcome<IndexReport>> {
+  return attempt(`the ${w.name} log`, async () => {
+    const rpc = client();
+    const head = await rpc.getBlockNumber();
+
+    const last = readCursor(w.name);
+    let from = last === null ? await findDeployBlock(w.address, head) : BigInt(last) + 1n;
+    const cold = last === null;
+    if (from > head) {
+      return ok({
+        contract: w.name,
+        cold,
+        from: Number(from),
+        to: Number(head),
+        windows: 0,
+        narrowings: 0,
+        rows: 0,
+      });
+    }
+
+    const began = from;
+    let window = LOG_WINDOW;
+    let windows = 0;
+    let narrowings = 0;
+    let rows = 0;
+
+    while (from <= head && windows < maxWindows) {
+      const to = from + window - 1n > head ? head : from + window - 1n;
+
+      try {
+        rows += await w.read(from, to);
+      } catch (err) {
+        // Some endpoints refuse by block range and some by result count, and the error
+        // does not say which. Halving handles both. The cursor does not move.
+        if (window > 1n) {
+          window = window / 2n;
+          narrowings++;
+          continue;
+        }
+        const why = err instanceof Error ? err.message : String(err);
+        throw new Error(`${w.name}: even a single block was refused at ${from} (${why})`);
+      }
+
+      // Only now, with the window safely read.
+      writeCursor(w.name, Number(to));
+      from = to + 1n;
+      windows++;
+
+      // Creep back up so one bad patch does not slow the whole walk forever.
+      if (window < LOG_WINDOW) window = window * 2n > LOG_WINDOW ? LOG_WINDOW : window * 2n;
+    }
+
+    return ok({
+      contract: w.name,
+      cold,
+      from: Number(began),
+      to: Number(from - 1n),
+      windows,
+      narrowings,
+      rows,
+    });
+  });
+}
+
+/** Block timestamps, one read per distinct block rather than one per log. */
+async function timesFor(blocks: bigint[]): Promise<Map<bigint, number>> {
+  const rpc = client();
+  const out = new Map<bigint, number>();
+  await Promise.all(
+    [...new Set(blocks)].map(async (blockNumber) => {
+      try {
+        const b = await rpc.getBlock({blockNumber});
+        out.set(blockNumber, Number(b.timestamp));
+      } catch {
+        // left absent; a surface says nothing about when rather than guessing
+      }
+    }),
+  );
+  return out;
+}
+
+function payrollWalker(address: Address): Walker {
+  return {
+    name: `payroll:${address.toLowerCase()}`,
+    address,
+    read: async (from, to) => {
+      const logs = await client().getLogs({address, event: PAID_EVENT, fromBlock: from, toBlock: to});
+      if (logs.length === 0) return 0;
+
+      const times = await timesFor(logs.map((l) => l.blockNumber!));
+      const insert = database().prepare(
+        `INSERT INTO receipts (tx_hash, log_index, block_number, block_time, payer, recipient,
+           run_id, asset, stable_amount, cash_amount, asset_amount, reason_hash)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(tx_hash, log_index) DO NOTHING`,
+      );
+
+      const write = database().transaction((batch: typeof logs) => {
+        for (const l of batch) {
+          const a = l.args;
+          insert.run(
+            l.transactionHash,
+            l.logIndex,
+            Number(l.blockNumber),
+            times.get(l.blockNumber!) ?? null,
+            a.payer!.toLowerCase(),
+            a.recipient!.toLowerCase(),
+            a.runId!,
+            a.asset!.toLowerCase(),
+            a.stableAmount!.toString(),
+            a.cashAmount!.toString(),
+            a.assetAmount!.toString(),
+            a.reasonHash!,
+          );
+        }
+      });
+      write(logs);
+      return logs.length;
+    },
+  };
+}
+
+function escrowWalker(address: Address): Walker {
+  return {
+    name: `escrow:${address.toLowerCase()}`,
+    address,
+    read: async (from, to) => {
+      const rpc = client();
+      const [opened, vested] = await Promise.all([
+        rpc.getLogs({address, event: GRANT_OPENED_EVENT, fromBlock: from, toBlock: to}),
+        rpc.getLogs({address, event: VESTED_EVENT, fromBlock: from, toBlock: to}),
+      ]);
+      if (opened.length === 0 && vested.length === 0) return 0;
+
+      const times = await timesFor([...opened, ...vested].map((l) => l.blockNumber!));
+      const db = database();
+
+      const insertGrant = db.prepare(
+        `INSERT INTO grants (id, tx_hash, block_number, block_time, payer, beneficiary, asset,
+           units, shares, stable_cost, start_at, cliff_seconds, duration_secs, tip_bps, reason_hash)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO NOTHING`,
+      );
+      const insertVest = db.prepare(
+        `INSERT INTO vests (tx_hash, log_index, block_number, block_time, grant_id, beneficiary,
+           caller, asset, units_to_beneficiary, units_to_caller)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(tx_hash, log_index) DO NOTHING`,
+      );
+
+      const write = db.transaction(() => {
+        for (const l of opened) {
+          const a = l.args;
+          insertGrant.run(
+            Number(a.id!),
+            l.transactionHash,
+            Number(l.blockNumber),
+            times.get(l.blockNumber!) ?? null,
+            a.payer!.toLowerCase(),
+            a.beneficiary!.toLowerCase(),
+            a.asset!.toLowerCase(),
+            a.units!.toString(),
+            a.shares!.toString(),
+            a.stableCost!.toString(),
+            Number(a.start!),
+            Number(a.cliff!),
+            Number(a.duration!),
+            Number(a.tipBps!),
+            a.reasonHash!,
+          );
+        }
+        for (const l of vested) {
+          const a = l.args;
+          insertVest.run(
+            l.transactionHash,
+            l.logIndex,
+            Number(l.blockNumber),
+            times.get(l.blockNumber!) ?? null,
+            Number(a.id!),
+            a.beneficiary!.toLowerCase(),
+            a.caller!.toLowerCase(),
+            a.asset!.toLowerCase(),
+            a.unitsToBeneficiary!.toString(),
+            a.unitsToCaller!.toString(),
+          );
+        }
+      });
+      write();
+      return opened.length + vested.length;
+    },
+  };
+}
+
+/** One pass over everything that is deployed. */
+export async function indexOnce(): Promise<IndexReport[]> {
+  const reports: IndexReport[] = [];
+
+  const payroll = payrollAddress();
+  if (payroll.ok) {
+    const r = await walk(payrollWalker(payroll.value));
+    if (r.ok) reports.push(r.value);
+    else throw new Error(r.why);
+  }
+
+  const escrow = escrowAddress();
+  if (escrow.ok) {
+    const r = await walk(escrowWalker(escrow.value));
+    if (r.ok) reports.push(r.value);
+    else throw new Error(r.why);
+  }
+
+  return reports;
+}

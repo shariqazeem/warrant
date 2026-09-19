@@ -1,0 +1,154 @@
+/**
+ * company.css — a company's public record. A stranger's page: ruled rows, no chrome.
+ * Aliases only; every value comes from styles/tokens.css.
+ */
+
+.wa-co-name {
+  font-size: var(--fs-h2);
+  line-height: var(--lh-h2);
+  letter-spacing: var(--tracking-h2);
+  overflow-wrap: anywhere;
+}
+
+/* ── the figures. Units are the largest thing on the page. ─────────── */
+
+.wa-co-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-8);
+  margin-top: var(--s-7);
+  padding: var(--s-6) 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.wa-co-figures .k {
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+  margin-bottom: var(--s-2);
+}
+
+.wa-units-sm {
+  font-family: var(--font-mono);
+  font-size: var(--fs-units-sm);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-h2);
+}
+
+.wa-co-sym {
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+}
+
+.wa-co-addr {
+  color: var(--ink-faint);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.wa-co-addr:hover {
+  color: var(--accent);
+}
+
+.wa-co-section {
+  margin-top: var(--s-8);
+}
+
+.wa-co-note {
+  margin-top: var(--s-4);
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+  line-height: var(--lh-body);
+}
+
+.wa-co-note a,
+.wa-co-when {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* ── every payment, as a ruled row ─────────────────────────────────── */
+
+.wa-co-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+
+.wa-co-row {
+  display: grid;
+  grid-template-columns: 7rem 8rem minmax(0, 1fr) 5rem 8rem 7rem;
+  gap: var(--s-4);
+  align-items: baseline;
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-small);
+}
+
+.wa-co-when {
+  font-size: var(--fs-caption);
+  white-space: nowrap;
+}
+
+.wa-co-when:hover {
+  color: var(--accent-strong);
+}
+
+.wa-co-who {
+  color: var(--ink);
+}
+
+.wa-co-why {
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.wa-co-why em {
+  color: var(--ink-faint);
+  font-style: normal;
+}
+
+.wa-co-paid {
+  text-align: right;
+  color: var(--ink);
+}
+
+.wa-co-got {
+  text-align: right;
+  color: var(--ok);
+}
+
+.wa-co-run {
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+  text-decoration: none;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.wa-co-run:hover {
+  color: var(--accent);
+}
+
+@media (max-width: 860px) {
+  .wa-co-row {
+    grid-template-columns: 1fr auto;
+    row-gap: var(--s-1);
+  }
+
+  .wa-co-why,
+  .wa-co-run {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+  .wa-co-got {
+    text-align: right;
+  }
+
+  .wa-co-figures {
+    gap: var(--s-6);
+  }
+}

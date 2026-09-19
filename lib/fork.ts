@@ -31,6 +31,35 @@ export const forkClient = (url = "http://127.0.0.1:8545") =>
 export type ForkClient = ReturnType<typeof forkClient>;
 
 /**
+ * A FORK'S CLOCK DRIFTS, AND EVERYTHING ELSE BREAKS QUIETLY WHEN IT DOES.
+ *
+ * `prove-grant` moves the fork years forward to walk a vesting schedule. Anything run
+ * after it on the same fork then signs permits and routes whose deadlines are long past,
+ * and the failures arrive as `PermitFailed` and `RouterCallFailed` — which look exactly
+ * like real bugs in the contract and are not.
+ *
+ * So anything that depends on a live quote checks first and says what is actually wrong.
+ */
+export async function checkClock(client: ForkClient, toleranceHours = 24): Promise<Outcome<number>> {
+  const block = await client.getBlock({blockTag: "latest"});
+  const chain = Number(block.timestamp);
+  const real = Math.floor(Date.now() / 1000);
+  const driftHours = Math.abs(chain - real) / 3600;
+
+  if (driftHours > toleranceHours) {
+    const days = Math.round(driftHours / 24);
+    return held(
+      `This fork's clock is ${days} days ${chain > real ? "ahead of" : "behind"} real time. ` +
+        `A quote from the aggregator carries a deadline, and so does a permit, so both ` +
+        `will be refused. Something moved it — prove-grant walks a vesting schedule ` +
+        `years forward. Restart the fork:\n\n` +
+        `    pkill -f "anvil --fork-url" && anvil --fork-url https://rpc.xlayer.tech --silent &`,
+    );
+  }
+  return ok(chain);
+}
+
+/**
  * FIND WHERE AN ERC20 KEEPS ITS BALANCES, by experiment rather than by assumption.
  *
  * Solidity puts `mapping(address => uint256) balances` at some slot N, and an entry at

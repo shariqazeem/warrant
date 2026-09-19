@@ -52,10 +52,53 @@ export function database(): Database.Database {
     CREATE INDEX IF NOT EXISTS receipts_recipient ON receipts (recipient, block_number DESC);
     CREATE INDEX IF NOT EXISTS receipts_run       ON receipts (run_id);
 
-    -- One row. The indexer only advances it when a window was read cleanly.
+    -- Grants, as the escrow reported them when they were opened. The live figures —
+    -- what is held, what is due — are read from the contract, never from here.
+    CREATE TABLE IF NOT EXISTS grants (
+      id            INTEGER PRIMARY KEY,
+      tx_hash       TEXT NOT NULL,
+      block_number  INTEGER NOT NULL,
+      block_time    INTEGER,
+      payer         TEXT NOT NULL,
+      beneficiary   TEXT NOT NULL,
+      asset         TEXT NOT NULL,
+      units         TEXT NOT NULL,
+      shares        TEXT NOT NULL,
+      stable_cost   TEXT NOT NULL,
+      start_at      INTEGER NOT NULL,
+      cliff_seconds INTEGER NOT NULL,
+      duration_secs INTEGER NOT NULL,
+      tip_bps       INTEGER NOT NULL,
+      reason_hash   TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS grants_payer ON grants (payer, block_number DESC);
+    CREATE INDEX IF NOT EXISTS grants_beneficiary ON grants (beneficiary, block_number DESC);
+
+    -- Every release. A vest is a money moment and prints a receipt like any other.
+    CREATE TABLE IF NOT EXISTS vests (
+      tx_hash       TEXT NOT NULL,
+      log_index     INTEGER NOT NULL,
+      block_number  INTEGER NOT NULL,
+      block_time    INTEGER,
+      grant_id      INTEGER NOT NULL,
+      beneficiary   TEXT NOT NULL,
+      caller        TEXT NOT NULL,
+      asset         TEXT NOT NULL,
+      units_to_beneficiary TEXT NOT NULL,
+      units_to_caller      TEXT NOT NULL,
+      PRIMARY KEY (tx_hash, log_index)
+    );
+
+    CREATE INDEX IF NOT EXISTS vests_grant ON vests (grant_id, block_number DESC);
+    CREATE INDEX IF NOT EXISTS vests_beneficiary ON vests (beneficiary, block_number DESC);
+
+    -- One row per watched contract. THE CURSOR ONLY ADVANCES WHEN A WINDOW WAS READ
+    -- CLEANLY: a refused range leaves it where it was, so nothing is ever skipped.
     CREATE TABLE IF NOT EXISTS cursor (
-      id            INTEGER PRIMARY KEY CHECK (id = 1),
-      last_block    INTEGER NOT NULL
+      name          TEXT PRIMARY KEY,
+      last_block    INTEGER NOT NULL,
+      updated_at    INTEGER NOT NULL
     );
   `);
   return db;
@@ -74,6 +117,24 @@ export function rememberReason(text: string): `0x${string}` {
     )
     .run(hash, text, Math.floor(Date.now() / 1000));
   return hash;
+}
+
+/** Where the indexer has read up to for a contract, or nothing if it never has. */
+export function readCursor(name: string): number | null {
+  const row = database().prepare(`SELECT last_block FROM cursor WHERE name = ?`).get(name) as
+    | {last_block: number}
+    | undefined;
+  return row ? row.last_block : null;
+}
+
+/** Only ever called after a window was read without a refusal. */
+export function writeCursor(name: string, lastBlock: number): void {
+  database()
+    .prepare(
+      `INSERT INTO cursor (name, last_block, updated_at) VALUES (?, ?, ?)
+       ON CONFLICT(name) DO UPDATE SET last_block = excluded.last_block, updated_at = excluded.updated_at`,
+    )
+    .run(name, lastBlock, Math.floor(Date.now() / 1000));
 }
 
 export type StoredReason =

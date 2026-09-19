@@ -17,7 +17,7 @@ import {erc20Abi, formatUnits, parseEventLogs, type Address, type Hex} from "vie
 import {privateKeyToAccount} from "viem/accounts";
 import {loadEnv} from "../lib/env";
 import {STABLE, DEFAULT_ASSET} from "../lib/chain";
-import {forkClient, fundToken} from "../lib/fork";
+import {checkClock, forkClient, fundToken} from "../lib/fork";
 import {approveTransaction, supportedChain, swap} from "../lib/okx";
 import {payrollAbi} from "../lib/payroll-abi";
 import {isOk} from "../lib/outcome";
@@ -58,6 +58,12 @@ async function main() {
   }
 
   // --- the two addresses Payroll is deployed against ---------------------------------
+  const clock = await checkClock(client);
+  if (!isOk(clock)) {
+    console.error(`\nHELD. ${clock.why}`);
+    process.exit(1);
+  }
+
   const chain = await supportedChain();
   if (!isOk(chain)) {
     console.error(`HELD. ${chain.why}`);

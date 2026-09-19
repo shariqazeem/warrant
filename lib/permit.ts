@@ -122,6 +122,31 @@ export async function resolveDomain(
   );
 }
 
+/**
+ * THE CHAIN'S CLOCK, NOT THE MACHINE'S.
+ *
+ * A permit deadline is checked against `block.timestamp`. Computing it from `Date.now()`
+ * means a browser whose clock is slow signs a permit that is already expired, and the
+ * failure surfaces as an opaque contract revert rather than as "your clock is wrong".
+ * This asks the chain what time it thinks it is and works from that.
+ *
+ * Falls back to the local clock if the head cannot be read — a deadline from a working
+ * clock is better than no transaction at all.
+ */
+export async function deadlineIn(minutes: number, rpcUrl?: string): Promise<bigint> {
+  const window = BigInt(Math.round(minutes * 60));
+  try {
+    const rpc = createPublicClient({
+      chain: xLayer,
+      transport: http(rpcUrl ?? xLayer.rpcUrls.default.http[0]),
+    });
+    const block = await rpc.getBlock({blockTag: "latest"});
+    return block.timestamp + window;
+  } catch {
+    return BigInt(Math.floor(Date.now() / 1000)) + window;
+  }
+}
+
 /** The nonce the next permit for this payer must carry. */
 export async function permitNonce(owner: Address, rpcUrl?: string): Promise<Outcome<bigint>> {
   const rpc = createPublicClient({

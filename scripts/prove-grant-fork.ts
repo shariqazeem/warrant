@@ -15,7 +15,7 @@ import {privateKeyToAccount} from "viem/accounts";
 import {loadEnv} from "../lib/env";
 import {STABLE} from "../lib/chain";
 import {defaultAsset} from "../lib/assets";
-import {forkClient, fundToken} from "../lib/fork";
+import {checkClock, forkClient, fundToken} from "../lib/fork";
 import {approveTransaction, supportedChain, swap} from "../lib/okx";
 import {grantEscrowAbi} from "../lib/payroll-abi";
 import {reasonHash} from "../lib/reason";
@@ -50,6 +50,9 @@ async function main() {
     console.error(`    anvil --fork-url https://rpc.xlayer.tech --silent &\n`);
     process.exit(1);
   }
+
+  const clock = await checkClock(client);
+  if (!isOk(clock)) return fail(clock.why);
 
   const chain = await supportedChain();
   if (!isOk(chain)) return fail(chain.why);

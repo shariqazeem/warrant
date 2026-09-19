@@ -17,7 +17,7 @@ import {erc20Abi, type Address, type Hex} from "viem";
 import {useAccount, useConfig} from "wagmi";
 import {readContract, waitForTransactionReceipt, writeContract, signTypedData} from "wagmi/actions";
 import {STABLE, xLayer} from "@/lib/chain";
-import {PERMIT_TYPES, permitAbi, resolveDomain} from "@/lib/permit";
+import {PERMIT_TYPES, deadlineIn, permitAbi, resolveDomain} from "@/lib/permit";
 import {payrollAbi} from "@/lib/payroll-abi";
 import type {BuiltLine} from "@/app/pay/actions";
 
@@ -110,7 +110,9 @@ export function usePay(payroll: Address | undefined) {
               functionName: "nonces",
               args: [address],
             });
-            const deadline = BigInt(Math.floor(Date.now() / 1000) + PERMIT_MINUTES * 60);
+            // From the chain's clock: a browser running slow would otherwise sign a permit
+            // that is already expired, and fail with an opaque revert.
+            const deadline = await deadlineIn(PERMIT_MINUTES);
 
             setPhase("signing");
             const signature = await signTypedData(config, {

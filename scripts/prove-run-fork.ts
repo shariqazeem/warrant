@@ -19,9 +19,9 @@ import {privateKeyToAccount} from "viem/accounts";
 import {loadEnv} from "../lib/env";
 import {STABLE} from "../lib/chain";
 import {defaultAsset} from "../lib/assets";
-import {forkClient, fundToken} from "../lib/fork";
+import {checkClock, forkClient, fundToken} from "../lib/fork";
 import {approveTransaction, supportedChain, swap} from "../lib/okx";
-import {PERMIT_TYPES, permitAbi, resolveDomain} from "../lib/permit";
+import {PERMIT_TYPES, deadlineIn, permitAbi, resolveDomain} from "../lib/permit";
 import {payrollAbi} from "../lib/payroll-abi";
 import {reasonHash} from "../lib/reason";
 import {runIdFromName} from "../lib/run-id";
@@ -60,6 +60,9 @@ async function main() {
   const total = BigInt(RUN.reduce((s, r) => s + Math.round(r.usd * 1e6), 0));
 
   // --- the two addresses --------------------------------------------------------------
+  const clock = await checkClock(client);
+  if (!isOk(clock)) return fail(clock.why);
+
   const chain = await supportedChain();
   if (!isOk(chain)) return fail(chain.why);
   const spender = chain.value.dexTokenApproveAddress as Address;
@@ -151,7 +154,8 @@ async function main() {
     functionName: "nonces",
     args: [payer.address],
   });
-  const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800);
+  // The fork's clock, not this machine's: another proof may have moved it years.
+  const deadline = await deadlineIn(30, FORK);
 
   console.log(`\nSigning one permit, off chain, for no gas.`);
   console.log(`  domain   ${JSON.stringify(domain.value.name)} v${domain.value.version}`);
