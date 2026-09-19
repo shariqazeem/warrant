@@ -1,0 +1,260 @@
+@import "../app/live.css";
+
+/**
+ * org.css — the organisation side: pay one, runs, grants, people. Paper, ruled rows, the
+ * stub for receipts; a grant's schedule as a ruled timeline. No cards.
+ */
+.sp-org {
+  --line: var(--border);
+  --line-strong: var(--border-strong);
+  display: grid;
+  gap: var(--s-7);
+}
+.sp-org-head {
+  display: grid;
+  gap: var(--s-3);
+}
+.sp-org-h1 {
+  font-size: var(--fs-h1);
+  line-height: var(--lh-h1);
+  letter-spacing: var(--tracking-h1);
+  font-weight: 600;
+  margin: 0;
+  max-width: 22ch;
+}
+.sp-org-lede {
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: 1.55;
+  color: var(--ink-muted);
+  max-width: 60ch;
+}
+.sp-org-lede a,
+.sp-org a.sp-inline {
+  color: var(--accent);
+}
+.sp-org-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--s-5) var(--s-6);
+  border-top: 1px solid var(--line-strong);
+  padding-top: var(--s-4);
+}
+.sp-org-section {
+  border-top: 1px solid var(--line-strong);
+  padding-top: var(--s-4);
+  display: grid;
+  gap: var(--s-4);
+}
+.sp-org-rows {
+  display: grid;
+}
+.sp-org-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.7fr) minmax(0, 2fr) minmax(90px, auto);
+  gap: var(--s-2) var(--s-4);
+  align-items: baseline;
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  font-size: var(--fs-small);
+}
+.sp-org-row:hover .who {
+  color: var(--accent);
+}
+.sp-org-row .who {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  letter-spacing: var(--tracking-mono);
+  font-weight: 600;
+}
+.sp-org-row .what {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.sp-org-row .what .why {
+  color: var(--ink-muted);
+}
+.sp-org-row .when {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+  text-align: right;
+  white-space: nowrap;
+}
+.sp-org-row .sp-grantbar {
+  grid-column: 1 / -1;
+}
+@media (max-width: 640px) {
+  .sp-org-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sp-org-row .when {
+    text-align: left;
+  }
+}
+
+/* ── the grant's schedule ───────────────────────────────────────────────── */
+.sp-grantbar {
+  display: grid;
+  gap: var(--s-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  letter-spacing: var(--tracking-mono);
+}
+.sp-grantbar .track {
+  position: relative;
+  height: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
+.sp-grantbar.is-compact .track {
+  height: 8px;
+}
+.sp-grantbar .released {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--accent);
+  transition: width var(--dur-4) var(--ease-out);
+}
+.sp-grantbar .cliff {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-strong);
+}
+.sp-grantbar .today {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--ink);
+}
+.sp-grantbar .marks {
+  position: relative;
+  height: 1.2em;
+  color: var(--ink-faint);
+}
+.sp-grantbar .marks span {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+}
+.sp-grantbar .marks .end {
+  right: 0;
+}
+.sp-grantbar .line {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+/* ── forms on the organisation side ─────────────────────────────────────── */
+.sp-org-form {
+  display: grid;
+  gap: var(--s-5);
+  max-width: var(--measure);
+}
+.sp-org-two {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: var(--s-7);
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .sp-org-two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.sp-split {
+  display: grid;
+  gap: var(--s-2);
+}
+.sp-split-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  gap: var(--s-4);
+  align-items: center;
+}
+.sp-split-line {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--ink-muted);
+}
+.sp-textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  line-height: 1.6;
+  color: var(--ink);
+  resize: vertical;
+}
+.sp-textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.sp-run-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-small);
+}
+.sp-run-table th,
+.sp-run-table td {
+  text-align: left;
+  padding: var(--s-2) var(--s-3) var(--s-2) 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.sp-run-table th {
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  color: var(--ink-faint);
+}
+.sp-run-table td.num,
+.sp-run-table th.num {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  letter-spacing: var(--tracking-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.sp-run-table td.err {
+  color: var(--err);
+}
+.sp-run-table td.ok {
+  color: var(--ok);
+}
+.sp-run-table .mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+}
+.sp-progress {
+  display: grid;
+  gap: var(--s-2);
+  font-size: var(--fs-small);
+}
+.sp-progress .bar {
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.sp-progress .bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width var(--dur-2) var(--ease-out);
+}
