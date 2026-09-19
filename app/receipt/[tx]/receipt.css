@@ -1,0 +1,171 @@
+/**
+ * receipt.css — the stub's own page. Print-like, unshelled, paper.
+ *
+ * Aliases only. Nothing is declared here that is not in styles/tokens.css.
+ */
+
+.wa-receipt {
+  --line: var(--border);
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: var(--s-7) var(--s-4) var(--s-9);
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.wa-r-one + .wa-r-one {
+  margin-top: var(--s-8);
+  padding-top: var(--s-8);
+  border-top: 1px dashed var(--border-strong);
+}
+
+.wa-r-many {
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+  margin-bottom: var(--s-5);
+}
+
+/* ── the sheets under the stub ─────────────────────────────────────── */
+
+.wa-r-sheet {
+  margin-top: var(--s-6);
+}
+
+.wa-r-sheet-title {
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.wa-r-line {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: var(--s-4);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-small);
+  align-items: baseline;
+}
+
+.wa-r-line .k {
+  color: var(--ink-faint);
+}
+
+.wa-r-line .v {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.wa-r-line a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.wa-r-line a:hover {
+  color: var(--accent-strong);
+}
+
+.wa-r-aside {
+  display: block;
+  margin-top: var(--s-1);
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+}
+
+/* ── the reason ────────────────────────────────────────────────────── */
+
+.wa-r-reason {
+  padding: var(--s-4) 0 var(--s-3);
+  font-size: var(--fs-lead);
+  line-height: var(--lh-lead);
+  color: var(--ink);
+}
+
+.wa-r-note {
+  padding: var(--s-4) 0 var(--s-3);
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  color: var(--ink-muted);
+}
+
+/* A refusal is a receipt too: red here means the record disagrees with itself. */
+.wa-r-note.is-err {
+  color: var(--err);
+}
+
+.wa-r-hashline {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: var(--s-4);
+  padding: var(--s-3) 0;
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-caption);
+}
+
+.wa-r-hashline .k {
+  color: var(--ink-faint);
+}
+
+.wa-r-hashline .v {
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+
+/* ── per-row disclosure, at the foot of the document it applies to ─── */
+
+.wa-r-issuer {
+  margin-top: var(--s-6);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-body);
+  color: var(--ink-faint);
+}
+
+.wa-r-held {
+  padding: var(--s-6) 0 var(--s-3);
+  font-size: var(--fs-lead);
+  line-height: var(--lh-lead);
+  color: var(--ink);
+}
+
+.wa-mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  letter-spacing: var(--tracking-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 480px) {
+  .wa-r-line,
+  .wa-r-hashline {
+    grid-template-columns: 1fr;
+    gap: var(--s-1);
+  }
+}
+
+/* ── printing: it is a stub, so it should print like one ───────────── */
+
+@media print {
+  .wa-receipt {
+    padding: 0;
+  }
+
+  .wa-r-issuer,
+  .wa-r-note {
+    color: var(--ink-muted);
+  }
+}
+
+/* An address is shown in full, with copy beside it rather than instead of it. */
+.wa-r-addr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.wa-r-addr a {
+  overflow-wrap: anywhere;
+}

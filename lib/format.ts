@@ -19,11 +19,28 @@ export const usd = (n: number): string => {
 /** The same amount with the cents ALWAYS shown, for stacked or aligned columns. */
 export const usdAligned = (n: number): string => `$${group(Math.round(n * 100) / 100, 2, 2)}`;
 
+/** USDT's own precision on X Layer. A payment cannot be smaller than one of these. */
+export const STABLE_DP = 6;
+
 /**
  * USDT base units → dollars in prose. SIX decimals on X Layer, not eighteen — reading this
  * wrong renders a payment a million times its size, so the decimals are never inferred.
+ *
+ * A NONZERO PAYMENT NEVER RENDERS AS "$0". Rounding to cents turns $0.000001 into "$0",
+ * which on a stub anchored to a real transaction reads as "nothing was paid" — a number
+ * the chain does not agree with. Below a cent, the figure widens to the precision that
+ * shows it rather than collapsing.
  */
-export const usdt = (base: bigint | number): string => usd(Number(base) / 1e6);
+export const usdt = (base: bigint | number): string => {
+  const raw = BigInt(base);
+  if (raw !== 0n && raw < 10_000n && raw > -10_000n) {
+    const v = Number(raw) / 1e6;
+    const text = v.toFixed(STABLE_DP).replace(/0+$/, "").replace(/\.$/, "");
+    return `${v < 0 ? "-" : ""}$${text.replace("-", "")}`;
+  }
+  return usd(Number(raw) / 1e6);
+};
+
 export const usdtAligned = (base: bigint | number): string => usdAligned(Number(base) / 1e6);
 
 /**
@@ -105,6 +122,26 @@ export const age = (seconds: number): string => {
   const hours = Math.floor(mins / 60);
   if (hours < 48) return `${hours} h`;
   return `${Math.floor(hours / 24)} days`;
+};
+
+/**
+ * A run id is bytes32. When a person named the run it is left-aligned ASCII with zero
+ * padding, and the name is what anyone refers to it by; when it is not, the hex is all
+ * there is. Decode the first case and short-hex the second.
+ */
+export const runLabel = (runId: string): string => {
+  const hex = runId.replace(/^0x/, "");
+  if (hex.length !== 64) return short(runId);
+  const bytes = hex.match(/.{2}/g) ?? [];
+  const chars: string[] = [];
+  for (const b of bytes) {
+    const code = parseInt(b, 16);
+    if (code === 0) break;
+    // printable ASCII only; anything else means this was never a name
+    if (code < 0x20 || code > 0x7e) return short(runId);
+    chars.push(String.fromCharCode(code));
+  }
+  return chars.length > 0 ? chars.join("") : short(runId);
 };
 
 /** Capitalize the first letter. */
