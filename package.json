@@ -18,14 +18,17 @@
     "keeper": "tsx scripts/keeper.ts"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tanstack/react-query": "^5.89.0",
+    "better-sqlite3": "^12.2.0",
+    "drizzle-orm": "^0.44.5",
+    "lucide-react": "^1.47.0",
     "next": "^15.5.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "tailwindcss": "^4.3.3",
     "viem": "^2.37.5",
-    "wagmi": "^2.16.9",
-    "@tanstack/react-query": "^5.89.0",
-    "drizzle-orm": "^0.44.5",
-    "better-sqlite3": "^12.2.0"
+    "wagmi": "^2.16.9"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

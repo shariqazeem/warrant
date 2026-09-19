@@ -1,0 +1,398 @@
+/**
+ * landing.css — THE INK SIDE. The network: the front door's opening and close, the
+ * marketing nav, the tape. Paper-coloured text on ink, one accent, no glow, no gradients.
+ *
+ * Dark is not a mode here. It is where the crowd is, and the paper tears off it. Aliases
+ * only; every value comes from styles/tokens.css and nothing is declared that is not there.
+ */
+
+.wa-landing {
+  /* The tear's notches sit 7px past each edge on purpose — they are punched holes, not
+   * content. `clip` rather than `hidden`: it stops the horizontal scroll they would
+   * otherwise create at 375px without turning this into a scroll container, which would
+   * break any sticky child inside it. */
+  overflow-x: clip;
+  --line: var(--border);
+  --line-ink: var(--border-inverse);
+  --pad: var(--s-5);
+  color: var(--ink);
+  background: var(--bg);
+}
+
+/* ── ink ───────────────────────────────────────────────────────────── */
+
+.wa-dark {
+  background: var(--surface-inverse);
+  color: var(--ink-inverse);
+}
+
+.wa-dark a {
+  color: var(--accent-inverse);
+}
+
+/* The seam. A perforated edge where the paper tears off the floor. */
+.wa-tear {
+  height: 0;
+  border-top: 1px dashed var(--border-strong);
+  background: var(--bg);
+  position: relative;
+}
+
+.wa-tear::before,
+.wa-tear::after {
+  content: "";
+  position: absolute;
+  top: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--r-pill);
+  background: var(--surface-inverse);
+}
+
+.wa-tear::before {
+  left: -7px;
+}
+
+.wa-tear::after {
+  right: -7px;
+}
+
+/* ── the nav ───────────────────────────────────────────────────────── */
+
+.wa-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  max-width: var(--measure-wide);
+  margin: 0 auto;
+  padding: var(--s-4) var(--pad);
+}
+
+ /* Rule 4: the accent is on every brand element, and on ink that is --accent-inverse.
+  * The mark beside the word is stroked on currentColor, so it tints from this one
+  * declaration rather than carrying a colour of its own. */
+.wa-nav-brand {
+  color: var(--accent-inverse);
+  text-decoration: none;
+  margin-inline-end: var(--s-2);
+}
+
+.wa-nav-link {
+  color: var(--ink-inverse-muted);
+  text-decoration: none;
+  font-size: var(--fs-small);
+  transition: color var(--dur-1) var(--ease-out);
+}
+
+.wa-nav-link:hover {
+  color: var(--ink-inverse);
+}
+
+.wa-nav-spacer {
+  flex: 1;
+}
+
+/* ── buttons. Every one says what happens. ─────────────────────────── */
+
+.wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-small);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out);
+}
+
+.wa-btn:hover {
+  border-color: var(--border-strong);
+}
+
+.wa-btn.is-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.wa-btn.is-primary:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+.wa-dark .wa-btn {
+  background: transparent;
+  border-color: var(--border-inverse);
+  color: var(--ink-inverse);
+}
+
+.wa-dark .wa-btn:hover {
+  border-color: var(--ink-inverse-faint);
+}
+
+.wa-dark .wa-btn.is-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.wa-btn[disabled],
+.wa-btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── sections ──────────────────────────────────────────────────────── */
+
+.wa-sec {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: var(--s-8) var(--pad);
+}
+
+.wa-sec.is-wide {
+  max-width: var(--measure-wide);
+}
+
+.wa-kicker {
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+  margin-bottom: var(--s-3);
+}
+
+.wa-dark .wa-kicker {
+  color: var(--ink-inverse-faint);
+}
+
+.wa-display {
+  font-size: var(--fs-display);
+  line-height: var(--lh-display);
+  letter-spacing: var(--tracking-display);
+  max-width: 16ch;
+}
+
+.wa-h2 {
+  font-size: var(--fs-h2);
+  line-height: var(--lh-h2);
+  letter-spacing: var(--tracking-h2);
+}
+
+.wa-lede {
+  font-size: var(--fs-lead);
+  line-height: var(--lh-lead);
+  letter-spacing: var(--tracking-lead);
+  color: var(--ink-muted);
+  max-width: 54ch;
+  margin-top: var(--s-4);
+}
+
+.wa-dark .wa-lede {
+  color: var(--ink-inverse-muted);
+}
+
+.wa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-top: var(--s-6);
+}
+
+/* ── the opening and the close ─────────────────────────────────────── */
+
+.wa-open {
+  max-width: var(--measure-wide);
+  margin: 0 auto;
+  padding: var(--s-9) var(--pad) var(--s-10);
+}
+
+.wa-close {
+  max-width: var(--measure-wide);
+  margin: 0 auto;
+  padding: var(--s-9) var(--pad);
+}
+
+/* ── a ruled row: the only other shape besides the stub ────────────── */
+
+.wa-rule-row {
+  display: grid;
+  grid-template-columns: 13rem 1fr;
+  gap: var(--s-5);
+  padding: var(--s-5) 0;
+  border-top: 1px solid var(--line);
+}
+
+.wa-rule-row .k {
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+}
+
+.wa-rule-row .v {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--ink);
+  max-width: 62ch;
+}
+
+.wa-dark .wa-rule-row {
+  border-top-color: var(--line-ink);
+}
+
+.wa-dark .wa-rule-row .k {
+  color: var(--ink-inverse-faint);
+}
+
+.wa-dark .wa-rule-row .v {
+  color: var(--ink-inverse);
+}
+
+/* ── figures. Mono, tabular, and the largest thing on the page. ────── */
+
+.wa-units {
+  font-family: var(--font-mono);
+  font-size: var(--fs-units);
+  line-height: 1;
+  letter-spacing: var(--tracking-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.wa-units-sm {
+  font-family: var(--font-mono);
+  font-size: var(--fs-units-sm);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.wa-mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  letter-spacing: var(--tracking-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── the honest empty state: words, never a sample row ─────────────── */
+
+.wa-nothing {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-md);
+  padding: var(--s-6);
+  color: var(--ink-muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  max-width: 62ch;
+}
+
+.wa-dark .wa-nothing {
+  border-color: var(--line-ink);
+  color: var(--ink-inverse-muted);
+}
+
+.wa-nothing strong {
+  display: block;
+  color: var(--ink);
+  font-weight: 500;
+  margin-bottom: var(--s-2);
+}
+
+.wa-dark .wa-nothing strong {
+  color: var(--ink-inverse);
+}
+
+/* ── the footer ────────────────────────────────────────────────────── */
+
+.wa-site-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-4);
+  max-width: var(--measure-wide);
+  margin: 0 auto;
+  padding: var(--s-6) var(--pad) var(--s-8);
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+}
+
+.wa-site-foot a {
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.wa-site-foot a:hover {
+  color: var(--accent);
+}
+
+.wa-foot-spacer {
+  flex: 1;
+}
+
+/* ── narrow ────────────────────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .wa-rule-row {
+    grid-template-columns: 1fr;
+    gap: var(--s-2);
+  }
+
+  .wa-nav {
+    gap: var(--s-4);
+    flex-wrap: wrap;
+  }
+}
+
+/* ── the tape. One line per payment, on ink. ───────────────────────── */
+
+.wa-tape {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wa-tape-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-4);
+  padding: var(--s-3) 0;
+  border-top: 1px solid var(--line-ink);
+  color: var(--ink-inverse-muted);
+  font-size: var(--fs-small);
+}
+
+/* The units are the largest thing on the row, as they are on every page. */
+.wa-tape-amt {
+  font-size: var(--fs-units-sm);
+  color: var(--ink-inverse);
+  margin-inline-start: auto;
+}
+
+.wa-tape-meta {
+  color: var(--ink-inverse-faint);
+  white-space: nowrap;
+}
+
+.wa-tape-link {
+  color: var(--accent-inverse);
+  text-decoration: none;
+}
+
+.wa-tape-link:hover {
+  color: var(--ink-inverse);
+}
+
+@media (max-width: 520px) {
+  .wa-tape-row {
+    flex-wrap: wrap;
+    gap: var(--s-2);
+  }
+
+  .wa-tape-amt {
+    margin-inline-start: 0;
+    width: 100%;
+  }
+}

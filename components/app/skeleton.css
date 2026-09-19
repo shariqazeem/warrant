@@ -1,0 +1,45 @@
+/* The wait, in the shape of what is coming. Tokens only; never a figure. */
+.wa-skel-note {
+  margin: 0 0 var(--s-4);
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+}
+.wa-skel-rows {
+  border-top: 1px solid var(--border);
+}
+.wa-skel-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr) 80px;
+  gap: var(--s-4);
+  align-items: center;
+  padding: var(--s-4) 0;
+  border-bottom: 1px solid var(--border);
+}
+.wa-skel-bar {
+  display: block;
+  height: 10px;
+  border-radius: var(--r-sm);
+  background: var(--border);
+  animation: wa-skel 1.6s var(--ease-out) infinite;
+}
+.wa-skel-bar.is-tall {
+  height: 22px;
+}
+@keyframes wa-skel {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wa-skel-bar {
+    animation: none;
+  }
+}
+@media (max-width: 720px) {
+  .wa-skel-row {
+    grid-template-columns: minmax(0, 1fr) 60px;
+  }
+  .wa-skel-row .wa-skel-bar:nth-child(2) {
+    display: none;
+  }
+}

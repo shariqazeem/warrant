@@ -1,0 +1,113 @@
+/**
+ * site.css — the marketing pages under the floor's nav: paper, one reading column, ruled
+ * sections. Aliases only.
+ */
+.wa-site-main {
+  padding-top: var(--s-8);
+  max-width: var(--measure);
+}
+.wa-site-main.is-wide {
+  max-width: var(--measure-wide);
+}
+.wa-site-h1 {
+  font-size: var(--fs-h1);
+  line-height: var(--lh-h1);
+  letter-spacing: var(--tracking-h1);
+  font-weight: 600;
+  margin: 0 0 var(--s-4);
+  max-width: 22ch;
+}
+.wa-site-body {
+  display: grid;
+  gap: var(--s-7);
+  margin-top: var(--s-7);
+}
+.wa-site-section {
+  border-top: 1px solid var(--line-strong);
+  padding-top: var(--s-4);
+  display: grid;
+  gap: var(--s-4);
+}
+.wa-site-section .wa-section-label {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+}
+.wa-site-section .wa-section-label a {
+  color: var(--accent);
+}
+.wa-site-section p.wa-body {
+  margin: 0;
+}
+.wa-site-section .wa-truths {
+  margin-top: 0;
+  max-width: none;
+}
+/* A document page states its facts; only the front door makes them enter. */
+.wa-site-section .wa-truth {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+.wa-site-section .wa-truth .v a,
+.wa-site-body a.wa-inline-link {
+  color: var(--accent);
+}
+.wa-site-section ul {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+.wa-site-section ul li + li {
+  margin-top: var(--s-2);
+}
+.wa-site-section li strong,
+.wa-site-section p strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.wa-site-section pre {
+  margin: 0;
+  padding: var(--s-4);
+  background: var(--surface-inverse);
+  color: var(--ink-inverse);
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  line-height: 1.6;
+  overflow-x: auto;
+}
+.wa-site-section .mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  letter-spacing: var(--tracking-mono);
+  overflow-wrap: anywhere;
+}
+.wa-site-foot {
+  max-width: var(--measure-wide);
+  margin: var(--s-10) auto 0;
+  padding: var(--s-6) var(--pad-x) var(--s-8);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-5);
+  align-items: center;
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+}
+.wa-site-foot a:hover {
+  color: var(--accent);
+}
+/* the wordmark: Fraunces, in exactly two places */
+.wa-wordmark {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variation-settings: "opsz" 144, "SOFT" 30;
+}

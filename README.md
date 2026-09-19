@@ -33,7 +33,37 @@ Scrip is the person's side: a rule on the wallet you get paid to, so a slice of 
 becomes a stock position. Warrant is the company's side: a rail for paying people in
 ownership. One engine, two products.
 
+## Commands
+
+```bash
+npm run dev          # the app
+npm run build
+npm run typecheck
+npm run test         # vitest: the reason hash, the ABI
+npm run preflight    # what is missing and what a deploy costs, read from the chain
+npm run probe        # which xStocks on chain 196 have real liquidity   (needs credentials)
+npm run prove-route  # plan step 1; prints the plan, sends nothing without --send
+
+cd contracts && forge test    # 24 tests on Payroll.sol
+```
+
+After changing a contract: `cd contracts && forge build && cd .. && npx tsx scripts/sync-abi.ts`.
+
 ## Status
 
-Nothing is built yet. The blockers in `CLAUDE.md` §7 come first, and the route proof in
-`docs/plan.md` step 1 decides whether the rest is possible.
+**Blocked on one thing: the OKX developer API credentials.** Every aggregator endpoint,
+including the public supported-chains read, answers HTTP 401 `OK-ACCESS-KEY can not be
+empty`. Nothing routes until `OKX_API_KEY`, `OKX_API_SECRET` and `OKX_API_PASSPHRASE` are
+in `.env.local`, so `docs/plan.md` step 1 has not been run and no payment exists yet.
+
+Built and green while blocked:
+
+- `contracts/src/Payroll.sol` — plan step 2 in full, 24 Foundry tests
+- `lib/okx.ts` — the signed aggregator client, server only
+- `scripts/probe.ts` — answers which xStocks have live liquidity, the moment credentials exist
+- `scripts/prove-route.ts` — plan step 1, dry by default
+- `scripts/preflight.ts` — reads the chain; confirmed chain 196, USDT/6, wNVDAx/18
+- The app scaffold and the design system, ported from Scrip with Warrant's own mark
+
+Nothing on any surface is invented. With no payments on chain, the front door says in
+words what will fill it.
