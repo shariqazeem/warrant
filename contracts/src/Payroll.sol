@@ -144,9 +144,10 @@ contract Payroll {
     function _payOne(Line calldata line, address asset, bytes32 runId) private {
         _checkAsset(asset);
         uint256 total = _check(line, 0);
+        uint256 floor = stable.balanceOf(address(this));
         stable.safeTransferFrom(msg.sender, address(this), total);
         _settle(line, asset, runId, 0);
-        _returnDust();
+        _returnDust(floor);
     }
 
     function _payMany(Line[] calldata lines, address asset, bytes32 runId) private {
@@ -159,13 +160,14 @@ contract Payroll {
             total += _check(lines[i], i);
         }
 
+        uint256 floor = stable.balanceOf(address(this));
         stable.safeTransferFrom(msg.sender, address(this), total);
 
         for (uint256 i; i < n; ++i) {
             _settle(lines[i], asset, runId, i);
         }
 
-        _returnDust();
+        _returnDust(floor);
     }
 
     /// @notice The reason hash, computed the same way on chain as off. The front end and the
@@ -200,6 +202,9 @@ contract Payroll {
 
         if (swapAmount != 0) {
             uint256 held = IERC20(asset).balanceOf(line.recipient);
+            // What this contract held BEFORE the route ran. Anything already here was not
+            // produced by this payment and must not be counted as though it were.
+            uint256 ours = IERC20(asset).balanceOf(address(this));
 
             stable.safeApprove(routerSpender, swapAmount);
             (bool ok,) = router.call(line.routerCalldata);
@@ -207,8 +212,12 @@ contract Payroll {
             stable.safeApprove(routerSpender, 0);
 
             // A route may pay the recipient directly or pay this contract. Either way the
-            // asset was meant for the recipient, so forward anything left here.
-            uint256 stranded = IERC20(asset).balanceOf(address(this));
+            // asset was meant for the recipient, so forward what THIS route left here —
+            // and only that. Sweeping the whole balance would let anyone donate the asset
+            // to this contract and have it counted toward the next payment's minimum,
+            // which would put a figure on a receipt that the route did not produce.
+            uint256 after_ = IERC20(asset).balanceOf(address(this));
+            uint256 stranded = after_ > ours ? after_ - ours : 0;
             if (stranded != 0) IERC20(asset).safeTransfer(line.recipient, stranded);
 
             delivered = IERC20(asset).balanceOf(line.recipient) - held;
@@ -229,10 +238,14 @@ contract Payroll {
         );
     }
 
-    /// @dev Whatever stablecoin the route did not spend goes back to the payer. This contract
-    ///      is never a resting place for money.
-    function _returnDust() private {
+    /**
+     * @dev Whatever stablecoin the route did not spend goes back to the payer, and NOTHING
+     *      ELSE. `floor` is what this contract held before the payer's money arrived, so a
+     *      balance somebody donated is not handed to whoever happens to pay next.
+     *      This contract is never a resting place for money, and never a source of it.
+     */
+    function _returnDust(uint256 floor) private {
         uint256 left = stable.balanceOf(address(this));
-        if (left != 0) stable.safeTransfer(msg.sender, left);
+        if (left > floor) stable.safeTransfer(msg.sender, left - floor);
     }
 }

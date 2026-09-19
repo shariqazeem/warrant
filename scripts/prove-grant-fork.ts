@@ -158,6 +158,12 @@ async function main() {
     await client.mine({blocks: 1});
   };
 
+  // DELTAS, NOT BALANCES. These addresses are reused across proofs on the same fork, so
+  // whatever they already hold is not this grant's doing. Measuring absolutes once made a
+  // run proof's earlier payment look like a vesting bug.
+  const aliceStart = await balance(ALICE);
+  const keeperStart = await balance(keeper.address);
+
   let good = true;
   const check = (label: string, ok: boolean, detail: string) => {
     if (!ok) good = false;
@@ -199,7 +205,7 @@ async function main() {
   const releasedNow = toBeneficiary + toCaller;
 
   const keeperGot = (await balance(keeper.address)) - keeperBefore;
-  const aliceGot = await balance(ALICE);
+  const aliceGot = (await balance(ALICE)) - aliceStart;
 
   // A RECEIVED BALANCE IS NOT THE AMOUNT SENT, ON THIS TOKEN.
   //
@@ -251,8 +257,8 @@ async function main() {
   const selfVested = parseEventLogs({abi: grantEscrowAbi, logs: selfReceipt.logs, eventName: "Vested"})[0];
   if (!selfVested) return fail("the beneficiary's vest emitted no Vested event");
 
-  const aliceTotal = await balance(ALICE);
-  const keeperTotal = await balance(keeper.address);
+  const aliceTotal = (await balance(ALICE)) - aliceStart;
+  const keeperTotal = (await balance(keeper.address)) - keeperStart;
   const everything = aliceTotal + keeperTotal;
 
   check("the escrow is empty", (await held()) < 10n, units(await held()));

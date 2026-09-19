@@ -84,7 +84,7 @@ contract GrantEscrowTest is Test {
         GrantEscrow.Grant memory g = escrow.grant(id);
 
         assertEq(escrow.heldUnits(id), UNITS, "the grant holds the units it bought");
-        assertEq(g.shares, UNITS, "the first grant in an asset defines the share unit");
+        assertEq(g.shares, UNITS * 1e6, "shares are offset a millionfold against inflation");
         assertEq(g.stableCost, COST, "what the payer spent, kept for the cost basis");
         assertEq(asset.balanceOf(address(escrow)), UNITS, "the escrow holds the asset");
         assertEq(stable.balanceOf(address(escrow)), 0, "and no stablecoin at all");
@@ -263,8 +263,12 @@ contract GrantEscrowTest is Test {
 
         uint256 tips = asset.balanceOf(keeper);
         assertLe(tips, (UNITS * 50) / 10_000, "total tips are capped at tipBps of the grant");
-        assertEq(asset.balanceOf(alice) + tips, UNITS, "and everything else reached the beneficiary");
-        assertEq(asset.balanceOf(address(escrow)), 0, "the escrow is empty");
+        assertApproxEqAbs(
+            asset.balanceOf(alice) + tips, UNITS, 2, "and everything else reached the beneficiary"
+        );
+        // A wei may remain: converting shares to units rounds DOWN so the pool can always
+        // pay what it promised. Dust left behind is the safe direction; a shortfall is not.
+        assertLe(asset.balanceOf(address(escrow)), 2, "the escrow is empty bar rounding dust");
     }
 
     function test_vest_neverReleasesMoreThanTheGrant() public {
@@ -471,13 +475,13 @@ contract GrantEscrowTest is Test {
         // A corporate action doubling the position, as a split would.
         asset.mint(address(escrow), 2 * UNITS);
 
-        assertEq(escrow.heldUnits(first), 2 * UNITS, "each grant's share is worth twice as much");
-        assertEq(escrow.heldUnits(second), 2 * UNITS);
+        assertApproxEqAbs(escrow.heldUnits(first), 2 * UNITS, 2, "each share is worth twice as much");
+        assertApproxEqAbs(escrow.heldUnits(second), 2 * UNITS, 2);
 
         vm.warp(block.timestamp + 5 * YEAR);
         vm.prank(alice);
         escrow.vest(first);
-        assertEq(asset.balanceOf(alice), 2 * UNITS, "the beneficiary gets it, not the contract");
+        assertApproxEqAbs(asset.balanceOf(alice), 2 * UNITS, 2, "the beneficiary gets it, not the contract");
     }
 
     function test_aGrantOpenedAfterAMoveBuysInAtThePoolsRatio() public {
@@ -489,8 +493,11 @@ contract GrantEscrowTest is Test {
 
         uint256 second = _open();
 
-        assertEq(escrow.heldUnits(second), UNITS, "the new grant holds what it actually bought");
-        assertEq(escrow.heldUnits(first), UNITS / 2, "and the old one is not diluted by it");
+        // Within a wei: pricing shares against the pool rounds DOWN, always, so a holder
+        // is never credited with more of the pool than it can pay. The remainder stays in
+        // the pool rather than being taken from another grant.
+        assertApproxEqAbs(escrow.heldUnits(second), UNITS, 2, "the new grant holds what it bought");
+        assertApproxEqAbs(escrow.heldUnits(first), UNITS / 2, 2, "and the old one is not diluted");
 
         vm.warp(block.timestamp + 5 * YEAR);
         vm.prank(alice);
@@ -521,6 +528,47 @@ contract GrantEscrowTest is Test {
         vm.prank(alice);
         escrow.vest(id);
         assertEq(asset.balanceOf(alice), UNITS);
+    }
+
+    /**
+     * THE FIRST-DEPOSITOR INFLATION ATTACK, WHICH THIS CONTRACT USED TO BE OPEN TO.
+     *
+     * Because the pool is priced from balanceOf, anyone can move it by sending the asset
+     * straight here without opening a grant. Before the virtual offset, one wei plus a
+     * donation made the next real grant price to zero shares and revert — a cheap, repeatable
+     * denial of service on opening grants in that asset.
+     */
+    function test_aDonationCannotPriceTheNextGrantToNothing() public {
+        // The attacker opens the smallest grant that exists, so they hold every share.
+        GrantEscrow.Terms memory tiny = _terms(0, YEAR, 0);
+        tiny.stableAmount = 1e6;
+        tiny.routerCalldata =
+            abi.encodeCall(MockRouter.swap, (address(stable), 1e6, address(asset), 1, address(escrow)));
+        vm.prank(payer);
+        uint256 attackerGrant = escrow.open(tiny);
+        assertEq(escrow.heldUnits(attackerGrant), 1, "one wei of asset");
+
+        // And then donates a thousand tokens straight to the contract.
+        asset.mint(address(escrow), 1_000e18);
+
+        // A real grant must still open, and must still be worth what it bought.
+        uint256 victim = _open();
+        assertApproxEqAbs(
+            escrow.heldUnits(victim), UNITS, UNITS / 1_000_000, "the victim holds what it paid for"
+        );
+
+        // And it pays out.
+        vm.warp(block.timestamp + 5 * YEAR);
+        vm.prank(alice);
+        escrow.vest(victim);
+        assertApproxEqAbs(asset.balanceOf(alice), UNITS, UNITS / 1_000_000, "and it pays out");
+    }
+
+    function test_aRoundTripAtAnEmptyPoolIsExact() public {
+        uint256 id = _open();
+        // Deposit D into an empty pool, hold exactly D. The offset must not cost anything
+        // in the ordinary case, only in the manipulated one.
+        assertEq(escrow.heldUnits(id), UNITS, "no rounding loss on the first grant");
     }
 
     function test_readingAGrantThatDoesNotExistIsRefused() public {

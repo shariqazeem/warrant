@@ -319,6 +319,69 @@ contract PayrollTest is Test {
         p.payOne(line, address(asset), RUN);
     }
 
+    // --- what somebody else's money must not do -----------------------------------------------
+    //
+    // Anyone can send tokens to this contract. Nothing they send may be credited to a
+    // payment, because a receipt that overstates what a route produced is the one lie
+    // this whole product cannot afford.
+
+    function test_aDonatedAssetIsNotCountedTowardsAPaymentsMinimum() public {
+        // Someone leaves 1 whole unit of the asset sitting in the contract.
+        asset.mint(address(payroll), 1e18);
+
+        // A route that delivers LESS than the line's floor must still be refused, even
+        // though the donation would more than cover the shortfall.
+        Payroll.Line memory line = _line(alice, 25e6, 0, 0.5e18, _route(25e6, 0.01e18, alice));
+
+        vm.prank(payer);
+        vm.expectRevert(abi.encodeWithSelector(Payroll.BelowMinimum.selector, 0, 0.01e18, 0.5e18));
+        payroll.payOne(line, address(asset), RUN);
+
+        assertEq(asset.balanceOf(address(payroll)), 1e18, "the donation is still sitting there");
+    }
+
+    function test_aDonatedAssetIsNotHandedToTheNextRecipient() public {
+        asset.mint(address(payroll), 1e18);
+
+        uint256 out = 0.02e18;
+        Payroll.Line memory line = _line(alice, 25e6, 0, 0.019e18, _route(25e6, out, alice));
+
+        vm.prank(payer);
+        payroll.payOne(line, address(asset), RUN);
+
+        assertEq(asset.balanceOf(alice), out, "exactly what the route produced, and no more");
+        assertEq(asset.balanceOf(address(payroll)), 1e18, "the donation was not swept to them");
+    }
+
+    function test_aDonatedStablecoinIsNotHandedToTheNextPayer() public {
+        stable.mint(address(payroll), 500e6);
+
+        Payroll.Line memory line = _line(alice, 25e6, 0, 1, _route(25e6, 0.01e18, alice));
+
+        uint256 before = stable.balanceOf(payer);
+        vm.prank(payer);
+        payroll.payOne(line, address(asset), RUN);
+
+        assertEq(stable.balanceOf(payer), before - 25e6, "the payer got back only their own dust");
+        assertEq(stable.balanceOf(address(payroll)), 500e6, "the donation stayed where it was");
+    }
+
+    /// The route paying this contract rather than the recipient must still work, and must
+    /// still forward only what the route itself produced.
+    function test_aMisroutedFillIsForwardedButADonationIsNot() public {
+        asset.mint(address(payroll), 1e18);
+
+        uint256 out = 0.02e18;
+        Payroll.Line memory line =
+            _line(alice, 25e6, 0, 0.019e18, _route(25e6, out, address(payroll)));
+
+        vm.prank(payer);
+        payroll.payOne(line, address(asset), RUN);
+
+        assertEq(asset.balanceOf(alice), out, "the fill reached them");
+        assertEq(asset.balanceOf(address(payroll)), 1e18, "the donation did not");
+    }
+
     // --- the reason hash ---------------------------------------------------------------------
 
     /// The front end and the indexer hash reasons in TypeScript. If either drifts from this

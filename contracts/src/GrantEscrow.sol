@@ -81,6 +81,25 @@ contract GrantEscrow {
     address public immutable router;
     address public immutable routerSpender;
 
+    /**
+     * @dev VIRTUAL SHARES, AGAINST THE FIRST-DEPOSITOR INFLATION ATTACK.
+     *
+     * The pool is priced from `balanceOf`, which is what makes a burn or a rebase by the
+     * issuer land on every grant proportionally. It also means anyone can move the pool by
+     * sending the asset straight to this contract, without opening a grant at all.
+     *
+     * Unmitigated, that is the classic vault attack: open a one-wei grant so you hold the
+     * only share, donate a large amount to the contract, and the next real grant prices to
+     * ZERO shares and reverts. Measured against a real $100 grant, one wei plus a thousand
+     * SPYx was enough to deny it.
+     *
+     * The offset makes shares a millionfold finer than units, so a donation must be about
+     * a million times the amount it could extract before the rounding bites — the ratio
+     * came out at eighteen million to one in the case above, which is not an attack, it is
+     * a gift. A round trip at an empty pool is still exact: deposit D, hold exactly D.
+     */
+    uint256 private constant SHARE_OFFSET = 1e6;
+
     /// @dev A keeper taking more than this of every release is not a keeper.
     uint16 public constant MAX_TIP_BPS = 200;
     /// @dev A grant nobody could ever finish is not a grant.
@@ -218,6 +237,9 @@ contract GrantEscrow {
 
         // Buy the asset once, now, bounded by a floor the payer signed for.
         uint256 poolBefore = IERC20(t.asset).balanceOf(address(this));
+        // What this contract held in the STABLECOIN before the payer's money arrived.
+        // Only the difference is theirs to get back; a donation is not.
+        uint256 stableFloor = stable.balanceOf(address(this));
 
         stable.safeTransferFrom(msg.sender, address(this), t.stableAmount);
         stable.safeApprove(routerSpender, t.stableAmount);
@@ -228,19 +250,17 @@ contract GrantEscrow {
         uint256 delivered = IERC20(t.asset).balanceOf(address(this)) - poolBefore;
         if (delivered < t.minOut) revert BelowMinimum(delivered, t.minOut);
 
-        // Shares against the pool as it stood BEFORE this deposit. The first grant in an
-        // asset defines the unit; every later one buys in at the pool's current ratio, so
-        // anything that moved the pool in between is already reflected.
+        // Shares against the pool as it stood BEFORE this deposit, with the virtual offset
+        // above. Rounds DOWN, so a new grant never takes value from the ones already here.
         uint256 outstanding = poolShares[t.asset];
-        uint256 newShares =
-            (outstanding == 0 || poolBefore == 0) ? delivered : (delivered * outstanding) / poolBefore;
+        uint256 newShares = (delivered * (outstanding + SHARE_OFFSET)) / (poolBefore + 1);
         if (newShares == 0) revert NoShares();
         poolShares[t.asset] = outstanding + newShares;
 
         // Whatever the route did not spend goes straight back; this contract holds no
         // stablecoin between calls, only the assets its grants are denominated in.
         uint256 leftover = stable.balanceOf(address(this));
-        if (leftover != 0) stable.safeTransfer(msg.sender, leftover);
+        if (leftover > stableFloor) stable.safeTransfer(msg.sender, leftover - stableFloor);
 
         id = ++grantCount;
         grants[id] = Grant({
@@ -325,12 +345,15 @@ contract GrantEscrow {
         return (uint256(g.shares) * (atTime - g.start)) / g.duration;
     }
 
-    /// @dev Rounds DOWN, always. A remainder stays in the pool rather than being paid out
-    ///      of another grant's holding.
+    /**
+     * @dev Rounds DOWN, always. A remainder stays in the pool rather than being paid out of
+     *      another grant's holding. The +1 and the offset mirror `_open` exactly, so a
+     *      deposit into an empty pool converts back to precisely what was put in.
+     */
     function _toUnits(address asset, uint256 shares) private view returns (uint256) {
+        if (shares == 0) return 0;
         uint256 outstanding = poolShares[asset];
-        if (outstanding == 0 || shares == 0) return 0;
-        return (shares * IERC20(asset).balanceOf(address(this))) / outstanding;
+        return (shares * (IERC20(asset).balanceOf(address(this)) + 1)) / (outstanding + SHARE_OFFSET);
     }
 
     // --- vesting ----------------------------------------------------------------------

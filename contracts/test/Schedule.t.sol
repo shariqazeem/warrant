@@ -61,17 +61,20 @@ contract ScheduleTest is Test {
                 duration: duration,
                 tipBps: 0,
                 reasonHash: keccak256("fixture"),
+                // Sized so the FIRST grant in this asset ends up holding exactly the
+                // fixture's share count: shares = delivered * SHARE_OFFSET, and the
+                // offset is 1e6. Comparing at the contract's own precision beats scaling
+                // the fixture afterwards, which would throw that precision away.
                 routerCalldata: abi.encodeCall(
-                    MockRouter.swap, (address(stable), 10_000e6, address(asset), shares, address(escrow))
+                    MockRouter.swap,
+                    (address(stable), 10_000e6, address(asset), shares / 1e6, address(escrow))
                 )
             });
             vm.prank(payer);
             id = escrow.open(t);
         }
 
-        // The first grant in an asset defines the share unit, so shares == units here and
-        // the fixture's figures are directly comparable.
-        assertEq(escrow.grant(id).shares, shares, "fixture shares");
+        assertEq(escrow.grant(id).shares, shares, "the grant holds the fixture's shares");
 
         uint256[] memory times = vm.parseJsonUintArray(fixture, ".at");
         uint256[] memory wants = vm.parseJsonUintArray(fixture, ".vested");
