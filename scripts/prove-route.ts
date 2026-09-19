@@ -50,7 +50,8 @@ async function main() {
   const account = privateKeyToAccount((pk.startsWith("0x") ? pk : `0x${pk}`) as Hex);
   const usd = Number(arg("usd", "1"));
   const asset = (arg("asset", DEFAULT_ASSET.address) ?? DEFAULT_ASSET.address) as `0x${string}`;
-  const slippage = arg("slippage", "0.01")!;
+  // PERCENT: "1" is one percent. V6 renamed this and changed its units.
+  const slippagePercent = arg("slippage", "1")!;
   const amount = BigInt(Math.round(usd * 10 ** STABLE.decimals));
 
   const rpc = createPublicClient({chain: xLayer, transport: http()});
@@ -109,7 +110,7 @@ async function main() {
     from: STABLE.address,
     to: asset,
     amount: amount.toString(),
-    slippage,
+    slippagePercent,
     userWalletAddress: account.address,
     receiver: account.address,
   });
@@ -135,10 +136,13 @@ async function main() {
   console.log(`Pay        ${usd} USDT  (${amount} units, 6 decimals)`);
   console.log(`Receive    ${formatUnits(expected, assetDecimals)} ${assetSymbol}  (${expected} units)`);
   if (minReceive !== undefined) {
-    console.log(`At least   ${formatUnits(minReceive, assetDecimals)} ${assetSymbol}  at ${slippage} slippage`);
+    console.log(`At least   ${formatUnits(minReceive, assetDecimals)} ${assetSymbol}  at ${slippagePercent}% slippage`);
   }
-  if (r.priceImpactPercentage) console.log(`Impact     ${r.priceImpactPercentage}%`);
-  console.log(`Through    ${(r.quoteCompareList ?? []).map((q) => q.dexName).join(", ") || "not reported"}`);
+  if (r.priceImpactPercent) console.log(`Impact     ${r.priceImpactPercent}%`);
+  const hops = (r.dexRouterList ?? [])
+    .map((h) => h.dexProtocol?.dexName)
+    .filter(Boolean);
+  console.log(`Through    ${hops.join(" -> ") || "not reported"}`);
   console.log(`Router     ${tx.to}`);
   console.log(`Spender    ${spender}`);
   console.log(`Allowance  ${formatUnits(allowance, STABLE.decimals)} USDT to that spender`);

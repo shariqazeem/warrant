@@ -15,7 +15,9 @@
     "prove-route": "tsx scripts/prove-route.ts",
     "preflight": "tsx scripts/preflight.ts",
     "index": "tsx scripts/index-logs.ts",
-    "keeper": "tsx scripts/keeper.ts"
+    "keeper": "tsx scripts/keeper.ts",
+    "router-addresses": "tsx scripts/router-addresses.ts",
+    "deploy": "cd contracts && forge script script/Deploy.s.sol --rpc-url $NEXT_PUBLIC_XLAYER_RPC --broadcast"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",

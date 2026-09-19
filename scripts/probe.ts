@@ -11,6 +11,12 @@
  * without the price moving more than the threshold. It is not pool TVL and it is not a
  * market cap. It is measured, it is labelled, and the raw quotes are written to disk so
  * any figure on a page can be traced back to the answer that produced it.
+ *
+ * AND A DEPTH CUT SHORT BY THROTTLING IS NOT A DEPTH. The first run of this probe reported
+ * "$100" for every asset on the chain, which was not liquidity — it was the rate limit,
+ * landing on the $1,000 rung every time and being recorded as if the aggregator had said
+ * no. A rung that was never actually quoted is now marked as such and reported as a FLOOR,
+ * "at least $100", never as a measurement.
  */
 import {mkdirSync, writeFileSync} from "node:fs";
 import {loadEnv} from "../lib/env";
@@ -31,7 +37,12 @@ type Rung = {
   unitPrice?: number;
   impactPct?: number;
   why?: string;
+  /** True when this rung was never actually quoted because the aggregator was throttling. */
+  throttled?: boolean;
 };
+
+/** The sentence lib/okx.ts holds with once it has exhausted its retries. */
+const isThrottle = (why: string) => /rate-limiting this run/i.test(why);
 
 type Depth = {
   symbol: string;
@@ -41,6 +52,9 @@ type Depth = {
   rungs: Rung[];
   /** The largest rung that quoted within the impact threshold. Zero means no usable route. */
   depthUsd: number;
+  /** True when the ladder ran out of quotes rather than out of liquidity, so the real
+   *  depth is AT LEAST depthUsd and this run does not know what it is. */
+  depthIsFloor: boolean;
   /** Price per whole unit at the smallest rung that quoted. */
   referencePrice?: number;
 };
@@ -58,14 +72,18 @@ async function ladder(token: TokenInfo): Promise<Depth> {
   const decimals = Number(token.decimals);
   const rungs: Rung[] = [];
   let depthUsd = 0;
+  let depthIsFloor = false;
   let referencePrice: number | undefined;
 
   for (const usd of LADDER) {
     const q = await quote({from: STABLE.address, to: token.tokenContractAddress, amount: usdt(usd)});
 
     if (!isOk(q)) {
-      rungs.push({usd, ok: false, why: q.why});
-      break; // a rung that will not quote means every rung above it is worse
+      const throttled = isThrottle(q.why);
+      rungs.push({usd, ok: false, why: q.why, throttled});
+      // A refusal ends the ladder either way, but only a real one ends it as an ANSWER.
+      if (throttled) depthIsFloor = true;
+      break;
     }
 
     const out = BigInt(q.value.toTokenAmount);
@@ -80,7 +98,7 @@ async function ladder(token: TokenInfo): Promise<Depth> {
 
     // The aggregator reports impact when it can. When it does not, derive it from how far
     // this rung's unit price has drifted from the smallest rung that quoted.
-    const reported = q.value.priceImpactPercentage;
+    const reported = q.value.priceImpactPercent;
     const impactPct =
       reported !== undefined && reported !== "" && !Number.isNaN(Number(reported))
         ? Math.abs(Number(reported))
@@ -99,6 +117,7 @@ async function ladder(token: TokenInfo): Promise<Depth> {
     decimals,
     rungs,
     depthUsd,
+    depthIsFloor,
     referencePrice,
   };
 }
@@ -145,13 +164,26 @@ async function main() {
   // spending a full ladder on tokens that have none.
   console.log(`\nProbing a one-dollar route for each, to find the ones with any route...`);
   const live: TokenInfo[] = [];
+  let neverAsked = 0;
   for (const t of candidates) {
     const q = await quote({from: STABLE.address, to: t.tokenContractAddress, amount: usdt(1)});
-    const routed = isOk(q) && BigInt(q.value.toTokenAmount) > 0n;
-    process.stdout.write(routed ? "." : "x");
-    if (routed) live.push(t);
+    if (isOk(q)) {
+      const routed = BigInt(q.value.toTokenAmount) > 0n;
+      process.stdout.write(routed ? "." : "x");
+      if (routed) live.push(t);
+    } else if (isThrottle(q.why)) {
+      // Not a verdict on this token. Ladder it anyway rather than record a false negative.
+      process.stdout.write("?");
+      neverAsked++;
+      live.push(t);
+    } else {
+      process.stdout.write("x");
+    }
   }
-  console.log(`\n\n${live.length} of ${candidates.length} have a route at one dollar.`);
+  console.log(`\n\n${live.length} of ${candidates.length} to ladder.`);
+  if (neverAsked > 0) {
+    console.log(`${neverAsked} were never actually quoted at a dollar; they are laddered anyway.`);
+  }
 
   if (live.length === 0) {
     console.error(`\nNone of them route. Stop here and say so.`);
@@ -164,9 +196,8 @@ async function main() {
     const d = await ladder(t);
     depths.push(d);
     const price = d.referencePrice ? `$${d.referencePrice.toFixed(2)}/unit` : "no price";
-    console.log(
-      `  ${d.symbol.padEnd(10)} depth $${String(d.depthUsd).padStart(6)}   ${price.padEnd(18)} ${d.address}`,
-    );
+    const depth = `${d.depthIsFloor ? ">=" : "  "}$${String(d.depthUsd).padStart(6)}`;
+    console.log(`  ${d.symbol.padEnd(10)} ${depth}   ${price.padEnd(18)} ${d.address}`);
   }
 
   depths.sort((a, b) => b.depthUsd - a.depthUsd || (a.symbol < b.symbol ? -1 : 1));
@@ -182,12 +213,17 @@ async function main() {
     console.log(`\n${i + 1}. ${d.symbol}${d.name ? `  — ${d.name}` : ""}`);
     console.log(`   address   ${d.address}`);
     console.log(`   decimals  ${d.decimals}`);
-    console.log(`   depth     $${d.depthUsd.toLocaleString()} at or under ${MAX_IMPACT_PCT}% impact`);
+    console.log(
+      d.depthIsFloor
+        ? `   depth     AT LEAST $${d.depthUsd.toLocaleString()} — the ladder ran out of ` +
+            `quotes, not out of liquidity`
+        : `   depth     $${d.depthUsd.toLocaleString()} at or under ${MAX_IMPACT_PCT}% impact`,
+    );
     if (d.referencePrice) console.log(`   price     $${d.referencePrice.toFixed(4)} per unit, from the $1 quote`);
     for (const r of d.rungs) {
       const line = r.ok
         ? `$${String(r.usd).padStart(6)}  ->  ${r.out} units, impact ${r.impactPct!.toFixed(3)}%`
-        : `$${String(r.usd).padStart(6)}  ->  held: ${r.why}`;
+        : `$${String(r.usd).padStart(6)}  ->  ${r.throttled ? "NEVER QUOTED: " : "held: "}${r.why}`;
       console.log(`     ${line}`);
     }
   }

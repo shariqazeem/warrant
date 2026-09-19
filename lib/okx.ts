@@ -9,17 +9,36 @@
  * 2. NOTHING HERE DECIDES ANYTHING. The payer chose the asset, the amount and the
  *    reason. This asks the aggregator for a price and a path, and returns what it said.
  *    If the aggregator holds, we hold, with its sentence on it.
+ *
+ * V6, NOT V5. V5 answers code 50050 "being deprecated" to a correctly signed request, so
+ * every path here is /api/v6. Four things renamed on the way across and each one is a
+ * silent wrong answer rather than an error if it is missed:
+ *
+ *     chainId               ->  chainIndex            (V5 shape returns code 51000)
+ *     slippage              ->  slippagePercent       ("1" means one percent, not "0.01")
+ *     priceImpactPercentage ->  priceImpactPercent
+ *     decimals              ->  decimal               INSIDE a quote's from/to token only;
+ *                                                     all-tokens still says `decimals`
  */
 import {createHmac} from "node:crypto";
 import {held, ok, type Outcome} from "./outcome";
 
 const BASE = process.env.OKX_API_BASE ?? "https://web3.okx.com";
-const CHAIN_ID = "196";
+const CHAIN_INDEX = "196";
 
-/** The aggregator's own rate limits bite before anything else does. One call at a time,
- *  with a floor between them, is the discipline that keeps a probe from being throttled
- *  into meaningless holds. */
-const MIN_GAP_MS = Number(process.env.OKX_MIN_GAP_MS ?? 220);
+/**
+ * THE AGGREGATOR'S RATE LIMIT BITES BEFORE ANYTHING ELSE DOES, and it bites in the worst
+ * possible way: code 50011 comes back looking exactly like an answer. A probe that treats
+ * it as one measures its own throttling and reports it as liquidity.
+ *
+ * So: one call at a time, a floor of a second between them, and 50011 is RETRIED rather
+ * than returned. A caller never sees a throttle as a result.
+ */
+const MIN_GAP_MS = Number(process.env.OKX_MIN_GAP_MS ?? 1100);
+const THROTTLE_RETRIES = Number(process.env.OKX_THROTTLE_RETRIES ?? 4);
+
+/** The aggregator's code for "too many requests". Transient, never an answer. */
+const THROTTLED = "50011";
 let gate: Promise<void> = Promise.resolve();
 let lastCall = 0;
 
@@ -92,8 +111,8 @@ function headers(c: Credentials, method: string, path: string, body = ""): Recor
 
 type Envelope<T> = {code: string; msg: string; data: T};
 
-/** One GET, signed, paced, and returned as an Outcome carrying the aggregator's own words. */
-async function get<T>(path: string, query: Record<string, string>): Promise<Outcome<T>> {
+/** One GET, signed and paced. A throttle comes back as the bare code for `get` to retry. */
+async function getOnce<T>(path: string, query: Record<string, string>): Promise<Outcome<T>> {
   const creds = credentials();
   if (!creds.ok) return creds;
 
@@ -120,6 +139,8 @@ async function get<T>(path: string, query: Record<string, string>): Promise<Outc
       return held<T>(`The aggregator answered ${res.status} with something that is not JSON.`);
     }
 
+    if (body.code === THROTTLED) return {ok: false, why: THROTTLED} as const;
+
     if (body.code !== "0") {
       return held<T>(`The aggregator refused: ${body.msg || "no reason given"} (code ${body.code}).`);
     }
@@ -128,25 +149,66 @@ async function get<T>(path: string, query: Record<string, string>): Promise<Outc
   });
 }
 
-// --- the shapes the aggregator returns, narrowed to what Warrant reads -----------------
+/**
+ * One GET, retried through throttling with a widening gap. A throttle that survives every
+ * attempt HOLDS saying so in as many words, which is honest and, crucially, is not a
+ * sentence any caller can mistake for "no route exists".
+ */
+async function get<T>(path: string, query: Record<string, string>): Promise<Outcome<T>> {
+  for (let attemptNo = 0; ; attemptNo++) {
+    const res = await getOnce<T>(path, query);
+    if (res.ok || res.why !== THROTTLED) return res;
 
+    if (attemptNo >= THROTTLE_RETRIES) {
+      return held<T>(
+        "The aggregator is rate-limiting this run, so this pair was never actually " +
+          "quoted. This is not an answer about liquidity.",
+      );
+    }
+    await new Promise((r) => setTimeout(r, MIN_GAP_MS * (attemptNo + 2)));
+  }
+}
+
+// --- the shapes V6 returns, narrowed to what Warrant reads ------------------------------
+
+/** An entry from `all-tokens`. Note `decimals`, plural, unlike a quote's token. */
 export type TokenInfo = {
   tokenContractAddress: string;
   tokenSymbol: string;
   tokenName?: string;
   decimals: string;
+  tokenLogoUrl?: string;
+};
+
+/** A token as it appears INSIDE a quote. Note `decimal`, singular. */
+export type QuoteToken = {
+  tokenContractAddress: string;
+  tokenSymbol: string;
+  /** Singular here. Plural on TokenInfo. This is not a typo and it has cost time before. */
+  decimal: string;
   tokenUnitPrice?: string;
+  isHoneyPot?: boolean;
+  taxRate?: string;
 };
 
 export type QuoteRouterResult = {
+  chainIndex: string;
   fromTokenAmount: string;
   toTokenAmount: string;
+  fromToken: QuoteToken;
+  toToken: QuoteToken;
   estimateGasFee?: string;
-  priceImpactPercentage?: string;
-  fromToken: {tokenContractAddress: string; tokenSymbol: string; decimals: string; tokenUnitPrice?: string};
-  toToken: {tokenContractAddress: string; tokenSymbol: string; decimals: string; tokenUnitPrice?: string};
-  dexRouterList?: Array<{router: string; routerPercent: string}>;
-  quoteCompareList?: Array<{dexName: string; amountOut: string}>;
+  /** Negative means the price moved against the payer. Read it with Math.abs. */
+  priceImpactPercent?: string;
+  tradeFee?: string;
+  quoteId?: string;
+  /** The hops, as contract addresses joined by "--". */
+  router?: string;
+  dexRouterList?: Array<{
+    dexProtocol?: {dexName: string; percent: string};
+    fromToken?: QuoteToken;
+    toToken?: QuoteToken;
+  }>;
 };
 
 export type SwapResult = {
@@ -159,28 +221,55 @@ export type SwapResult = {
     gas?: string;
     gasPrice?: string;
     maxPriorityFeePerGas?: string;
+    /** What the aggregator itself guarantees at the requested slippage. Warrant's `minOut`
+     *  is derived from this, so the contract enforces the aggregator's own promise. */
     minReceiveAmount?: string;
-    slippage?: string;
+    slippagePercent?: string;
   };
 };
 
 export type ApproveResult = {
   data: string;
+  /** The approval proxy — NOT the router. Approving the router instead is a silent
+   *  failure that reads as a broken route. */
   dexContractAddress: string;
   gasLimit?: string;
   gasPrice?: string;
+};
+
+export type SupportedChain = {
+  chainId: number;
+  chainIndex: number;
+  chainName: string;
+  /** The same address as `ApproveResult.dexContractAddress`; this is the one Payroll
+   *  stores as `routerSpender` at deploy time. */
+  dexTokenApproveAddress: string;
 };
 
 // --- the calls ---------------------------------------------------------------------------
 
 /** Every token the aggregator will quote on X Layer. The starting list for finding depth. */
 export function allTokens(): Promise<Outcome<TokenInfo[]>> {
-  return get<TokenInfo[]>("/api/v5/dex/aggregator/all-tokens", {chainId: CHAIN_ID});
+  return get<TokenInfo[]>("/api/v6/dex/aggregator/all-tokens", {chainIndex: CHAIN_INDEX});
 }
 
 /** The liquidity sources the aggregator routes through on this chain. */
 export function liquiditySources(): Promise<Outcome<Array<{id: string; name: string}>>> {
-  return get("/api/v5/dex/aggregator/get-liquidity", {chainId: CHAIN_ID});
+  return get("/api/v6/dex/aggregator/get-liquidity", {chainIndex: CHAIN_INDEX});
+}
+
+/**
+ * X Layer as the aggregator sees it, and — the reason this call exists — the approval
+ * proxy address that Payroll must be deployed against.
+ */
+export async function supportedChain(): Promise<Outcome<SupportedChain>> {
+  const res = await get<SupportedChain[]>("/api/v6/dex/aggregator/supported/chain", {
+    chainIndex: CHAIN_INDEX,
+  });
+  if (!res.ok) return res;
+  const first = res.value[0];
+  if (!first) return held("The aggregator does not list X Layer as a supported chain.");
+  return ok(first);
 }
 
 /**
@@ -193,8 +282,8 @@ export async function quote(args: {
   to: string;
   amount: string;
 }): Promise<Outcome<QuoteRouterResult>> {
-  const res = await get<QuoteRouterResult[]>("/api/v5/dex/aggregator/quote", {
-    chainId: CHAIN_ID,
+  const res = await get<QuoteRouterResult[]>("/api/v6/dex/aggregator/quote", {
+    chainIndex: CHAIN_INDEX,
     amount: args.amount,
     fromTokenAddress: args.from,
     toTokenAddress: args.to,
@@ -216,16 +305,17 @@ export function swap(args: {
   from: string;
   to: string;
   amount: string;
-  slippage: string;
+  /** PERCENT, so "1" is one percent. V5 took a fraction here and V6 does not. */
+  slippagePercent: string;
   userWalletAddress: string;
   receiver: string;
 }): Promise<Outcome<SwapResult[]>> {
-  return get<SwapResult[]>("/api/v5/dex/aggregator/swap", {
-    chainId: CHAIN_ID,
+  return get<SwapResult[]>("/api/v6/dex/aggregator/swap", {
+    chainIndex: CHAIN_INDEX,
     amount: args.amount,
     fromTokenAddress: args.from,
     toTokenAddress: args.to,
-    slippage: args.slippage,
+    slippagePercent: args.slippagePercent,
     userWalletAddress: args.userWalletAddress,
     swapReceiverAddress: args.receiver,
   });
@@ -240,8 +330,8 @@ export function approveTransaction(args: {
   token: string;
   amount: string;
 }): Promise<Outcome<ApproveResult[]>> {
-  return get<ApproveResult[]>("/api/v5/dex/aggregator/approve-transaction", {
-    chainId: CHAIN_ID,
+  return get<ApproveResult[]>("/api/v6/dex/aggregator/approve-transaction", {
+    chainIndex: CHAIN_INDEX,
     tokenContractAddress: args.token,
     approveAmount: args.amount,
   });
