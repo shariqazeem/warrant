@@ -5,3 +5,10 @@ var
 .env.local.*
 out
 *.log
+.DS_Store
+
+# foundry
+contracts/out
+contracts/cache
+contracts/broadcast
+tsconfig.tsbuildinfo

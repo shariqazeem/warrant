@@ -1,0 +1,40 @@
+{
+  "name": "warrant",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A company pays its people in ownership. X Layer, xStocks, the OKX DEX aggregator.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "probe": "tsx scripts/probe.ts",
+    "prove-route": "tsx scripts/prove-route.ts",
+    "preflight": "tsx scripts/preflight.ts",
+    "index": "tsx scripts/index-logs.ts",
+    "keeper": "tsx scripts/keeper.ts"
+  },
+  "dependencies": {
+    "next": "^15.5.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "viem": "^2.37.5",
+    "wagmi": "^2.16.9",
+    "@tanstack/react-query": "^5.89.0",
+    "drizzle-orm": "^0.44.5",
+    "better-sqlite3": "^12.2.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.15.3",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "dotenv": "^17.2.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

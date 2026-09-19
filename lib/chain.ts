@@ -1,0 +1,41 @@
+/**
+ * X Layer, and the two addresses everything on this rail is denominated in.
+ *
+ * Every constant below was read from the chain on 19 September 2026, not copied from a
+ * blog post. `npm run preflight` reads them again and refuses to agree quietly.
+ */
+import {defineChain} from "viem";
+
+export const xLayer = defineChain({
+  id: 196,
+  name: "X Layer",
+  nativeCurrency: {name: "OKB", symbol: "OKB", decimals: 18},
+  rpcUrls: {default: {http: [process.env.NEXT_PUBLIC_XLAYER_RPC ?? "https://rpc.xlayer.tech"]}},
+  blockExplorers: {default: {name: "OKLink", url: "https://www.oklink.com/x-layer"}},
+});
+
+/** USDT on X Layer. SIX decimals, not eighteen. One dollar is 1_000_000n. */
+export const STABLE = {
+  address: (process.env.NEXT_PUBLIC_STABLE ??
+    "0x1E4a5963aBFD975d8c9021ce480b42188849D41d") as `0x${string}`,
+  symbol: "USDT",
+  decimals: 6,
+} as const;
+
+/** Wrapped NVIDIA xStock. EIGHTEEN decimals. Verified on chain. */
+export const DEFAULT_ASSET = {
+  address: (process.env.NEXT_PUBLIC_DEFAULT_ASSET ??
+    "0xa8ddb5cd96b5222afe198316e9a57caa642850d5") as `0x${string}`,
+  symbol: "wNVDAx",
+  decimals: 18,
+} as const;
+
+export const EXPLORER_TX = (hash: string) => `https://www.oklink.com/x-layer/tx/${hash}`;
+export const EXPLORER_ADDRESS = (a: string) => `https://www.oklink.com/x-layer/address/${a}`;
+
+/**
+ * THE PUBLIC RPC REFUSES WIDE LOG RANGES with HTTP 400. The indexer pages in windows of
+ * this size. Raising it is the fastest way to break the indexer on a machine that is not
+ * yours; if you have a paid endpoint, raise it there through the environment.
+ */
+export const LOG_WINDOW = BigInt(process.env.XLAYER_LOG_WINDOW ?? 2000);
