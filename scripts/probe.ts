@@ -21,11 +21,18 @@
 import {mkdirSync, writeFileSync} from "node:fs";
 import {loadEnv} from "../lib/env";
 import {allTokens, quote, liquiditySources, credentials, type TokenInfo} from "../lib/okx";
-import {STABLE} from "../lib/chain";
+import {DEFAULT_ASSET, STABLE} from "../lib/chain";
 import {isOk} from "../lib/outcome";
 
-/** Dollars, smallest first. A pair that will not quote a single dollar has no route at all. */
-const LADDER = [1, 10, 100, 1_000, 10_000];
+/**
+ * Dollars, smallest first. A pair that will not quote a single dollar has no route at all.
+ *
+ * THE TOP RUNG IS A CEILING, NOT A LIMIT. An asset that still routes at the last rung has
+ * a depth of AT LEAST that, and this run does not know what it is. That is reported as a
+ * floor, the same way a throttled ladder is — the first version of this reported the
+ * ceiling as though it were a measurement, for five assets at once.
+ */
+const LADDER = [1, 10, 100, 1_000, 10_000, 100_000];
 
 /** Above this, the payment is moving the price rather than taking it. */
 const MAX_IMPACT_PCT = Number(process.env.PROBE_MAX_IMPACT ?? 1.0);
@@ -60,6 +67,28 @@ type Depth = {
 };
 
 const usdt = (dollars: number) => String(BigInt(Math.round(dollars * 1e6)));
+
+/**
+ * ONLY WHAT THE PROBE CAN SEE. `all-tokens` lists what OKX surfaces, and it is NOT the set
+ * of pairs the aggregator will route: wNVDAx quotes and settles, and does not appear in
+ * the list. So the asset this installation is configured to pay in is always laddered,
+ * listed or not, or the probe would quietly say nothing about the one that matters.
+ */
+function withConfiguredAsset(tokens: TokenInfo[]): TokenInfo[] {
+  const has = tokens.some(
+    (t) => t.tokenContractAddress.toLowerCase() === DEFAULT_ASSET.address.toLowerCase(),
+  );
+  if (has) return tokens;
+  return [
+    ...tokens,
+    {
+      tokenContractAddress: DEFAULT_ASSET.address,
+      tokenSymbol: DEFAULT_ASSET.symbol,
+      tokenName: `${DEFAULT_ASSET.symbol} (configured here; not in the aggregator's list)`,
+      decimals: String(DEFAULT_ASSET.decimals),
+    },
+  ];
+}
 
 function isXStock(t: TokenInfo): boolean {
   const name = (t.tokenName ?? "").toLowerCase();
@@ -106,8 +135,13 @@ async function ladder(token: TokenInfo): Promise<Depth> {
 
     rungs.push({usd, ok: true, out: out.toString(), unitPrice, impactPct});
 
-    if (impactPct <= MAX_IMPACT_PCT) depthUsd = usd;
-    else break;
+    if (impactPct <= MAX_IMPACT_PCT) {
+      depthUsd = usd;
+      // Still routing at the largest size asked about: the ladder ran out, not the pool.
+      if (usd === LADDER[LADDER.length - 1]) depthIsFloor = true;
+    } else {
+      break;
+    }
   }
 
   return {
@@ -151,7 +185,22 @@ async function main() {
   }
 
   const all = tokens.value;
-  const candidates = all.filter(isXStock);
+  const only = process.argv
+    .find((a) => a.startsWith("--only="))
+    ?.slice(7)
+    .split(",")
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean);
+
+  let candidates = withConfiguredAsset(all.filter(isXStock));
+  if (only && only.length > 0) {
+    candidates = candidates.filter(
+      (t) =>
+        only.includes(t.tokenSymbol.toLowerCase()) ||
+        only.includes(t.tokenContractAddress.toLowerCase()),
+    );
+    console.log(`\nNarrowed to ${candidates.length}: ${candidates.map((t) => t.tokenSymbol).join(", ")}`);
+  }
   console.log(`\n${all.length} tokens quotable. ${candidates.length} of them look like xStocks.`);
 
   if (candidates.length === 0) {
@@ -215,8 +264,8 @@ async function main() {
     console.log(`   decimals  ${d.decimals}`);
     console.log(
       d.depthIsFloor
-        ? `   depth     AT LEAST $${d.depthUsd.toLocaleString()} — the ladder ran out of ` +
-            `quotes, not out of liquidity`
+        ? `   depth     AT LEAST $${d.depthUsd.toLocaleString()} — this run stopped asking, ` +
+            `it did not find a limit`
         : `   depth     $${d.depthUsd.toLocaleString()} at or under ${MAX_IMPACT_PCT}% impact`,
     );
     if (d.referencePrice) console.log(`   price     $${d.referencePrice.toFixed(4)} per unit, from the $1 quote`);
