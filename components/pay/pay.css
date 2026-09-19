@@ -299,3 +299,15 @@ select.wa-input {
     gap: var(--s-1);
   }
 }
+
+/* How old the price is. Said plainly, because a price is a moment. */
+.wa-quote-age {
+  margin-top: var(--s-4);
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+  line-height: var(--lh-body);
+}
+
+.wa-quote-age.is-stale {
+  color: var(--warn);
+}

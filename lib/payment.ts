@@ -10,6 +10,7 @@
  */
 import {getAddress, isAddress} from "viem";
 import {STABLE} from "./chain";
+import {MAX_REASON_LENGTH} from "./reason";
 import {held, ok, type Outcome} from "./outcome";
 
 /**
@@ -93,6 +94,9 @@ export function checkLine(req: LineRequest): Outcome<Split> {
   }
   if (req.reason.trim().length === 0) {
     return held("Every payment carries a reason. It is the point of the receipt.");
+  }
+  if (req.reason.length > MAX_REASON_LENGTH) {
+    return held(`A reason cannot be longer than ${MAX_REASON_LENGTH} characters.`);
   }
 
   const total = toBase(req.usd);

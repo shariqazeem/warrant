@@ -1,7 +1,9 @@
 import type {Metadata} from "next";
+import Link from "next/link";
 import {createPublicClient, erc20Abi, http} from "viem";
 import {Stub} from "@/components/stub/stub";
 import {CopyText} from "@/components/app/copy-text";
+import {PrintButton} from "@/components/app/print-button";
 import {EXPLORER_ADDRESS, EXPLORER_TX, STABLE, xLayer} from "@/lib/chain";
 import {ISSUER_NOTE, ISSUER_OWNER_NOTE, assetByAddress} from "@/lib/assets";
 import {paidInTransaction, type Receipt} from "@/lib/receipts";
@@ -197,9 +199,17 @@ function One({r, symbol, decimals}: {r: Receipt; symbol: string; decimals: numbe
           </a>
         </Line>
         <Line k="Run">
-          <span className="wa-mono">{runLabel(r.runId)}</span>
+          <Link href={`/run/${r.runId}`} className="wa-mono">
+            {runLabel(r.runId)}
+          </Link>
         </Line>
       </Sheet>
+
+      {/* A stub is a document. It should print like one, and nothing else on the page
+          should print at all. */}
+      <div className="wa-r-print">
+        <PrintButton />
+      </div>
 
 
     </article>

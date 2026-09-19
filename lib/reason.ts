@@ -12,6 +12,16 @@
  */
 import {keccak256, toHex} from "viem";
 
+/**
+ * Longer than any reason a person writes on a payment, short enough that a public endpoint
+ * cannot be used to fill a disk.
+ *
+ * DELIBERATELY HERE AND NOT IN lib/db.ts. Line validation runs in the browser, and a
+ * constant imported from the module that opens SQLite would drag better-sqlite3 into the
+ * client bundle with it.
+ */
+export const MAX_REASON_LENGTH = 500;
+
 export function normaliseReason(reason: string): string {
   return reason.trim().replace(/\s+/g, " ");
 }

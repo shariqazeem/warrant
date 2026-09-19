@@ -292,7 +292,12 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
             <dl className="wa-quote-rows">
               <div>
                 <dt>At</dt>
-                <dd>${(price ?? 0).toFixed(2)} per whole {chosen.symbol}</dd>
+                {/* A price that cannot be computed is not zero. See the note in pay-form. */}
+                <dd>
+                  {price === null
+                    ? "not computable from this quote"
+                    : `$${price.toFixed(2)} per whole ${chosen.symbol}`}
+                </dd>
               </div>
               <div>
                 <dt>At least</dt>

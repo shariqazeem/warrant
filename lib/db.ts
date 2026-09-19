@@ -13,7 +13,7 @@
 import Database from "better-sqlite3";
 import {mkdirSync} from "node:fs";
 import {dirname} from "node:path";
-import {reasonHash} from "./reason";
+import {MAX_REASON_LENGTH, reasonHash} from "./reason";
 
 const PATH = process.env.WARRANT_DB_PATH ?? "var/warrant.db";
 
@@ -109,6 +109,11 @@ export function database(): Database.Database {
  * free and idempotent — many payments share one reason, which is the normal case in a run.
  */
 export function rememberReason(text: string): `0x${string}` {
+  // The hash is of the text as given. Truncating before hashing would store a reason that
+  // does not match the receipt, which reasonFor would then correctly refuse to vouch for.
+  if (text.length > MAX_REASON_LENGTH) {
+    throw new Error(`A reason cannot be longer than ${MAX_REASON_LENGTH} characters.`);
+  }
   const hash = reasonHash(text);
   database()
     .prepare(

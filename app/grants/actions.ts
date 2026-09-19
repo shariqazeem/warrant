@@ -10,6 +10,7 @@
  */
 import {STABLE} from "@/lib/chain";
 import {rememberReason} from "@/lib/db";
+import {MAX_REASON_LENGTH} from "@/lib/reason";
 import {swap} from "@/lib/okx";
 import {held, ok, type Outcome} from "@/lib/outcome";
 import {checkAddress, toBase} from "@/lib/payment";
@@ -81,6 +82,9 @@ export async function buildGrant(req: GrantRequest): Promise<Outcome<BuiltGrant>
   }
   if (req.reason.trim().length === 0) {
     return held("Every grant carries a reason. It is what the receipt is for.");
+  }
+  if (req.reason.length > MAX_REASON_LENGTH) {
+    return held(`A reason cannot be longer than ${MAX_REASON_LENGTH} characters.`);
   }
 
   const reasonHash = rememberReason(req.reason);

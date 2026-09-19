@@ -9,6 +9,7 @@
 import {describe, expect, it} from "vitest";
 import {STABLE} from "./chain";
 import {MAX_USD, checkAddress, checkLine, runTotal, toBase} from "./payment";
+import {MAX_REASON_LENGTH} from "./reason";
 
 const OK_LINE = {
   recipient: "0x00000000000000000000000000000000000ca511",
@@ -139,5 +140,16 @@ describe("the split", () => {
     // 0.1 + 0.2 + 0.3 is famously not 0.6 in floating point. In base units it is exact.
     expect(runTotal(lines)).toBe(100_000n + 200_000n + 300_000n + 3_330_000n + 25_000_000n);
     expect(runTotal(lines)).toBe(28_930_000n);
+  });
+});
+
+describe("a reason", () => {
+  it("is bounded, because the form that posts it is a public endpoint", () => {
+    const tooLong = "x".repeat(MAX_REASON_LENGTH + 1);
+    const o = checkLine({...OK_LINE, reason: tooLong});
+    expect(o.ok).toBe(false);
+    expect(o.ok === false && o.why).toMatch(/cannot be longer/);
+
+    expect(checkLine({...OK_LINE, reason: "x".repeat(MAX_REASON_LENGTH)}).ok).toBe(true);
   });
 });

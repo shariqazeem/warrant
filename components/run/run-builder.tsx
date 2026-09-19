@@ -1,7 +1,7 @@
 "use client";
 
 import {AlertCircle, Download, FileText, Loader2} from "lucide-react";
-import {useCallback, useMemo, useRef, useState} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
 import {useAccount} from "wagmi";
 import {buildPayment, type BuiltLine} from "@/app/pay/actions";
@@ -9,6 +9,7 @@ import {ASSETS, ISSUER_NOTE, defaultAsset} from "@/lib/assets";
 import {RUN_TEMPLATE, parseRunFile, type ParsedRow} from "@/lib/csv";
 import {short, unitsFromRaw, usdt} from "@/lib/format";
 import {newRunId} from "@/lib/run-id";
+import {freshness, quoteAge} from "@/lib/quote-age";
 import {Connect} from "@/components/wallet/connect";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {usePay} from "@/components/pay/use-pay";
@@ -34,6 +35,9 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
   const [text, setText] = useState("");
   const [asset, setAsset] = useState(defaultAsset().address);
   const [built, setBuilt] = useState<Built[] | null>(null);
+  const [builtAt, setBuiltAt] = useState<number | null>(null);
+  /** Ticks so the age of the prices stays true on screen. */
+  const [, setTick] = useState(0);
   const [building, setBuilding] = useState(false);
   const [buildDone, setBuildDone] = useState(0);
   const [buildWhy, setBuildWhy] = useState<string | null>(null);
@@ -49,8 +53,15 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
     detail: why ?? undefined,
   });
 
+  useEffect(() => {
+    if (builtAt === null) return;
+    const t = setInterval(() => setTick((n) => n + 1), 15_000);
+    return () => clearInterval(t);
+  }, [builtAt]);
+
   const takeFile = useCallback(async (file: File) => {
     setBuilt(null);
+    setBuiltAt(null);
     setBuildWhy(null);
     setText(await file.text());
   }, []);
@@ -79,6 +90,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
     }
 
     setBuilt(out);
+    setBuiltAt(Date.now());
     setBuilding(false);
   }, [parsed.good, asset]);
 
@@ -94,6 +106,11 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
     if (result) router.push(`/receipt/${result.hash}`);
   }, [built, asset, pay, router]);
 
+  // N ROUTES ARE EXPENSIVE TO REBUILD, so this does not do it behind the payer's back the
+  // way /pay does. It says how old the prices are and refuses to sign once they are too
+  // old — the gap between pricing a run and connecting a wallet is exactly where minutes
+  // go, and a run that reverts in front of an audience is worth avoiding.
+  const age = builtAt === null ? null : freshness(builtAt);
   const busy = phase === "building" || phase === "signing" || phase === "confirming";
   const totalOut = built?.reduce((sum, b) => sum + BigInt(b.expectedOut), 0n) ?? 0n;
 
@@ -121,6 +138,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
           onChange={(e) => {
             setText(e.target.value);
             setBuilt(null);
+            setBuiltAt(null);
             setBuildWhy(null);
           }}
           placeholder={`address,amount,reason\n0x…,25,Design review week 38\n0x…,40,Shipped the indexer`}
@@ -267,7 +285,12 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
               <Connect />
             </>
           ) : (
-            <button type="button" className="wa-btn is-primary" disabled={busy} onClick={() => void send()}>
+            <button
+              type="button"
+              className="wa-btn is-primary"
+              disabled={busy || age === "stale"}
+              onClick={() => void send()}
+            >
               {busy ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
               {phase === "signing"
                 ? "Waiting for your wallet"
@@ -276,6 +299,25 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
                   : `Pay ${parsed.good.length} people, ${usdt(parsed.total)}, one signature`}
             </button>
           )}
+
+          {built && builtAt !== null ? (
+            <p className={`wa-quote-age${age === "stale" ? " is-stale" : ""}`}>
+              {parsed.good.length} routes priced {quoteAge(builtAt)}
+              {age === "stale" ? ", which is too long ago to sign. " : ". "}
+              <button
+                type="button"
+                className="wa-linkish"
+                disabled={building}
+                onClick={() => {
+                  setBuilt(null);
+                  setBuiltAt(null);
+                  void buildRoutes();
+                }}
+              >
+                {building ? "Repricing…" : "Reprice them"}
+              </button>
+            </p>
+          ) : null}
 
           {buildWhy ? <p className="wa-refusal">{buildWhy}</p> : null}
           {phase === "failed" && why ? (

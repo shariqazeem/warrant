@@ -9,6 +9,7 @@ import {ASSETS, ISSUER_NOTE, defaultAsset} from "@/lib/assets";
 import {STABLE} from "@/lib/chain";
 import {settledUnitPrice, unitsFromRaw, usdt} from "@/lib/format";
 import {singlePayRunId} from "@/lib/run-id";
+import {QUOTE_FRESH_MS, freshness, quoteAge} from "@/lib/quote-age";
 import {Connect} from "@/components/wallet/connect";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {usePay} from "./use-pay";
@@ -46,9 +47,13 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
    * amount while reading the new one. The numbers and the button must never describe a
    * line that is not the one on screen.
    */
-  const [quoted, setQuoted] = useState<{sig: string; value: BuiltPayment} | null>(null);
+  const [quoted, setQuoted] = useState<{sig: string; value: BuiltPayment; at: number} | null>(null);
+  /** Ticks so the age on screen stays true without the quote changing under it. */
+  const [, setTick] = useState(0);
   const [quoteWhy, setQuoteWhy] = useState<string | null>(null);
   const [quoting, setQuoting] = useState(false);
+  /** Bumped to force a requote without changing a single field. */
+  const [refreshAt, setRefreshAt] = useState(0);
 
   const {pay, phase, why, reset} = usePay(payroll);
 
@@ -61,12 +66,23 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
   /** The quote for THIS line, or nothing. A stale one is not a quote. */
   const quote = quoted?.sig === signature ? quoted.value : null;
   const restating = quoted !== null && quoted.sig !== signature;
+  const age = quoted && quote ? freshness(quoted.at) : null;
 
   useTxToast(phase === "idle" ? "idle" : phase, `Pay ${usd > 0 ? usdt(BigInt(Math.round(usd * 1e6))) : ""}`.trim(), {
     detail: why ?? undefined,
   });
 
   // Quote as the line settles, not on every keystroke.
+  // A PRICE IS A MOMENT. Left alone, this refreshes itself rather than letting the button
+  // stay live on a quote from ten minutes ago. The contract would refuse to settle below
+  // the floor anyway, so a stale quote costs a revert rather than money — but a revert in
+  // front of an audience is its own kind of expensive.
+  useEffect(() => {
+    if (!quote) return;
+    const tick = setInterval(() => setTick((n) => n + 1), 15_000);
+    return () => clearInterval(tick);
+  }, [quote]);
+
   const seq = useRef(0);
   useEffect(() => {
     if (!ready) {
@@ -81,7 +97,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
       if (mine !== seq.current) return; // a later edit already won
       setQuoting(false);
       if (out.ok) {
-        setQuoted({sig: signature, value: out.value});
+        setQuoted({sig: signature, value: out.value, at: Date.now()});
         setQuoteWhy(null);
       } else {
         setQuoted(null);
@@ -89,7 +105,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
       }
     }, 450);
     return () => clearTimeout(t);
-  }, [ready, recipient, usd, cashUsd, asset, reason, signature]);
+  }, [ready, recipient, usd, cashUsd, asset, reason, signature, refreshAt]);
 
   const send = useCallback(async () => {
     if (!quote) return;
@@ -101,6 +117,14 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
     );
     if (result) router.push(`/receipt/${result.hash}`);
   }, [pay, quote, router]);
+
+  // Re-price automatically once it is no longer fresh, while the payer is still reading.
+  useEffect(() => {
+    if (!quoted || quoting) return;
+    const due = quoted.at + QUOTE_FRESH_MS - Date.now();
+    const t = setTimeout(() => setRefreshAt(Date.now()), Math.max(1_000, due));
+    return () => clearTimeout(t);
+  }, [quoted, quoting]);
 
   const busy = phase === "building" || phase === "signing" || phase === "confirming";
   const buttonWord =
@@ -200,7 +224,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
 
         <div className="wa-pay-act">
           {isConnected ? (
-            <button type="submit" className="wa-btn is-primary" disabled={!quote || busy}>
+            <button type="submit" className="wa-btn is-primary" disabled={!quote || busy || age === "stale"}>
               {busy ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
               {buttonWord}
             </button>
@@ -232,15 +256,21 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
               <div>
                 <dt>At</dt>
                 <dd>
-                  $
-                  {(
-                    settledUnitPrice(
+                  {/*
+                    NOT `?? 0`. A price that cannot be computed is not a price of zero, and
+                    "$0.00 per whole SPYx" is a figure nothing can confirm — which is the
+                    one thing no surface here is allowed to print.
+                  */}
+                  {(() => {
+                    const price = settledUnitPrice(
                       BigInt(quote.line.stableAmount) - BigInt(quote.line.cashAmount),
                       BigInt(quote.expectedOut),
                       chosen.decimals,
-                    ) ?? 0
-                  ).toFixed(2)}{" "}
-                  per whole {chosen.symbol}
+                    );
+                    return price === null
+                      ? "not computable from this quote"
+                      : `$${price.toFixed(2)} per whole ${chosen.symbol}`;
+                  })()}
                 </dd>
               </div>
               <div>
@@ -271,6 +301,20 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
                 </div>
               ) : null}
             </dl>
+            {quoted ? (
+              <p className={`wa-quote-age${age === "stale" ? " is-stale" : ""}`}>
+                Priced {quoteAge(quoted.at)}
+                {age === "stale" ? ", which is too long ago to sign. " : ". "}
+                <button
+                  type="button"
+                  className="wa-linkish"
+                  onClick={() => setRefreshAt(Date.now())}
+                  disabled={quoting}
+                >
+                  {quoting ? "Repricing…" : "Reprice"}
+                </button>
+              </p>
+            ) : null}
             <p className="wa-quote-issuer">
               {chosen.symbol} — {ISSUER_NOTE}
             </p>

@@ -205,3 +205,14 @@
   line-height: var(--lh-body);
   color: var(--ink-faint);
 }
+
+/* The print control is chrome, so it is the one thing that does not print. */
+.wa-r-print {
+  margin-top: var(--s-6);
+}
+
+@media print {
+  .wa-r-print {
+    display: none;
+  }
+}
