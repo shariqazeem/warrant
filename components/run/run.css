@@ -1,0 +1,179 @@
+/**
+ * run.css — a file becoming lines. Ruled rows, never a grid of cards.
+ * Aliases only; every value comes from styles/tokens.css.
+ */
+
+.wa-run {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+/* ── the file ──────────────────────────────────────────────────────── */
+
+.wa-drop {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-md);
+  padding: var(--s-4);
+  transition: border-color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out);
+}
+
+.wa-drop.is-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.wa-drop-text {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  line-height: 1.7;
+  resize: vertical;
+  padding: 0;
+}
+
+.wa-drop-text:focus {
+  outline: none;
+}
+
+.wa-drop-text::placeholder {
+  color: var(--ink-faint);
+}
+
+.wa-drop-act {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
+}
+
+.wa-drop-hint {
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+  line-height: var(--lh-body);
+  max-width: 44ch;
+}
+
+/* ── the lines ─────────────────────────────────────────────────────── */
+
+.wa-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+
+.wa-line {
+  display: grid;
+  grid-template-columns: 2rem 9rem minmax(0, 1fr) 6rem 9rem;
+  gap: var(--s-4);
+  align-items: baseline;
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-small);
+}
+
+.wa-line-n {
+  color: var(--ink-faint);
+  font-size: var(--fs-caption);
+}
+
+.wa-line-who {
+  color: var(--ink);
+}
+
+.wa-line-why {
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.wa-line-why em {
+  color: var(--ink-faint);
+  font-style: normal;
+}
+
+.wa-line-amt {
+  text-align: right;
+  color: var(--ink);
+}
+
+.wa-line-gets {
+  text-align: right;
+  color: var(--ok);
+}
+
+/* A line that will not pay is shown IN PLACE, with the rule it broke. */
+.wa-line.is-bad {
+  grid-template-columns: 2rem 9rem minmax(0, 1fr);
+}
+
+.wa-line.is-bad .wa-line-who {
+  color: var(--err);
+  overflow-wrap: anywhere;
+}
+
+.wa-line-refusal {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  color: var(--err);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-body);
+}
+
+.wa-line-refusal svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+/* ── the sum ───────────────────────────────────────────────────────── */
+
+.wa-run-sum {
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  color: var(--ink-muted);
+}
+
+.wa-run-sum strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.wa-run-sum .is-bad {
+  color: var(--err);
+}
+
+.wa-run-out {
+  margin-top: var(--s-2);
+}
+
+.wa-run-out strong {
+  color: var(--ok);
+}
+
+/* ── narrow ────────────────────────────────────────────────────────── */
+
+@media (max-width: 760px) {
+  .wa-line,
+  .wa-line.is-bad {
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+    row-gap: var(--s-1);
+  }
+
+  .wa-line-why {
+    grid-column: 2 / -1;
+    font-size: var(--fs-caption);
+  }
+
+  .wa-line-gets {
+    grid-column: 2 / -1;
+    text-align: left;
+  }
+}

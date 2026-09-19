@@ -80,3 +80,52 @@ contract MockUSDT {
         balanceOf[to] += value;
     }
 }
+
+/// @notice A USDT-shaped token that also implements EIP-2612, like the real one on X Layer.
+contract MockPermitUSDT is MockUSDT {
+    bytes32 public constant PERMIT_TYPEHASH =
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+
+    bytes32 public immutable DOMAIN_SEPARATOR;
+    mapping(address => uint256) public nonces;
+
+    error PermitExpired();
+    error BadSignature();
+
+    constructor() {
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256("USDT"),
+                keccak256("1"),
+                block.chainid,
+                address(this)
+            )
+        );
+    }
+
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        if (block.timestamp > deadline) revert PermitExpired();
+
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonces[owner]++, deadline))
+            )
+        );
+
+        address signer = ecrecover(digest, v, r, s);
+        if (signer == address(0) || signer != owner) revert BadSignature();
+
+        allowance[owner][spender] = value;
+    }
+}

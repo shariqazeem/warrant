@@ -2,6 +2,7 @@
 pragma solidity 0.8.24;
 
 import {IERC20} from "./interfaces/IERC20.sol";
+import {IERC20Permit} from "./interfaces/IERC20Permit.sol";
 import {SafeToken} from "./lib/SafeToken.sol";
 
 /// @title Payroll
@@ -36,6 +37,17 @@ contract Payroll {
         bytes routerCalldata;
     }
 
+    /// @notice An EIP-2612 signature standing in for a separate approval transaction.
+    ///         USDT on X Layer implements permit, so a payer signs once, off chain and for
+    ///         no gas, and the run is one transaction rather than two.
+    struct Permit {
+        uint256 value;
+        uint256 deadline;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+    }
+
     IERC20 public immutable stable;
     address public immutable router;
     address public immutable routerSpender;
@@ -63,6 +75,7 @@ contract Payroll {
     error RouterCallFailed(uint256 index);
     error BelowMinimum(uint256 index, uint256 delivered, uint256 minOut);
     error Reentrant();
+    error PermitFailed();
 
     uint256 private _lock = 1;
 
@@ -81,6 +94,54 @@ contract Payroll {
 
     /// @notice Pay one person. The payer must have approved this contract for `stableAmount`.
     function payOne(Line calldata line, address asset, bytes32 runId) external nonReentrant {
+        _payOne(line, asset, runId);
+    }
+
+    /// @notice Pay a run. One `runId`, N receipts. The payer must have approved this
+    ///         contract for the sum of the lines.
+    function payMany(Line[] calldata lines, address asset, bytes32 runId) external nonReentrant {
+        _payMany(lines, asset, runId);
+    }
+
+    /// @notice Pay one person, approving with a signature instead of a prior transaction.
+    function payOneWithPermit(Line calldata line, address asset, bytes32 runId, Permit calldata p)
+        external
+        nonReentrant
+    {
+        _usePermit(p);
+        _payOne(line, asset, runId);
+    }
+
+    /// @notice THE ONE SIGNATURE. A payer signs an EIP-2612 permit off chain, for no gas,
+    ///         and this single transaction approves and pays the whole run.
+    function payManyWithPermit(
+        Line[] calldata lines,
+        address asset,
+        bytes32 runId,
+        Permit calldata p
+    ) external nonReentrant {
+        _usePermit(p);
+        _payMany(lines, asset, runId);
+    }
+
+    /**
+     * @dev A permit is a public signature and anyone may submit it. If someone already
+     *      has — to grief the payer, or simply because a transaction was retried — the
+     *      permit call reverts on a spent nonce and would take the whole run with it.
+     *      So a failed permit is only fatal when the allowance it was meant to create is
+     *      not there anyway. The transferFrom below is what actually enforces it.
+     */
+    function _usePermit(Permit calldata p) private {
+        try IERC20Permit(address(stable)).permit(
+            msg.sender, address(this), p.value, p.deadline, p.v, p.r, p.s
+        ) {
+            return;
+        } catch {
+            if (stable.allowance(msg.sender, address(this)) < p.value) revert PermitFailed();
+        }
+    }
+
+    function _payOne(Line calldata line, address asset, bytes32 runId) private {
         _checkAsset(asset);
         uint256 total = _check(line, 0);
         stable.safeTransferFrom(msg.sender, address(this), total);
@@ -88,9 +149,7 @@ contract Payroll {
         _returnDust();
     }
 
-    /// @notice Pay a run. One signature, one `runId`, N receipts. The payer must have approved
-    ///         this contract for the sum of the lines.
-    function payMany(Line[] calldata lines, address asset, bytes32 runId) external nonReentrant {
+    function _payMany(Line[] calldata lines, address asset, bytes32 runId) private {
         _checkAsset(asset);
         uint256 n = lines.length;
         if (n == 0) revert NoLines();
