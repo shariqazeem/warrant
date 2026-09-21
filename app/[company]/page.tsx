@@ -51,17 +51,6 @@ export default async function CompanyPage({params}: Params) {
   const c = record.value;
   const now = Math.floor(Date.now() / 1000);
 
-  const paidInAssets = new Map<string, {symbol: string; decimals: number; units: bigint}>();
-  for (const r of c.receipts) {
-    const current = paidInAssets.get(r.asset) ?? {
-      symbol: r.assetSymbol,
-      decimals: r.assetDecimals,
-      units: 0n,
-    };
-    current.units += r.assetAmount;
-    paidInAssets.set(r.asset, current);
-  }
-
   return (
     <div className="wa-landing">
       <div className="wa-dark">
@@ -117,18 +106,18 @@ export default async function CompanyPage({params}: Params) {
               ) : null}
             </section>
 
-            {paidInAssets.size > 0 ? (
+            {c.deliveredByAsset.length > 0 ? (
               <section className="wa-co-section">
                 <p className="wa-kicker">Delivered into people&rsquo;s own wallets</p>
-                {[...paidInAssets.entries()].map(([addr, a]) => (
-                  <div className="wa-rule-row" key={addr}>
+                {c.deliveredByAsset.map((a) => (
+                  <div className="wa-rule-row" key={a.asset}>
                     <span className="k">{a.symbol}</span>
                     <p className="v">
                       <span className="wa-units-sm">{unitsFromRaw(a.units, a.decimals)}</span>{" "}
                       <span className="wa-co-sym">{a.symbol}</span>
                       <br />
-                      <Link href={EXPLORER_ADDRESS(addr)} className="wa-mono wa-co-addr">
-                        {addr}
+                      <Link href={EXPLORER_ADDRESS(a.asset)} className="wa-mono wa-co-addr">
+                        {a.asset}
                       </Link>
                     </p>
                   </div>

@@ -41,6 +41,13 @@ export type CompanyGrant = {
   reason: string | null;
 };
 
+export type DeliveredAsset = {
+  asset: `0x${string}`;
+  symbol: string;
+  decimals: number;
+  units: bigint;
+};
+
 export type Company = {
   address: `0x${string}`;
   /** Block time of the first payment or grant, or null if there are none. */
@@ -50,6 +57,8 @@ export type Company = {
   runCount: number;
   totalStable: bigint;
   receipts: CompanyReceipt[];
+  /** Summed over EVERY payment, not only the page of them above. */
+  deliveredByAsset: DeliveredAsset[];
   grants: CompanyGrant[];
   grantsTotalStable: bigint;
 };
@@ -123,6 +132,22 @@ export function readCompany(address: string, limit = 200): Outcome<Company> {
     }>
   ).reduce((sum, r) => sum + BigInt(r.stable_amount), 0n);
 
+  // OVER EVERY ROW, NOT THE PAGE ABOVE. `receipts` is limited so a page stays fast;
+  // summing that list would present a partial total as a complete one, which is the kind
+  // of wrong number that looks right. Exact in bigint, for the same reason as the total.
+  const deliveredRows = db
+    .prepare(`SELECT asset, asset_amount FROM receipts WHERE payer = ?`)
+    .all(who) as Array<{asset: string; asset_amount: string}>;
+
+  const byAsset = new Map<string, bigint>();
+  for (const row of deliveredRows) {
+    byAsset.set(row.asset, (byAsset.get(row.asset) ?? 0n) + BigInt(row.asset_amount));
+  }
+  const deliveredByAsset: DeliveredAsset[] = [...byAsset.entries()].map(([asset, units]) => {
+    const facts = assetFacts(asset);
+    return {asset: asset as `0x${string}`, symbol: facts.symbol, decimals: facts.decimals, units};
+  });
+
   const grantRows = db
     .prepare(
       `SELECT g.*, n.text AS reason_text
@@ -168,6 +193,7 @@ export function readCompany(address: string, limit = 200): Outcome<Company> {
     runCount: totals.runs ?? 0,
     totalStable: exactTotal,
     receipts,
+    deliveredByAsset,
     grants,
     grantsTotalStable,
   });
