@@ -290,23 +290,49 @@ function escrowWalker(address: Address): Walker {
   };
 }
 
+/**
+ * CATCH UP TO THE HEAD, QUICKLY, FOR A PAGE THAT IS ABOUT TO RENDER.
+ *
+ * `/receipt/[tx]` reads its transaction straight from the chain, so a stub is openable the
+ * instant a payment confirms. The company and run pages read the indexer — so without
+ * this, paying someone and then showing them the public record shows an empty page, which
+ * is the demo failing at the exact moment it should land.
+ *
+ * Bounded on purpose. It only moves a cursor that already exists, and only a window or
+ * two, so a page load never turns into a cold start over seventy million blocks. A
+ * contract that has never been indexed is left to `npm run index`, and the page says so.
+ */
+export async function catchUp(maxWindows = 2): Promise<IndexReport[]> {
+  const reports: IndexReport[] = [];
+
+  for (const w of walkers()) {
+    // A cold start is not a page load's job.
+    if (readCursor(w.name) === null) continue;
+    const r = await walk(w, maxWindows);
+    // A page must still render if the chain refuses; being behind is not an error here.
+    if (r.ok) reports.push(r.value);
+  }
+
+  return reports;
+}
+
+/** Whichever contracts are deployed, as walkers. */
+function walkers(): Walker[] {
+  const out: Walker[] = [];
+  const payroll = payrollAddress();
+  if (payroll.ok) out.push(payrollWalker(payroll.value));
+  const escrow = escrowAddress();
+  if (escrow.ok) out.push(escrowWalker(escrow.value));
+  return out;
+}
+
 /** One pass over everything that is deployed. */
 export async function indexOnce(): Promise<IndexReport[]> {
   const reports: IndexReport[] = [];
-
-  const payroll = payrollAddress();
-  if (payroll.ok) {
-    const r = await walk(payrollWalker(payroll.value));
-    if (r.ok) reports.push(r.value);
-    else throw new Error(r.why);
+  for (const w of walkers()) {
+    const r = await walk(w);
+    if (!r.ok) throw new Error(r.why);
+    reports.push(r.value);
   }
-
-  const escrow = escrowAddress();
-  if (escrow.ok) {
-    const r = await walk(escrowWalker(escrow.value));
-    if (r.ok) reports.push(r.value);
-    else throw new Error(r.why);
-  }
-
   return reports;
 }

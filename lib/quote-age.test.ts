@@ -28,3 +28,24 @@ describe("how old a price is", () => {
     expect(quoteAge(now - 60_000, now)).toBe("1 minute ago");
   });
 });
+
+/**
+ * The permit deadline is not in this file, but the reasoning is the same shape and it cost
+ * a debugging session: a deadline must clear the block it lands in, which is in the future.
+ * See lib/permit.ts `deadlineIn`.
+ */
+describe("erring long is the safe direction", () => {
+  const later = (a: bigint, b: bigint) => (a > b ? a : b);
+
+  it("takes the later clock when the chain's head is stale", () => {
+    const chainHead = 1_000n; // a block 55 minutes old
+    const local = 4_300n;
+    expect(later(chainHead, local) + 1_800n).toBe(6_100n);
+  });
+
+  it("takes the later clock when the local machine is slow", () => {
+    const chainHead = 4_300n;
+    const local = 1_000n; // a browser running behind
+    expect(later(chainHead, local) + 1_800n).toBe(6_100n);
+  });
+});

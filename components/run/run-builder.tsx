@@ -11,6 +11,7 @@ import {short, unitsFromRaw, usdt} from "@/lib/format";
 import {newRunId} from "@/lib/run-id";
 import {freshness, quoteAge} from "@/lib/quote-age";
 import {Connect} from "@/components/wallet/connect";
+import {syncFromChain} from "@/app/sync/actions";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {usePay} from "@/components/pay/use-pay";
 import "@/components/pay/pay.css";
@@ -103,7 +104,11 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
       newRunId(),
       total,
     );
-    if (result) router.push(`/receipt/${result.hash}`);
+    if (result) {
+      // See the note in pay-form: the record must be true by the time anyone looks at it.
+      await syncFromChain();
+      router.push(`/receipt/${result.hash}`);
+    }
   }, [built, asset, pay, router]);
 
   // N ROUTES ARE EXPENSIVE TO REBUILD, so this does not do it behind the payer's back the

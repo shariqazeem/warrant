@@ -5,6 +5,7 @@ import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {ScheduleBar} from "@/components/grants/schedule-bar";
 import {EXPLORER_ADDRESS} from "@/lib/chain";
 import {readCompany} from "@/lib/company";
+import {catchUp} from "@/lib/indexer";
 import {dateUTC, short, since as sinceWords, unitsFromRaw, usdt} from "@/lib/format";
 import {humanDuration} from "@/lib/schedule";
 import {runLabel} from "@/lib/format";
@@ -45,6 +46,10 @@ export default async function CompanyPage({params}: Params) {
   // Anything that is not an address is not a company. A 404 is more honest than a page
   // explaining itself.
   if (!/^0x[0-9a-fA-F]{40}$/.test(address)) notFound();
+
+  // A stranger arriving by link has not just paid anyone, so nothing has synced for them.
+  // Bounded: it moves an existing cursor a window or two and never cold-starts a page.
+  await catchUp();
 
   const record = readCompany(address);
   if (!record.ok) notFound();

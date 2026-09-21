@@ -4,6 +4,7 @@ import {notFound} from "next/navigation";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {EXPLORER_TX} from "@/lib/chain";
 import {readRun} from "@/lib/company";
+import {catchUp} from "@/lib/indexer";
 import {dateUTC, runLabel, short, unitsFromRaw, usdt} from "@/lib/format";
 import "@/app/landing.css";
 import "@/app/[company]/company.css";
@@ -30,6 +31,7 @@ export default async function RunPage({params}: Params) {
   const {id} = await params;
   const runId = decodeURIComponent(id);
 
+  await catchUp();
   const found = readRun(runId);
   if (!found.ok) notFound();
 

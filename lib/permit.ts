@@ -123,27 +123,35 @@ export async function resolveDomain(
 }
 
 /**
- * THE CHAIN'S CLOCK, NOT THE MACHINE'S.
+ * WHEN A PERMIT STOPS BEING GOOD.
  *
- * A permit deadline is checked against `block.timestamp`. Computing it from `Date.now()`
- * means a browser whose clock is slow signs a permit that is already expired, and the
- * failure surfaces as an opaque contract revert rather than as "your clock is wrong".
- * This asks the chain what time it thinks it is and works from that.
+ * A deadline is checked against the `block.timestamp` of the block this lands in — which is
+ * in the FUTURE, not the latest block and not this machine's clock. Both of those can be
+ * wrong in the fatal direction:
  *
- * Falls back to the local clock if the head cannot be read — a deadline from a working
- * clock is better than no transaction at all.
+ *   - `Date.now()` on a browser running slow signs a permit that is already expired, and
+ *     the failure arrives as an opaque contract revert rather than "your clock is wrong".
+ *   - the chain's latest block can be minutes old — on a quiet fork it was 55 minutes old,
+ *     and every permit built from it expired before it was mined.
+ *
+ * So this takes the LATER of the two and adds the window. A deadline further out than
+ * intended is harmless, because a permit is single-use by nonce; a deadline in the past
+ * kills the payment. When they disagree, err long.
  */
 export async function deadlineIn(minutes: number, rpcUrl?: string): Promise<bigint> {
   const window = BigInt(Math.round(minutes * 60));
+  const local = BigInt(Math.floor(Date.now() / 1000));
+
   try {
     const rpc = createPublicClient({
       chain: xLayer,
       transport: http(rpcUrl ?? xLayer.rpcUrls.default.http[0]),
     });
     const block = await rpc.getBlock({blockTag: "latest"});
-    return block.timestamp + window;
+    const later = block.timestamp > local ? block.timestamp : local;
+    return later + window;
   } catch {
-    return BigInt(Math.floor(Date.now() / 1000)) + window;
+    return local + window;
   }
 }
 

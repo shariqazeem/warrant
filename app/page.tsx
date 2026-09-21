@@ -4,6 +4,7 @@ import {Stub} from "@/components/stub/stub";
 import {EXPLORER_TX, STABLE} from "@/lib/chain";
 import {ASSETS, ISSUER, ISSUER_NOTE, ISSUER_POWERS, defaultAsset} from "@/lib/assets";
 import {readRail} from "@/lib/company";
+import {catchUp} from "@/lib/indexer";
 import {short, since, stampUTC, unitsFromRaw, usdt} from "@/lib/format";
 import "./landing.css";
 
@@ -21,6 +22,7 @@ export const revalidate = 15;
 export default async function Home() {
   // The whole rail, from the indexer. Zeroes and an empty list before anything has been
   // paid, which is rendered as a sentence rather than as a figure.
+  await catchUp();
   const rail = readRail(8);
   const asset = defaultAsset();
   const latest = rail.ok ? rail.value.recent[0] : undefined;

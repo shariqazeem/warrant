@@ -11,6 +11,7 @@ import {settledUnitPrice, unitsFromRaw, usdt} from "@/lib/format";
 import {singlePayRunId} from "@/lib/run-id";
 import {QUOTE_FRESH_MS, freshness, quoteAge} from "@/lib/quote-age";
 import {Connect} from "@/components/wallet/connect";
+import {syncFromChain} from "@/app/sync/actions";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {usePay} from "./use-pay";
 import "./pay.css";
@@ -115,7 +116,13 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
       singlePayRunId(),
       BigInt(quote.totalStable),
     );
-    if (result) router.push(`/receipt/${result.hash}`);
+    if (result) {
+      // Walk the log before navigating, so the company page and the run page are already
+      // true when the payer gets there. The receipt itself does not need this — it reads
+      // its transaction directly — but the public record does.
+      await syncFromChain();
+      router.push(`/receipt/${result.hash}`);
+    }
   }, [pay, quote, router]);
 
   // Re-price automatically once it is no longer fresh, while the payer is still reading.

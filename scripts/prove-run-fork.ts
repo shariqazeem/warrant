@@ -41,6 +41,10 @@ const RUN = [
 
 const line = () => console.log("-".repeat(78));
 
+/** Reuse an already-deployed Payroll instead of deploying another. Lets a second run land
+ *  on the same contract, which is what testing the indexer's catch-up needs. */
+const reuse = process.argv.find((a) => a.startsWith("--payroll="))?.slice(10) as Address | undefined;
+
 async function main() {
   loadEnv();
   const client = forkClient(FORK);
@@ -94,14 +98,19 @@ async function main() {
     readFileSync("contracts/out/Payroll.sol/Payroll.json", "utf8"),
   ) as {bytecode: {object: Hex}};
 
-  const deployHash = await client.deployContract({
-    abi: payrollAbi,
-    bytecode: artifact.bytecode.object,
-    account: payer,
-    chain: null,
-    args: [STABLE.address, router, spender],
-  });
-  const payroll = (await client.waitForTransactionReceipt({hash: deployHash})).contractAddress!;
+  let payroll: Address;
+  if (reuse) {
+    payroll = reuse;
+  } else {
+    const deployHash = await client.deployContract({
+      abi: payrollAbi,
+      bytecode: artifact.bytecode.object,
+      account: payer,
+      chain: null,
+      args: [STABLE.address, router, spender],
+    });
+    payroll = (await client.waitForTransactionReceipt({hash: deployHash})).contractAddress!;
+  }
 
   console.log(`\nTHE RUN`);
   line();
@@ -180,7 +189,9 @@ async function main() {
     functionName: "allowance",
     args: [payer.address, payroll],
   });
-  if (allowanceBefore !== 0n) return fail("The payer already had an allowance; this proves nothing.");
+  if (!reuse && allowanceBefore !== 0n) {
+    return fail("The payer already had an allowance; this proves nothing.");
+  }
 
   const before = await Promise.all(
     RUN.map((x) =>
@@ -194,7 +205,7 @@ async function main() {
   );
 
   // --- one transaction ------------------------------------------------------------------
-  const runId = runIdFromName("run-fork-proof");
+  const runId = runIdFromName(reuse ? `run-${Date.now().toString(36).slice(-6)}` : "run-fork-proof");
   console.log(`\nOne transaction: payManyWithPermit, runId "run-fork-proof"...`);
 
   const hash = await client.writeContract({
