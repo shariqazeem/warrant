@@ -15,6 +15,9 @@ export type CompanyReceipt = {
   logIndex: number;
   blockNumber: number;
   blockTime: number | null;
+  /** Who paid. Implicit on a company's own page; the rail spans every company, so it is
+   *  carried on the row rather than inferred from context. */
+  payer: `0x${string}`;
   recipient: `0x${string}`;
   runId: `0x${string}`;
   asset: `0x${string}`;
@@ -63,6 +66,28 @@ export type Company = {
   grantsTotalStable: bigint;
 };
 
+/** One row of `receipts`, joined to its reason, as the surfaces want it. One copy. */
+function toReceipt(r: Record<string, unknown>): CompanyReceipt {
+  const facts = assetFacts(String(r.asset));
+  return {
+    txHash: String(r.tx_hash) as `0x${string}`,
+    logIndex: Number(r.log_index),
+    blockNumber: Number(r.block_number),
+    blockTime: r.block_time === null ? null : Number(r.block_time),
+    payer: String(r.payer) as `0x${string}`,
+    recipient: String(r.recipient) as `0x${string}`,
+    runId: String(r.run_id) as `0x${string}`,
+    asset: String(r.asset) as `0x${string}`,
+    assetSymbol: facts.symbol,
+    assetDecimals: facts.decimals,
+    stableAmount: BigInt(String(r.stable_amount)),
+    cashAmount: BigInt(String(r.cash_amount)),
+    assetAmount: BigInt(String(r.asset_amount)),
+    reasonHash: String(r.reason_hash) as `0x${string}`,
+    reason: r.reason_text === null || r.reason_text === undefined ? null : String(r.reason_text),
+  };
+}
+
 function assetFacts(address: string) {
   const known = assetByAddress(address);
   return known
@@ -93,25 +118,7 @@ export function readCompany(address: string, limit = 200): Outcome<Company> {
     )
     .all(who, limit) as Array<Record<string, unknown>>;
 
-  const receipts: CompanyReceipt[] = rows.map((r) => {
-    const facts = assetFacts(String(r.asset));
-    return {
-      txHash: String(r.tx_hash) as `0x${string}`,
-      logIndex: Number(r.log_index),
-      blockNumber: Number(r.block_number),
-      blockTime: r.block_time === null ? null : Number(r.block_time),
-      recipient: String(r.recipient) as `0x${string}`,
-      runId: String(r.run_id) as `0x${string}`,
-      asset: String(r.asset) as `0x${string}`,
-      assetSymbol: facts.symbol,
-      assetDecimals: facts.decimals,
-      stableAmount: BigInt(String(r.stable_amount)),
-      cashAmount: BigInt(String(r.cash_amount)),
-      assetAmount: BigInt(String(r.asset_amount)),
-      reasonHash: String(r.reason_hash) as `0x${string}`,
-      reason: r.reason_text === null || r.reason_text === undefined ? null : String(r.reason_text),
-    };
-  });
+  const receipts: CompanyReceipt[] = rows.map(toReceipt);
 
   const totals = db
     .prepare(
@@ -199,6 +206,87 @@ export function readCompany(address: string, limit = 200): Outcome<Company> {
   });
 }
 
+export type Rail = {
+  /** When the first payment on this rail settled, or null if none has. */
+  since: number | null;
+  companies: number;
+  peoplePaid: number;
+  paymentCount: number;
+  runCount: number;
+  grantCount: number;
+  totalStable: bigint;
+  deliveredByAsset: DeliveredAsset[];
+  /** Newest first. */
+  recent: CompanyReceipt[];
+};
+
+/**
+ * THE WHOLE RAIL, for the front door.
+ *
+ * Every figure is a count or an exact sum over rows the indexer copied from the chain.
+ * Before anything has been paid this returns zeroes and an empty list, which the front
+ * door renders as a sentence about what will fill it rather than as a figure — a zero on
+ * a page about payments reads as a claim.
+ */
+export function readRail(limit = 8): Outcome<Rail> {
+  const db = database();
+
+  const totals = db
+    .prepare(
+      `SELECT COUNT(*) AS payments,
+              COUNT(DISTINCT recipient) AS people,
+              COUNT(DISTINCT payer) AS companies,
+              COUNT(DISTINCT run_id) AS runs,
+              MIN(block_time) AS first_at
+         FROM receipts`,
+    )
+    .get() as {payments: number; people: number; companies: number; runs: number; first_at: number | null};
+
+  const grants = (db.prepare(`SELECT COUNT(*) AS n FROM grants`).get() as {n: number}).n;
+
+  // Exact, in bigint, for the same reason as everywhere else: SQL SUM over a TEXT column
+  // is a float, and a float is not a total.
+  const amounts = db.prepare(`SELECT asset, stable_amount, asset_amount FROM receipts`).all() as Array<{
+    asset: string;
+    stable_amount: string;
+    asset_amount: string;
+  }>;
+
+  let totalStable = 0n;
+  const byAsset = new Map<string, bigint>();
+  for (const a of amounts) {
+    totalStable += BigInt(a.stable_amount);
+    byAsset.set(a.asset, (byAsset.get(a.asset) ?? 0n) + BigInt(a.asset_amount));
+  }
+
+  const deliveredByAsset: DeliveredAsset[] = [...byAsset.entries()].map(([asset, units]) => {
+    const facts = assetFacts(asset);
+    return {asset: asset as `0x${string}`, symbol: facts.symbol, decimals: facts.decimals, units};
+  });
+
+  const rows = db
+    .prepare(
+      `SELECT r.*, n.text AS reason_text
+         FROM receipts r
+         LEFT JOIN reasons n ON n.hash = r.reason_hash
+        ORDER BY r.block_number DESC, r.log_index DESC
+        LIMIT ?`,
+    )
+    .all(limit) as Array<Record<string, unknown>>;
+
+  return ok({
+    since: totals.first_at,
+    companies: totals.companies ?? 0,
+    peoplePaid: totals.people ?? 0,
+    paymentCount: totals.payments ?? 0,
+    runCount: totals.runs ?? 0,
+    grantCount: grants ?? 0,
+    totalStable,
+    deliveredByAsset,
+    recent: rows.map(toReceipt),
+  });
+}
+
 /** Every payment in one run, for the run's own public record. */
 export function readRun(runId: string): Outcome<CompanyReceipt[]> {
   if (!/^0x[0-9a-fA-F]{64}$/.test(runId)) {
@@ -214,25 +302,5 @@ export function readRun(runId: string): Outcome<CompanyReceipt[]> {
     )
     .all(runId) as Array<Record<string, unknown>>;
 
-  return ok(
-    rows.map((r) => {
-      const facts = assetFacts(String(r.asset));
-      return {
-        txHash: String(r.tx_hash) as `0x${string}`,
-        logIndex: Number(r.log_index),
-        blockNumber: Number(r.block_number),
-        blockTime: r.block_time === null ? null : Number(r.block_time),
-        recipient: String(r.recipient) as `0x${string}`,
-        runId: String(r.run_id) as `0x${string}`,
-        asset: String(r.asset) as `0x${string}`,
-        assetSymbol: facts.symbol,
-        assetDecimals: facts.decimals,
-        stableAmount: BigInt(String(r.stable_amount)),
-        cashAmount: BigInt(String(r.cash_amount)),
-        assetAmount: BigInt(String(r.asset_amount)),
-        reasonHash: String(r.reason_hash) as `0x${string}`,
-        reason: r.reason_text === null || r.reason_text === undefined ? null : String(r.reason_text),
-      };
-    }),
-  );
+  return ok(rows.map(toReceipt));
 }

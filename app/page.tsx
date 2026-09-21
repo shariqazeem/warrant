@@ -1,9 +1,10 @@
 import Link from "next/link";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
+import {Stub} from "@/components/stub/stub";
 import {EXPLORER_TX, STABLE} from "@/lib/chain";
 import {ASSETS, ISSUER, ISSUER_NOTE, ISSUER_POWERS, defaultAsset} from "@/lib/assets";
-import {recentPaid} from "@/lib/receipts";
-import {short, since, unitsFromRaw, usdt} from "@/lib/format";
+import {readRail} from "@/lib/company";
+import {short, since, stampUTC, unitsFromRaw, usdt} from "@/lib/format";
 import "./landing.css";
 
 /**
@@ -18,8 +19,12 @@ import "./landing.css";
 export const revalidate = 15;
 
 export default async function Home() {
-  const tape = await recentPaid(8);
+  // The whole rail, from the indexer. Zeroes and an empty list before anything has been
+  // paid, which is rendered as a sentence rather than as a figure.
+  const rail = readRail(8);
   const asset = defaultAsset();
+  const latest = rail.ok ? rail.value.recent[0] : undefined;
+  const now = Math.floor(Date.now() / 1000);
 
   return (
     <div className="wa-landing">
@@ -41,36 +46,86 @@ export default async function Home() {
               Pay a run
             </Link>
           </div>
+
+          {/*
+            THE STUB IS THE ONE OBJECT, so the front door shows one — a real payment, read
+            from the chain, openable by anyone. Before there is a real one it says what will
+            fill it. There is no example stub here and never will be: a worked example on a
+            page about receipts is the one lie this product cannot afford.
+          */}
+          {latest ? (
+            <div className="wa-hero-stub">
+              <Stub
+                landed={<><strong>{usdt(latest.stableAmount)}</strong> paid</>}
+                became={
+                  latest.cashAmount > 0n
+                    ? `${usdt(latest.stableAmount - latest.cashAmount)} of it became`
+                    : "which became"
+                }
+                units={unitsFromRaw(latest.assetAmount, latest.assetDecimals)}
+                symbol={latest.assetSymbol}
+                when={latest.blockTime === null ? "settled on X Layer" : stampUTC(latest.blockTime)}
+                where="in their own wallet"
+                whereName={short(latest.recipient)}
+                href={`/receipt/${latest.txHash}`}
+                foot={latest.reason ?? undefined}
+              />
+            </div>
+          ) : null}
         </div>
 
         <div className="wa-sec is-wide" style={{paddingTop: 0}}>
           <p className="wa-kicker">The tape</p>
-          {tape.ok && tape.value.length > 0 ? (
-            <ol className="wa-tape">
-              {tape.value.map((r) => (
-                <li key={`${r.txHash}-${r.logIndex}`} className="wa-tape-row">
-                  <span className="wa-mono">{short(r.recipient)}</span>
-                  <span className="wa-tape-amt wa-mono">
-                    {unitsFromRaw(r.assetAmount, asset.decimals)}
-                  </span>
-                  <span className="wa-tape-meta">
-                    for {usdt(r.stableAmount)}
-                    {r.timestamp === null ? null : `, ${since(r.timestamp)}`}
-                  </span>
-                  <Link className="wa-tape-link wa-mono" href={`/receipt/${r.txHash}`}>
-                    {short(r.txHash)}
-                  </Link>
-                </li>
-              ))}
-            </ol>
+          {rail.ok && rail.value.recent.length > 0 ? (
+            <>
+              <ol className="wa-tape">
+                {rail.value.recent.map((r) => (
+                  <li key={`${r.txHash}-${r.logIndex}`} className="wa-tape-row">
+                    <span className="wa-mono">{short(r.recipient)}</span>
+                    <span className="wa-tape-why">{r.reason ?? ""}</span>
+                    <span className="wa-tape-amt wa-mono">
+                      {unitsFromRaw(r.assetAmount, r.assetDecimals)}
+                    </span>
+                    <span className="wa-tape-meta">
+                      for {usdt(r.stableAmount)}
+                      {r.blockTime === null ? null : `, ${since(r.blockTime, now * 1000)}`}
+                    </span>
+                    <Link className="wa-tape-link wa-mono" href={`/receipt/${r.txHash}`}>
+                      open
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+
+              <dl className="wa-rail">
+                <div>
+                  <dt>People paid</dt>
+                  <dd>{rail.value.peoplePaid}</dd>
+                </div>
+                <div>
+                  <dt>Payments</dt>
+                  <dd>{rail.value.paymentCount}</dd>
+                </div>
+                <div>
+                  <dt>Paid in ownership</dt>
+                  <dd>{usdt(rail.value.totalStable)}</dd>
+                </div>
+                {rail.value.deliveredByAsset.map((a) => (
+                  <div key={a.asset}>
+                    <dt>Delivered in {a.symbol}</dt>
+                    <dd>{unitsFromRaw(a.units, a.decimals)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </>
           ) : (
             <div className="wa-nothing">
-              <strong>{tape.ok ? "No payments yet." : "The tape is not reading."}</strong>
-              {tape.ok
+              <strong>{rail.ok ? "No payments yet." : "The tape is not reading."}</strong>
+              {rail.ok
                 ? "Every payment made through Warrant prints here as it settles, newest " +
-                  "first, with the transaction it is anchored to. Nothing is shown until " +
-                  "there is something real to show."
-                : tape.why}
+                  "first, with the reason it was made and the transaction it is anchored " +
+                  "to. Nothing is shown until there is something real to show."
+                : rail.why}
             </div>
           )}
         </div>
@@ -170,14 +225,13 @@ export default async function Home() {
 
       <section className="wa-sec">
         <p className="wa-kicker">The public record</p>
-        {tape.ok && tape.value.length > 0 ? (
+        {latest ? (
           <p className="wa-lede" style={{marginTop: 0}}>
-            Every payment is openable by a stranger with no session. The most recent one is{" "}
-            <Link href={`/receipt/${tape.value[0]!.txHash}`}>its stub</Link>, anchored to{" "}
-            <Link href={EXPLORER_TX(tape.value[0]!.txHash)}>
-              the transaction on X Layer
-            </Link>
-            .
+            Every payment is openable by a stranger with no session: its{" "}
+            <Link href={`/receipt/${latest.txHash}`}>stub</Link>, the{" "}
+            <Link href={`/run/${latest.runId}`}>run</Link> it belonged to, the{" "}
+            <Link href={`/@${latest.payer}`}>company</Link> that paid it, and{" "}
+            <Link href={EXPLORER_TX(latest.txHash)}>the transaction on X Layer</Link>.
           </p>
         ) : (
           <div className="wa-nothing">

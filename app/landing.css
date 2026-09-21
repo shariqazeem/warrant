@@ -402,3 +402,56 @@
   font-style: normal;
   color: var(--accent);
 }
+
+/* ── the hero stub: the one object, with a real payment on it ──────── */
+
+.wa-hero-stub {
+  margin-top: var(--s-7);
+  max-width: 26rem;
+}
+
+/* ── the reason, on the tape ───────────────────────────────────────── */
+
+.wa-tape-why {
+  color: var(--ink-inverse-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 24ch;
+}
+
+/* ── what the whole rail has done ──────────────────────────────────── */
+
+.wa-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-7);
+  margin-top: var(--s-6);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--line-ink);
+}
+
+.wa-rail dt {
+  font-size: var(--fs-caption);
+  color: var(--ink-inverse-faint);
+}
+
+.wa-rail dd {
+  margin: var(--s-1) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-units-sm);
+  line-height: 1;
+  color: var(--ink-inverse);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-h2);
+}
+
+@media (max-width: 620px) {
+  .wa-tape-why {
+    display: none;
+  }
+
+  .wa-rail {
+    gap: var(--s-5);
+  }
+}
