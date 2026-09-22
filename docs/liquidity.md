@@ -1,7 +1,8 @@
 # Which xStocks on X Layer can actually be paid in
 
-> Measured 19 September 2026 by `npm run probe`, against the OKX DEX aggregator V6 on
-> chain 196. Every figure below came from a real quote; the quotes themselves are in
+> Re-measured 22 September 2026 by `npm run probe`, against the OKX DEX aggregator V6 on
+> chain 196. The 19 September figures are in `var/`; the shape held and the market moved,
+> which is the point of re-running it. Every figure below came from a real quote; the quotes themselves are in
 > `var/probe-*.json`. Re-run it before submission — this is a market, and it moves.
 
 `docs/brief.md` left this open: *"Which of the 43 have live on-chain liquidity, and how
@@ -32,13 +33,18 @@ asset on the chain at once. Both cases are now labelled.
 Of **662** tokens the aggregator will quote on X Layer, **640** are xStocks. Of those,
 **46 have any route at all at one dollar**. The other 594 are listed and unroutable.
 
-| Depth at ≤1% impact | Assets |
-| --- | --- |
-| $10,000 | **5** — NVDAx, QQQx, SPCXx, SPYx, TSLAx |
-| $1,000 | 31 |
-| $100 | 3 |
-| $10 | 3 |
-| no usable route | 4 |
+| Depth at ≤1% impact | 19 Sep | 22 Sep |
+| --- | ---: | ---: |
+| $10,000 | 5 | **26** |
+| $1,000 | 31 | 10 |
+| $100 | 3 | 4 |
+| $10 | 3 | 0 |
+| no usable route | 4 | 11 |
+
+Between the two runs the number of assets carrying $10,000 went from five to
+twenty-six, and the number routing at a dollar at all went from 46 to 51. Depth is a
+market on a day; this is why the page says to re-measure rather than quoting a number
+from memory.
 
 ### The three deepest
 
@@ -47,11 +53,14 @@ and not a ceiling this run imposed.
 
 | | Address | Price/unit | $10,000 impact |
 | --- | --- | --- | --- |
-| **NVDAx**, NVIDIA | `0xc845b2894dbddd03858fd2d643b4ef725fe0849d` | $222.21 | 0.68% |
-| **QQQx**, Nasdaq | `0xa753a7395cae905cd615da0b82a53e0560f250af` | $722.33 | 0.63% |
-| **SPCXx**, SpaceX | `0x68fa48b1c2fe52b3d776e1953e0e782b5044ce28` | $152.85 | 0.71% |
+| **AAPLx**, Apple | `0x9d275685dc284c8eb1c79f6aba7a63dc75ec890a` | $339.72 | 0.69% |
+| **NVDAx**, NVIDIA | `0xc845b2894dbddd03858fd2d643b4ef725fe0849d` | $226.68 | — |
+| **QQQx**, Nasdaq | `0xa753a7395cae905cd615da0b82a53e0560f250af` | $740.69 | — |
 
-SPYx (0.78%) and TSLAx (0.87%) also reach $10,000, with more impact.
+Twenty-six assets reach $10,000 on this run, so "the three deepest" is now a tie broken
+alphabetically rather than a meaningful ranking. **All three of the assets Warrant offers —
+SPYx at $773.35, NVDAx at $226.68, QQQx at $740.69 — still carry $10,000 at or under 1%
+impact**, which is the only question that matters for the default.
 
 ## Two things worth knowing before choosing an asset
 

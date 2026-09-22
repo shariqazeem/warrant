@@ -26,7 +26,7 @@ export type Asset = {
   hops: number;
 };
 
-export const MEASURED_AT = "2026-09-19";
+export const MEASURED_AT = "2026-09-22";
 
 export const ASSETS: readonly Asset[] = [
   {
