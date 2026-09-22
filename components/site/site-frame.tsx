@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type {ReactNode} from "react";
 import {Wordmark} from "@/components/brand/wordmark";
+import {Jump} from "@/components/shell/jump";
 import "@/app/landing.css";
 import "./site.css";
 
@@ -31,6 +32,7 @@ export function SiteNav() {
         </Link>
       ))}
       <span className="wa-nav-spacer" />
+      <Jump />
       <Link href="/pay" className="wa-btn is-primary">
         Pay someone
       </Link>
