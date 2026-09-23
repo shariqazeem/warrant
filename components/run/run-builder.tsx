@@ -54,7 +54,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
   const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const {pay, phase, why, reset} = usePay(payroll);
+  const {pay, phase, why, note, reset} = usePay(payroll);
   const chosen = ASSETS.find((a) => a.address === asset) ?? defaultAsset();
 
   const parsed = useMemo(() => parseRunFile(text, asset), [text, asset]);
@@ -450,6 +450,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
             </p>
           ) : null}
 
+          {note && busy ? <p className="wa-fine">{note}</p> : null}
           {parsed.tooMany ? <p className="wa-refusal">{parsed.tooMany}</p> : null}
           {buildWhy ? <p className="wa-refusal">{buildWhy}</p> : null}
           {phase === "failed" && why ? (

@@ -5,15 +5,18 @@
  *
  * The stablecoin is approved by an EIP-2612 permit where the token supports it, so the
  * whole thing — approve, buy the asset, lock it in the escrow on a schedule — is a single
- * transaction. Falls back to an approval transaction where permit cannot be used.
+ * transaction. Where a permit cannot work — the token's domain, a wallet that cannot sign
+ * typed data, a smart-contract wallet, or a permit the escrow refuses — it falls back to an
+ * approval transaction, once, exactly as a payment does (components/pay/use-pay.ts).
  */
-import {useCallback, useState} from "react";
+import {useCallback, useRef, useState} from "react";
 import {erc20Abi, type Address, type Hex} from "viem";
 import {useAccount, useConfig} from "wagmi";
 import {readContract, signTypedData, waitForTransactionReceipt, writeContract} from "wagmi/actions";
 import {STABLE, xLayer} from "@/lib/chain";
-import {PERMIT_TYPES, deadlineIn, permitAbi, resolveDomain} from "@/lib/permit";
+import {deadlineIn, permitAbi, resolveDomain} from "@/lib/permit";
 import {grantEscrowAbi} from "@/lib/payroll-abi";
+import {approveFirst, isPermitRefusal, signPermit, type Permit} from "@/components/wallet/permit";
 import type {BuiltTerms} from "@/app/grants/actions";
 
 export type OpenPhase = "idle" | "building" | "signing" | "confirming" | "done" | "failed";
@@ -25,15 +28,21 @@ export function useOpenGrant(escrow: Address | undefined) {
   const {address, chainId} = useAccount();
   const [phase, setPhase] = useState<OpenPhase>("idle");
   const [why, setWhy] = useState<string | null>(null);
+  /** Said while it is true: opening this grant takes two wallet requests instead of one. */
+  const [note, setNote] = useState<string | null>(null);
+  /** Wallets, lower-cased, whose permit could not work here; they approve straight away. */
+  const noPermit = useRef(new Set<string>());
 
   const reset = useCallback(() => {
     setPhase("idle");
     setWhy(null);
+    setNote(null);
   }, []);
 
   const open = useCallback(
     async (terms: BuiltTerms) => {
       setWhy(null);
+      setNote(null);
 
       if (!address) {
         setPhase("failed");
@@ -86,38 +95,53 @@ export function useOpenGrant(escrow: Address | undefined) {
             args: [asTuple],
           });
         } else {
-          const domain = await resolveDomain();
-          if (domain.ok) {
-            const nonce = await readContract(config, {
-              address: STABLE.address,
-              abi: permitAbi,
-              functionName: "nonces",
-              args: [address],
-            });
-            // From the chain's clock: a browser running slow would otherwise sign a permit
-            // that is already expired, and fail with an opaque revert.
-            const deadline = await deadlineIn(PERMIT_MINUTES);
+          const wallet = address.toLowerCase();
+          let permit: Permit | null = null;
 
-            setPhase("signing");
-            const signature = await signTypedData(config, {
-              domain: domain.value.domain,
-              types: PERMIT_TYPES,
-              primaryType: "Permit",
-              message: {owner: address, spender: escrow, value: total, nonce, deadline},
+          if (!noPermit.current.has(wallet)) {
+            const attempt = await signPermit({
+              owner: address,
+              spender: escrow,
+              value: total,
+              domain: () => resolveDomain(),
+              nonce: () =>
+                readContract(config, {
+                  address: STABLE.address,
+                  abi: permitAbi,
+                  functionName: "nonces",
+                  args: [address],
+                }),
+              deadline: () => deadlineIn(PERMIT_MINUTES),
+              sign: (typed) => signTypedData(config, typed),
+              onAsk: () => setPhase("signing"),
             });
+            if (attempt.kind === "dismissed") {
+              setPhase("failed");
+              setWhy("You dismissed the request in your wallet, so no grant was opened.");
+              return null;
+            }
+            if (attempt.kind === "signed") permit = attempt.permit;
+            else noPermit.current.add(wallet);
+          }
 
-            const r = `0x${signature.slice(2, 66)}` as Hex;
-            const s = `0x${signature.slice(66, 130)}` as Hex;
-            let v = parseInt(signature.slice(130, 132), 16);
-            if (v < 27) v += 27;
+          let sent: Hex | null = null;
+          if (permit) {
+            try {
+              sent = await writeContract(config, {
+                address: escrow,
+                abi: grantEscrowAbi,
+                functionName: "openWithPermit",
+                args: [asTuple, permit.value, permit.deadline, permit.v, permit.r, permit.s],
+              });
+            } catch (err) {
+              // Refused after all: approve instead, once, now, and remember the wallet.
+              if (!isPermitRefusal(err)) throw err;
+              noPermit.current.add(wallet);
+            }
+          }
 
-            tx = await writeContract(config, {
-              address: escrow,
-              abi: grantEscrowAbi,
-              functionName: "openWithPermit",
-              args: [asTuple, total, deadline, v, r, s],
-            });
-          } else {
+          if (sent === null) {
+            setNote(approveFirst("open the grant"));
             setPhase("signing");
             const approveHash = await writeContract(config, {
               address: STABLE.address,
@@ -134,13 +158,14 @@ export function useOpenGrant(escrow: Address | undefined) {
             }
 
             setPhase("signing");
-            tx = await writeContract(config, {
+            sent = await writeContract(config, {
               address: escrow,
               abi: grantEscrowAbi,
               functionName: "open",
               args: [asTuple],
             });
           }
+          tx = sent;
         }
 
         setPhase("confirming");
@@ -157,6 +182,8 @@ export function useOpenGrant(escrow: Address | undefined) {
         setPhase("done");
         return tx;
       } catch (err) {
+        // The next press approves first, which is what the message below says.
+        if (isPermitRefusal(err)) noPermit.current.add(address.toLowerCase());
         setPhase("failed");
         setWhy(readable(err));
         return null;
@@ -165,7 +192,7 @@ export function useOpenGrant(escrow: Address | undefined) {
     [address, chainId, config, escrow],
   );
 
-  return {open, phase, why, reset};
+  return {open, phase, why, note, reset};
 }
 
 function readable(err: unknown): string {
@@ -178,6 +205,9 @@ function readable(err: unknown): string {
   }
   if (/BelowMinimum/i.test(raw)) {
     return "The route moved while you were signing and would have bought less than the floor. Nothing was opened. Ask for a fresh quote.";
+  }
+  if (isPermitRefusal(err)) {
+    return "Your wallet's approval signature was not accepted, so no grant was opened. Try again — it will ask you to approve the USDT with a transaction first.";
   }
   if (/BeneficiaryIsThePayer/i.test(raw)) {
     return "A grant cannot be made to the wallet opening it.";

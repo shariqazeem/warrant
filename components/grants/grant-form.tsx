@@ -66,7 +66,7 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
   const [refreshAt, setRefreshAt] = useState(0);
   const [, setTick] = useState(0);
 
-  const {open, phase, why, reset} = useOpenGrant(escrow);
+  const {open, phase, why, note, reset} = useOpenGrant(escrow);
 
   const chosen = ASSETS.find((a) => a.address === asset) ?? defaultAsset();
   // Read as /pay and a run file read it: "2,50" is refused, not taken as $250.
@@ -354,6 +354,7 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
                   : (blocker ??
                     `Create a ${humanDuration(durationSeconds)} grant · ${usdt(BigInt(quote!.terms.stableAmount))}`)}
           </button>
+          {note && busy ? <p className="wa-fine">{note}</p> : null}
           {phase === "failed" && why ? (
             <p className="wa-refusal">
               {why}{" "}

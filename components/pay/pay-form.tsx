@@ -52,7 +52,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
   const [refreshAt, setRefreshAt] = useState(0);
   const [, setTick] = useState(0);
 
-  const {pay, phase, why, reset} = usePay(payroll);
+  const {pay, phase, why, note, reset} = usePay(payroll);
 
   const chosen = ASSETS.find((a) => a.address === asset) ?? defaultAsset();
   // Read the way a file's amounts are read: a comma only between thousands, so "2,50" is
@@ -334,6 +334,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
             {locked ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
             {label}
           </button>
+          {note && busy ? <p className="wa-fine">{note}</p> : null}
           {phase === "failed" && why ? (
             <p className="wa-refusal">
               {why}{" "}
