@@ -165,7 +165,6 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
     const total = built.lines.reduce((sum, b) => sum + BigInt(b.line.stableAmount), 0n);
     const result = await pay(
       built.lines.map((b) => b.line),
-      asset,
       newRunId(),
       total,
     );

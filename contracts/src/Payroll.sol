@@ -6,10 +6,13 @@ import {IERC20Permit} from "./interfaces/IERC20Permit.sol";
 import {SafeToken} from "./lib/SafeToken.sol";
 
 /// @title Payroll
-/// @notice Warrant's rail. A company pays its people in ownership: the stablecoin is pulled
-///         from the payer, routed through the OKX DEX aggregator, and the asset lands in the
-///         recipient's own wallet. Every payment emits one `Paid` event, and that event is
-///         the record — the indexer reads it, the receipt page reads the indexer.
+/// @notice Warrant's rail. A company pays its people in dollars, and EACH PERSON'S OWN CHOICE
+///         decides how much of it becomes stock, and which stock: the stablecoin is pulled
+///         from the payer once, the stock part of each line is routed through the OKX DEX
+///         aggregator into that line's asset, and it lands in the recipient's own wallet;
+///         the rest arrives as the stablecoin. One run can carry a different stock on every
+///         line, so twenty people's twenty choices are still one signature. Every payment
+///         emits one `Paid` event, and that event is the record.
 ///
 /// @dev Threat model for `routerCalldata`, which is opaque bytes built off chain:
 ///      - the only address this contract will ever call is the immutable `router`;
@@ -23,6 +26,8 @@ contract Payroll {
     using SafeToken for IERC20;
 
     /// @param recipient      the person being paid; the asset lands in this wallet
+    /// @param asset          the stock this person's share becomes, or address(0) when none of
+    ///                       the line is swapped (a person who chose to be paid all in dollars)
     /// @param stableAmount   total stablecoin pulled from the payer for this line
     /// @param cashAmount     the part of it delivered as the stablecoin, unswapped. The split.
     /// @param minOut         the least asset the recipient must end up holding, or the line reverts
@@ -30,6 +35,7 @@ contract Payroll {
     /// @param routerCalldata the swap, built by the OKX aggregator server side
     struct Line {
         address recipient;
+        address asset;
         uint256 stableAmount;
         uint256 cashAmount;
         uint256 minOut;
@@ -70,8 +76,9 @@ contract Payroll {
     error CashExceedsTotal(uint256 index);
     error MinOutRequired(uint256 index);
     error MinOutWithoutSwap(uint256 index);
-    error AssetIsStable();
-    error ZeroAsset();
+    error AssetIsStable(uint256 index);
+    error ZeroAsset(uint256 index);
+    error AssetWithoutSwap(uint256 index);
     error RouterCallFailed(uint256 index);
     error BelowMinimum(uint256 index, uint256 delivered, uint256 minOut);
     error Reentrant();
@@ -93,35 +100,27 @@ contract Payroll {
     }
 
     /// @notice Pay one person. The payer must have approved this contract for `stableAmount`.
-    function payOne(Line calldata line, address asset, bytes32 runId) external nonReentrant {
-        _payOne(line, asset, runId);
+    function payOne(Line calldata line, bytes32 runId) external nonReentrant {
+        _payOne(line, runId);
     }
 
-    /// @notice Pay a run. One `runId`, N receipts. The payer must have approved this
-    ///         contract for the sum of the lines.
-    function payMany(Line[] calldata lines, address asset, bytes32 runId) external nonReentrant {
-        _payMany(lines, asset, runId);
+    /// @notice Pay a run. One `runId`, N receipts, each line in its own person's chosen
+    ///         stock. The payer must have approved this contract for the sum of the lines.
+    function payMany(Line[] calldata lines, bytes32 runId) external nonReentrant {
+        _payMany(lines, runId);
     }
 
     /// @notice Pay one person, approving with a signature instead of a prior transaction.
-    function payOneWithPermit(Line calldata line, address asset, bytes32 runId, Permit calldata p)
-        external
-        nonReentrant
-    {
+    function payOneWithPermit(Line calldata line, bytes32 runId, Permit calldata p) external nonReentrant {
         _usePermit(p);
-        _payOne(line, asset, runId);
+        _payOne(line, runId);
     }
 
     /// @notice THE ONE SIGNATURE. A payer signs an EIP-2612 permit off chain, for no gas,
     ///         and this single transaction approves and pays the whole run.
-    function payManyWithPermit(
-        Line[] calldata lines,
-        address asset,
-        bytes32 runId,
-        Permit calldata p
-    ) external nonReentrant {
+    function payManyWithPermit(Line[] calldata lines, bytes32 runId, Permit calldata p) external nonReentrant {
         _usePermit(p);
-        _payMany(lines, asset, runId);
+        _payMany(lines, runId);
     }
 
     /**
@@ -141,17 +140,15 @@ contract Payroll {
         }
     }
 
-    function _payOne(Line calldata line, address asset, bytes32 runId) private {
-        _checkAsset(asset);
+    function _payOne(Line calldata line, bytes32 runId) private {
         uint256 total = _check(line, 0);
         uint256 floor = stable.balanceOf(address(this));
         stable.safeTransferFrom(msg.sender, address(this), total);
-        _settle(line, asset, runId, 0);
+        _settle(line, runId, 0);
         _returnDust(floor);
     }
 
-    function _payMany(Line[] calldata lines, address asset, bytes32 runId) private {
-        _checkAsset(asset);
+    function _payMany(Line[] calldata lines, bytes32 runId) private {
         uint256 n = lines.length;
         if (n == 0) revert NoLines();
 
@@ -164,7 +161,7 @@ contract Payroll {
         stable.safeTransferFrom(msg.sender, address(this), total);
 
         for (uint256 i; i < n; ++i) {
-            _settle(lines[i], asset, runId, i);
+            _settle(lines[i], runId, i);
         }
 
         _returnDust(floor);
@@ -176,11 +173,6 @@ contract Payroll {
         return keccak256(bytes(reason));
     }
 
-    function _checkAsset(address asset) private view {
-        if (asset == address(0)) revert ZeroAsset();
-        if (asset == address(stable)) revert AssetIsStable();
-    }
-
     function _check(Line calldata line, uint256 i) private view returns (uint256) {
         if (line.recipient == address(0)) revert ZeroRecipient(i);
         if (line.recipient == address(this)) revert RecipientIsContract(i);
@@ -188,16 +180,25 @@ contract Payroll {
         if (line.cashAmount > line.stableAmount) revert CashExceedsTotal(i);
 
         uint256 swapAmount = line.stableAmount - line.cashAmount;
-        // A line that swaps must state a floor, or an empty delivery would settle silently.
-        if (swapAmount != 0 && line.minOut == 0) revert MinOutRequired(i);
-        // A line that swaps nothing cannot promise any asset.
-        if (swapAmount == 0 && line.minOut != 0) revert MinOutWithoutSwap(i);
+        if (swapAmount != 0) {
+            // A line that buys stock must name it, and it cannot be the dollar it is paid in.
+            if (line.asset == address(0)) revert ZeroAsset(i);
+            if (line.asset == address(stable)) revert AssetIsStable(i);
+            // It must state a floor, or an empty delivery would settle silently.
+            if (line.minOut == 0) revert MinOutRequired(i);
+        } else {
+            // A line that buys nothing promises no asset and names none, so its receipt can
+            // never show a stock that was not bought.
+            if (line.minOut != 0) revert MinOutWithoutSwap(i);
+            if (line.asset != address(0)) revert AssetWithoutSwap(i);
+        }
 
         return line.stableAmount;
     }
 
-    function _settle(Line calldata line, address asset, bytes32 runId, uint256 i) private {
+    function _settle(Line calldata line, bytes32 runId, uint256 i) private {
         uint256 swapAmount = line.stableAmount - line.cashAmount;
+        address asset = line.asset;
         uint256 delivered;
 
         if (swapAmount != 0) {

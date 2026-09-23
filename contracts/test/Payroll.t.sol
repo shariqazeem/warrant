@@ -53,13 +53,16 @@ contract PayrollTest is Test {
         return abi.encodeCall(MockRouter.swap, (address(stable), spend, address(asset), out, to));
     }
 
+    /// A line that swaps names this test's asset; a line that swaps nothing names none, as
+    /// the contract requires.
     function _line(address to, uint256 amount, uint256 cash, uint256 minOut, bytes memory data)
         internal
-        pure
+        view
         returns (Payroll.Line memory)
     {
         return Payroll.Line({
             recipient: to,
+            asset: cash == amount ? address(0) : address(asset),
             stableAmount: amount,
             cashAmount: cash,
             minOut: minOut,
@@ -75,7 +78,7 @@ contract PayrollTest is Test {
         Payroll.Line memory line = _line(alice, 25e6, 0, 0.014e18, _route(25e6, out, alice));
 
         vm.prank(payer);
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
 
         assertEq(asset.balanceOf(alice), out, "recipient holds the asset");
         assertEq(asset.balanceOf(address(payroll)), 0, "contract holds no asset");
@@ -90,7 +93,7 @@ contract PayrollTest is Test {
             _line(alice, 25e6, 0, 0.019e18, _route(25e6, out, address(payroll)));
 
         vm.prank(payer);
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
 
         assertEq(asset.balanceOf(alice), out, "forwarded to the recipient");
         assertEq(asset.balanceOf(address(payroll)), 0, "nothing stranded");
@@ -105,7 +108,7 @@ contract PayrollTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(Payroll.BelowMinimum.selector, 0, 0.0139e18, 0.014e18)
         );
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
 
         assertEq(asset.balanceOf(alice), 0, "nothing settled");
         assertEq(stable.balanceOf(payer), 1_000e6, "payer untouched");
@@ -116,7 +119,7 @@ contract PayrollTest is Test {
 
         vm.prank(payer);
         vm.expectRevert(abi.encodeWithSelector(Payroll.BelowMinimum.selector, 0, 0, 1));
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
     }
 
     function test_payOne_revertsWhenRouteReverts() public {
@@ -124,7 +127,7 @@ contract PayrollTest is Test {
 
         vm.prank(payer);
         vm.expectRevert(abi.encodeWithSelector(Payroll.RouterCallFailed.selector, 0));
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
     }
 
     function test_payOne_swapWithoutFloorIsRefused() public {
@@ -132,7 +135,7 @@ contract PayrollTest is Test {
 
         vm.prank(payer);
         vm.expectRevert(abi.encodeWithSelector(Payroll.MinOutRequired.selector, 0));
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
     }
 
     function test_payOne_floorWithoutSwapIsRefused() public {
@@ -140,7 +143,7 @@ contract PayrollTest is Test {
 
         vm.prank(payer);
         vm.expectRevert(abi.encodeWithSelector(Payroll.MinOutWithoutSwap.selector, 0));
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
     }
 
     // --- the split ------------------------------------------------------------------------
@@ -150,7 +153,7 @@ contract PayrollTest is Test {
         Payroll.Line memory line = _line(alice, 100e6, 40e6, 0.03e18, _route(60e6, out, alice));
 
         vm.prank(payer);
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
 
         assertEq(stable.balanceOf(alice), 40e6, "the cash half");
         assertEq(asset.balanceOf(alice), out, "the ownership half");
@@ -163,8 +166,9 @@ contract PayrollTest is Test {
 
         vm.prank(payer);
         vm.expectEmit(true, true, true, true);
-        emit Paid(payer, alice, RUN, address(asset), 50e6, 50e6, 0, REASON_HASH);
-        payroll.payOne(line, address(asset), RUN);
+        // All in dollars: the receipt names no stock, because none was bought.
+        emit Paid(payer, alice, RUN, address(0), 50e6, 50e6, 0, REASON_HASH);
+        payroll.payOne(line, RUN);
 
         assertEq(stable.balanceOf(alice), 50e6);
         assertEq(asset.balanceOf(alice), 0);
@@ -180,7 +184,7 @@ contract PayrollTest is Test {
         Payroll.Line memory line = _line(alice, amount, cash, swapAmount == 0 ? 0 : 1, data);
 
         vm.prank(payer);
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
 
         assertEq(stable.balanceOf(alice), cash, "cash equals the cash half exactly");
         assertEq(asset.balanceOf(alice), swapAmount == 0 ? 0 : out, "asset equals the fill");
@@ -204,7 +208,7 @@ contract PayrollTest is Test {
         emit Paid(payer, carol, RUN, address(asset), 45e6, 15e6, 0.011e18, REASON_HASH);
 
         vm.prank(payer);
-        payroll.payMany(lines, address(asset), RUN);
+        payroll.payMany(lines, RUN);
 
         assertEq(asset.balanceOf(alice), 0.01e18);
         assertEq(asset.balanceOf(bob), 0.012e18);
@@ -224,7 +228,7 @@ contract PayrollTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(Payroll.BelowMinimum.selector, 1, 0.012e18, 0.5e18)
         );
-        payroll.payMany(lines, address(asset), RUN);
+        payroll.payMany(lines, RUN);
 
         assertEq(asset.balanceOf(alice), 0, "the line before it did not stand");
         assertEq(stable.balanceOf(payer), 1_000e6, "the payer kept every cent");
@@ -234,7 +238,7 @@ contract PayrollTest is Test {
         Payroll.Line[] memory lines = new Payroll.Line[](0);
         vm.prank(payer);
         vm.expectRevert(Payroll.NoLines.selector);
-        payroll.payMany(lines, address(asset), RUN);
+        payroll.payMany(lines, RUN);
     }
 
     // --- what the route leaves behind --------------------------------------------------------
@@ -244,7 +248,7 @@ contract PayrollTest is Test {
         Payroll.Line memory line = _line(alice, 25e6, 0, 1, _route(20e6, 0.01e18, alice));
 
         vm.prank(payer);
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
 
         assertEq(stable.balanceOf(payer), 980e6, "only what the route spent left the payer");
         assertEq(stable.balanceOf(address(payroll)), 0, "the contract kept nothing");
@@ -254,7 +258,7 @@ contract PayrollTest is Test {
         Payroll.Line memory line = _line(alice, 25e6, 0, 1, _route(25e6, 0.01e18, alice));
 
         vm.prank(payer);
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
 
         assertEq(stable.allowance(address(payroll), address(proxy)), 0, "no standing allowance");
     }
@@ -265,42 +269,105 @@ contract PayrollTest is Test {
         Payroll.Line memory line = _line(address(0), 25e6, 25e6, 0, "");
         vm.prank(payer);
         vm.expectRevert(abi.encodeWithSelector(Payroll.ZeroRecipient.selector, 0));
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
     }
 
     function test_rejects_recipientIsTheContract() public {
         Payroll.Line memory line = _line(address(payroll), 25e6, 25e6, 0, "");
         vm.prank(payer);
         vm.expectRevert(abi.encodeWithSelector(Payroll.RecipientIsContract.selector, 0));
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
     }
 
     function test_rejects_zeroAmount() public {
         Payroll.Line memory line = _line(alice, 0, 0, 0, "");
         vm.prank(payer);
         vm.expectRevert(abi.encodeWithSelector(Payroll.ZeroAmount.selector, 0));
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
     }
 
     function test_rejects_cashAboveTheLine() public {
         Payroll.Line memory line = _line(alice, 25e6, 26e6, 0, "");
         vm.prank(payer);
         vm.expectRevert(abi.encodeWithSelector(Payroll.CashExceedsTotal.selector, 0));
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
     }
 
     function test_rejects_payingTheStablecoinAsTheAsset() public {
-        Payroll.Line memory line = _line(alice, 25e6, 25e6, 0, "");
+        Payroll.Line memory line = _line(alice, 25e6, 0, 1, _route(25e6, 0.01e18, alice));
+        line.asset = address(stable);
         vm.prank(payer);
-        vm.expectRevert(Payroll.AssetIsStable.selector);
-        payroll.payOne(line, address(stable), RUN);
+        vm.expectRevert(abi.encodeWithSelector(Payroll.AssetIsStable.selector, 0));
+        payroll.payOne(line, RUN);
     }
 
-    function test_rejects_zeroAsset() public {
-        Payroll.Line memory line = _line(alice, 25e6, 25e6, 0, "");
+    function test_rejects_aSwapThatNamesNoAsset() public {
+        Payroll.Line memory line = _line(alice, 25e6, 0, 1, _route(25e6, 0.01e18, alice));
+        line.asset = address(0);
         vm.prank(payer);
-        vm.expectRevert(Payroll.ZeroAsset.selector);
-        payroll.payOne(line, address(0), RUN);
+        vm.expectRevert(abi.encodeWithSelector(Payroll.ZeroAsset.selector, 0));
+        payroll.payOne(line, RUN);
+    }
+
+    /// A person who chose to be paid all in dollars gets a receipt that names no stock.
+    function test_rejects_aDollarsOnlyLineThatNamesAnAsset() public {
+        Payroll.Line memory line = _line(alice, 25e6, 25e6, 0, "");
+        line.asset = address(asset);
+        vm.prank(payer);
+        vm.expectRevert(abi.encodeWithSelector(Payroll.AssetWithoutSwap.selector, 0));
+        payroll.payOne(line, RUN);
+    }
+
+    function test_aDollarsOnlyLineRecordsNoAsset() public {
+        Payroll.Line memory line = _line(alice, 25e6, 25e6, 0, "");
+        vm.expectEmit(true, true, true, true, address(payroll));
+        emit Paid(payer, alice, RUN, address(0), 25e6, 25e6, 0, REASON_HASH);
+        vm.prank(payer);
+        payroll.payOne(line, RUN);
+        assertEq(stable.balanceOf(alice), 25e6);
+    }
+
+    /// THE POINT OF THE CHANGE. Three people, three choices — one all in dollars, one a
+    /// quarter in one stock, one entirely in another — settled in one transaction, each
+    /// stock landing with the person who chose it and each receipt naming its own.
+    function test_aRunPaysEachPersonInTheirOwnChoice() public {
+        MockERC20 other = new MockERC20("Apple xStock", "AAPLx", 18);
+
+        Payroll.Line[] memory lines = new Payroll.Line[](3);
+        lines[0] = _line(alice, 40e6, 40e6, 0, "");
+        lines[1] = _line(bob, 40e6, 30e6, 0.012e18, _route(10e6, 0.013e18, bob));
+        lines[2] = _line(carol, 20e6, 0, 0.08e18, abi.encodeCall(MockRouter.swap, (address(stable), 20e6, address(other), 0.09e18, carol)));
+        lines[2].asset = address(other);
+
+        vm.expectEmit(true, true, true, true, address(payroll));
+        emit Paid(payer, alice, RUN, address(0), 40e6, 40e6, 0, REASON_HASH);
+        vm.expectEmit(true, true, true, true, address(payroll));
+        emit Paid(payer, bob, RUN, address(asset), 40e6, 30e6, 0.013e18, REASON_HASH);
+        vm.expectEmit(true, true, true, true, address(payroll));
+        emit Paid(payer, carol, RUN, address(other), 20e6, 0, 0.09e18, REASON_HASH);
+
+        vm.prank(payer);
+        payroll.payMany(lines, RUN);
+
+        assertEq(stable.balanceOf(alice), 40e6);
+        assertEq(stable.balanceOf(bob), 30e6);
+        assertEq(asset.balanceOf(bob), 0.013e18);
+        assertEq(other.balanceOf(carol), 0.09e18);
+        assertEq(asset.balanceOf(carol), 0);
+        assertEq(stable.balanceOf(address(payroll)), 0);
+        assertEq(asset.balanceOf(address(payroll)), 0);
+        assertEq(other.balanceOf(address(payroll)), 0);
+    }
+
+    /// A line's floor is measured in ITS asset: a route that delivers the wrong stock is a
+    /// delivery of nothing, and the whole run reverts.
+    function test_aRouteDeliveringAnotherStockIsNotADelivery() public {
+        MockERC20 other = new MockERC20("Apple xStock", "AAPLx", 18);
+        Payroll.Line memory line = _line(alice, 25e6, 0, 0.01e18, _route(25e6, 0.02e18, alice));
+        line.asset = address(other);
+        vm.prank(payer);
+        vm.expectRevert(abi.encodeWithSelector(Payroll.BelowMinimum.selector, 0, 0, 0.01e18));
+        payroll.payOne(line, RUN);
     }
 
     function test_reentrantRouteIsRefused() public {
@@ -316,7 +383,7 @@ contract PayrollTest is Test {
 
         vm.prank(payer);
         vm.expectRevert(abi.encodeWithSelector(Payroll.RouterCallFailed.selector, 0));
-        p.payOne(line, address(asset), RUN);
+        p.payOne(line, RUN);
     }
 
     // --- what somebody else's money must not do -----------------------------------------------
@@ -335,7 +402,7 @@ contract PayrollTest is Test {
 
         vm.prank(payer);
         vm.expectRevert(abi.encodeWithSelector(Payroll.BelowMinimum.selector, 0, 0.01e18, 0.5e18));
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
 
         assertEq(asset.balanceOf(address(payroll)), 1e18, "the donation is still sitting there");
     }
@@ -347,7 +414,7 @@ contract PayrollTest is Test {
         Payroll.Line memory line = _line(alice, 25e6, 0, 0.019e18, _route(25e6, out, alice));
 
         vm.prank(payer);
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
 
         assertEq(asset.balanceOf(alice), out, "exactly what the route produced, and no more");
         assertEq(asset.balanceOf(address(payroll)), 1e18, "the donation was not swept to them");
@@ -360,7 +427,7 @@ contract PayrollTest is Test {
 
         uint256 before = stable.balanceOf(payer);
         vm.prank(payer);
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
 
         assertEq(stable.balanceOf(payer), before - 25e6, "the payer got back only their own dust");
         assertEq(stable.balanceOf(address(payroll)), 500e6, "the donation stayed where it was");
@@ -376,7 +443,7 @@ contract PayrollTest is Test {
             _line(alice, 25e6, 0, 0.019e18, _route(25e6, out, address(payroll)));
 
         vm.prank(payer);
-        payroll.payOne(line, address(asset), RUN);
+        payroll.payOne(line, RUN);
 
         assertEq(asset.balanceOf(alice), out, "the fill reached them");
         assertEq(asset.balanceOf(address(payroll)), 1e18, "the donation did not");

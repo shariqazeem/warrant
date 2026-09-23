@@ -1,5 +1,7 @@
 "use server";
 
+import {zeroAddress} from "viem";
+
 /**
  * BUILDING A PAYMENT, SERVER SIDE.
  *
@@ -32,6 +34,8 @@ import {payrollAddress} from "@/lib/receipts";
 /** One line of a payment, ready for the wallet to sign. Mirrors Payroll.Line exactly. */
 export type BuiltLine = {
   recipient: `0x${string}`;
+  /** The stock this line buys, or the zero address when it is paid all in dollars. */
+  asset: `0x${string}`;
   stableAmount: string;
   cashAmount: string;
   minOut: string;
@@ -74,17 +78,16 @@ export async function buildPayment(req: PaymentRequest): Promise<Outcome<BuiltPa
   if (!split.ok) return split;
   const {total, cash, swapAmount} = split.value;
 
-  const listed = checkListedAsset(req.asset);
-  if (!listed.ok) return listed;
-
   // The reason text is kept so the receipt can show it; only its hash goes on chain.
   const reasonHash = rememberReason(req.reason);
 
-  // All cash: no route to build, and the contract refuses a floor it cannot deliver.
+  // All in dollars: no route to build, and no stock named — the contract refuses both a
+  // floor and an asset on a line that buys nothing, so its receipt can never name one.
   if (swapAmount === 0n) {
     return ok({
       line: {
         recipient: req.recipient as `0x${string}`,
+        asset: zeroAddress,
         stableAmount: total.toString(),
         cashAmount: cash.toString(),
         minOut: "0",
@@ -100,6 +103,9 @@ export async function buildPayment(req: PaymentRequest): Promise<Outcome<BuiltPa
       totalStable: total.toString(),
     });
   }
+
+  const listed = checkListedAsset(req.asset);
+  if (!listed.ok) return listed;
 
   const router = await routerOf(payroll.value);
   if (!router.ok) return router;
@@ -144,6 +150,7 @@ export async function buildPayment(req: PaymentRequest): Promise<Outcome<BuiltPa
   return ok({
     line: {
       recipient: req.recipient as `0x${string}`,
+      asset: req.asset as `0x${string}`,
       stableAmount: total.toString(),
       cashAmount: cash.toString(),
       minOut: minOut.toString(),

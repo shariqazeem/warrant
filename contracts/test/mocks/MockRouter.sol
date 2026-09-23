@@ -52,6 +52,7 @@ contract ReentrantRouter {
     function swap(address, uint256, address, uint256, address) external {
         Payroll.Line memory line = Payroll.Line({
             recipient: address(0xBEEF),
+            asset: address(0),
             stableAmount: 1,
             cashAmount: 1,
             minOut: 0,
@@ -60,6 +61,6 @@ contract ReentrantRouter {
         });
         Payroll.Line[] memory lines = new Payroll.Line[](1);
         lines[0] = line;
-        payroll.payMany(lines, address(0xA55E7), bytes32("re"));
+        payroll.payMany(lines, bytes32("re"));
     }
 }

@@ -72,11 +72,12 @@ contract PayrollPermitTest is Test {
 
     function _line(address to, uint256 amount, uint256 minOut, bytes memory data)
         internal
-        pure
+        view
         returns (Payroll.Line memory)
     {
         return Payroll.Line({
             recipient: to,
+            asset: address(asset),
             stableAmount: amount,
             cashAmount: 0,
             minOut: minOut,
@@ -95,7 +96,7 @@ contract PayrollPermitTest is Test {
         Payroll.Permit memory p = _sign(60e6, block.timestamp + 1 hours);
 
         vm.prank(payer);
-        payroll.payManyWithPermit(lines, address(asset), RUN, p);
+        payroll.payManyWithPermit(lines, RUN, p);
 
         assertEq(asset.balanceOf(alice), 0.03e18);
         assertEq(asset.balanceOf(bob), 0.04e18);
@@ -107,7 +108,7 @@ contract PayrollPermitTest is Test {
         Payroll.Line memory line = _line(alice, 25e6, 1, _route(25e6, 0.03e18, alice));
 
         vm.prank(payer);
-        payroll.payOneWithPermit(line, address(asset), RUN, p);
+        payroll.payOneWithPermit(line, RUN, p);
 
         assertEq(asset.balanceOf(alice), 0.03e18);
     }
@@ -125,7 +126,7 @@ contract PayrollPermitTest is Test {
 
         // The nonce is spent, so the permit inside the run reverts. The run must not.
         vm.prank(payer);
-        payroll.payOneWithPermit(line, address(asset), RUN, p);
+        payroll.payOneWithPermit(line, RUN, p);
 
         assertEq(asset.balanceOf(alice), 0.03e18, "paid anyway");
     }
@@ -139,7 +140,7 @@ contract PayrollPermitTest is Test {
 
         vm.prank(payer);
         vm.expectRevert(Payroll.PermitFailed.selector);
-        payroll.payOneWithPermit(line, address(asset), RUN, bad);
+        payroll.payOneWithPermit(line, RUN, bad);
     }
 
     function test_anExpiredPermitIsRefused() public {
@@ -150,7 +151,7 @@ contract PayrollPermitTest is Test {
 
         vm.prank(payer);
         vm.expectRevert(Payroll.PermitFailed.selector);
-        payroll.payOneWithPermit(line, address(asset), RUN, p);
+        payroll.payOneWithPermit(line, RUN, p);
     }
 
     /// A permit for less than the run cannot quietly pay a smaller run.
@@ -163,7 +164,7 @@ contract PayrollPermitTest is Test {
 
         vm.prank(payer);
         vm.expectRevert(); // the transferFrom for the full total has nothing to draw on
-        payroll.payManyWithPermit(lines, address(asset), RUN, p);
+        payroll.payManyWithPermit(lines, RUN, p);
 
         assertEq(asset.balanceOf(alice), 0, "nothing settled");
         assertEq(stable.balanceOf(payer), 1_000e6, "the payer kept every cent");
@@ -182,6 +183,6 @@ contract PayrollPermitTest is Test {
         // stranger, who approved nothing.
         vm.prank(stranger);
         vm.expectRevert();
-        payroll.payOneWithPermit(line, address(asset), RUN, p);
+        payroll.payOneWithPermit(line, RUN, p);
     }
 }

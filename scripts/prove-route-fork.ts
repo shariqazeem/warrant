@@ -200,13 +200,13 @@ async function main() {
     args: [
       {
         recipient: RECIPIENT,
+        asset,
         stableAmount: amount,
         cashAmount: 0n,
         minOut,
         reasonHash: reasonHash(reason),
         routerCalldata: tx.data as Hex,
       },
-      asset,
       RUN_ID,
     ],
   });

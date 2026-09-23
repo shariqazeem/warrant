@@ -166,7 +166,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
 
   const send = useCallback(async () => {
     if (!quote) return;
-    const result = await pay([quote.line], quote.asset, singlePayRunId(), BigInt(quote.totalStable));
+    const result = await pay([quote.line], singlePayRunId(), BigInt(quote.totalStable));
     if (result) {
       // The receipt reads its own transaction, so it is true the moment it opens: go there
       // first. Bringing the company page and the tape up to date follows without holding

@@ -58,57 +58,7 @@ export const payrollAbi = [
             "internalType": "address"
           },
           {
-            "name": "stableAmount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "cashAmount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "minOut",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "reasonHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "routerCalldata",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
-      },
-      {
-        "name": "asset",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "runId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "payManyWithPermit",
-    "inputs": [
-      {
-        "name": "lines",
-        "type": "tuple[]",
-        "internalType": "struct Payroll.Line[]",
-        "components": [
-          {
-            "name": "recipient",
+            "name": "asset",
             "type": "address",
             "internalType": "address"
           },
@@ -140,9 +90,59 @@ export const payrollAbi = [
         ]
       },
       {
-        "name": "asset",
-        "type": "address",
-        "internalType": "address"
+        "name": "runId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "payManyWithPermit",
+    "inputs": [
+      {
+        "name": "lines",
+        "type": "tuple[]",
+        "internalType": "struct Payroll.Line[]",
+        "components": [
+          {
+            "name": "recipient",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "asset",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "stableAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "cashAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minOut",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "reasonHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "routerCalldata",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
       },
       {
         "name": "runId",
@@ -200,57 +200,7 @@ export const payrollAbi = [
             "internalType": "address"
           },
           {
-            "name": "stableAmount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "cashAmount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "minOut",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "reasonHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "routerCalldata",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
-      },
-      {
-        "name": "asset",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "runId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "payOneWithPermit",
-    "inputs": [
-      {
-        "name": "line",
-        "type": "tuple",
-        "internalType": "struct Payroll.Line",
-        "components": [
-          {
-            "name": "recipient",
+            "name": "asset",
             "type": "address",
             "internalType": "address"
           },
@@ -282,9 +232,59 @@ export const payrollAbi = [
         ]
       },
       {
-        "name": "asset",
-        "type": "address",
-        "internalType": "address"
+        "name": "runId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "payOneWithPermit",
+    "inputs": [
+      {
+        "name": "line",
+        "type": "tuple",
+        "internalType": "struct Payroll.Line",
+        "components": [
+          {
+            "name": "recipient",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "asset",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "stableAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "cashAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minOut",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "reasonHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "routerCalldata",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
       },
       {
         "name": "runId",
@@ -429,7 +429,24 @@ export const payrollAbi = [
   {
     "type": "error",
     "name": "AssetIsStable",
-    "inputs": []
+    "inputs": [
+      {
+        "name": "index",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "AssetWithoutSwap",
+    "inputs": [
+      {
+        "name": "index",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
   },
   {
     "type": "error",
@@ -546,7 +563,13 @@ export const payrollAbi = [
   {
     "type": "error",
     "name": "ZeroAsset",
-    "inputs": []
+    "inputs": [
+      {
+        "name": "index",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
   },
   {
     "type": "error",

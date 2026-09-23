@@ -53,7 +53,7 @@ export function usePay(payroll: Address | undefined) {
   }, []);
 
   const pay = useCallback(
-    async (lines: BuiltLine[], asset: Address, runId: Hex, total: bigint) => {
+    async (lines: BuiltLine[], runId: Hex, total: bigint) => {
       setWhy(null);
       setHash(null);
       setNote(null);
@@ -79,8 +79,10 @@ export function usePay(payroll: Address | undefined) {
         return null;
       }
 
+      // Each line carries its own stock: every person is paid in what they chose.
       const asLine = (l: BuiltLine) => ({
         recipient: l.recipient,
+        asset: l.asset,
         stableAmount: BigInt(l.stableAmount),
         cashAmount: BigInt(l.cashAmount),
         minOut: BigInt(l.minOut),
@@ -109,8 +111,8 @@ export function usePay(payroll: Address | undefined) {
             functionName: lines.length === 1 ? "payOne" : "payMany",
             args:
               lines.length === 1
-                ? [asLine(lines[0]!), asset, runId]
-                : [lines.map(asLine), asset, runId],
+                ? [asLine(lines[0]!), runId]
+                : [lines.map(asLine), runId],
           });
         } else {
           const wallet = address.toLowerCase();
@@ -151,8 +153,8 @@ export function usePay(payroll: Address | undefined) {
                 functionName: lines.length === 1 ? "payOneWithPermit" : "payManyWithPermit",
                 args:
                   lines.length === 1
-                    ? [asLine(lines[0]!), asset, runId, permit]
-                    : [lines.map(asLine), asset, runId, permit],
+                    ? [asLine(lines[0]!), runId, permit]
+                    : [lines.map(asLine), runId, permit],
               });
             } catch (err) {
               // The contract refused the permit after all. Fall back to the approval — once,
@@ -188,8 +190,8 @@ export function usePay(payroll: Address | undefined) {
               functionName: lines.length === 1 ? "payOne" : "payMany",
               args:
                 lines.length === 1
-                  ? [asLine(lines[0]!), asset, runId]
-                  : [lines.map(asLine), asset, runId],
+                  ? [asLine(lines[0]!), runId]
+                  : [lines.map(asLine), runId],
             });
           }
           txHash = sent;

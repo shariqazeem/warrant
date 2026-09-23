@@ -14,11 +14,11 @@
  *   npm run prove-run
  */
 import {readFileSync} from "node:fs";
-import {erc20Abi, formatUnits, parseEventLogs, type Address, type Hex} from "viem";
+import {erc20Abi, formatUnits, parseEventLogs, zeroAddress, type Address, type Hex} from "viem";
 import {privateKeyToAccount} from "viem/accounts";
 import {loadEnv} from "../lib/env";
 import {STABLE} from "../lib/chain";
-import {defaultAsset} from "../lib/assets";
+import {ASSETS, defaultAsset} from "../lib/assets";
 import {checkClock, forkClient, fundToken, FORK_PAYER_KEY} from "../lib/fork";
 import {approveTransaction, supportedChain, swap} from "../lib/okx";
 import {PERMIT_TYPES, deadlineIn, permitAbi, resolveDomain} from "../lib/permit";
@@ -30,14 +30,25 @@ import {isOk} from "../lib/outcome";
 const PAYER_KEY = FORK_PAYER_KEY;
 const FORK = "http://127.0.0.1:8545";
 
-/** Eight lines, the shape of the demo. Addresses are arbitrary and hold nothing. */
-const RUN = [
-  {to: "0x00000000000000000000000000000000000ca511", usd: 3, cash: 0, why: "Reviewed the vesting maths"},
-  {to: "0x00000000000000000000000000000000000ca512", usd: 3, cash: 0, why: "Wrote the CSV parser"},
-  {to: "0x00000000000000000000000000000000000ca513", usd: 3, cash: 0, why: "Found the throttle bug"},
-  {to: "0x00000000000000000000000000000000000ca514", usd: 5, cash: 2, why: "Design review, week 38"},
-  {to: "0x00000000000000000000000000000000000ca515", usd: 3, cash: 0, why: "Shipped the indexer"},
+/**
+ * Five people, five choices — the shape of the demo. Each person decided how much of their
+ * pay becomes stock and which stock; one of them chose to be paid all in dollars. Addresses
+ * are arbitrary and hold nothing.
+ */
+const RUN: Array<{to: string; usd: number; stockPct: number; symbol: string | null; why: string}> = [
+  {to: "0x00000000000000000000000000000000000ca511", usd: 4, stockPct: 25, symbol: "SPYx", why: "Reviewed the vesting maths"},
+  {to: "0x00000000000000000000000000000000000ca512", usd: 3, stockPct: 100, symbol: "NVDAx", why: "Wrote the CSV parser"},
+  {to: "0x00000000000000000000000000000000000ca513", usd: 3, stockPct: 0, symbol: null, why: "Found the throttle bug"},
+  {to: "0x00000000000000000000000000000000000ca514", usd: 5, stockPct: 50, symbol: "QQQx", why: "Design review, week 38"},
+  {to: "0x00000000000000000000000000000000000ca515", usd: 3, stockPct: 100, symbol: "SPYx", why: "Shipped the indexer"},
 ];
+
+const assetOf = (symbol: string | null) => {
+  if (symbol === null) return null;
+  const a = ASSETS.find((x) => x.symbol === symbol);
+  if (!a) throw new Error(`${symbol} is not in lib/assets.ts`);
+  return a;
+};
 
 const line = () => console.log("-".repeat(78));
 
@@ -116,7 +127,7 @@ async function main() {
   line();
   console.log(`Payer      ${payer.address}`);
   console.log(`Payroll    ${payroll}`);
-  console.log(`Asset      ${asset.symbol}  ${asset.address}`);
+  console.log(`Choices    ${RUN.map((r) => (r.symbol ? `${r.stockPct}% ${r.symbol}` : "all USDT")).join(" · ")}`);
   console.log(`Lines      ${RUN.length}, totalling ${formatUnits(total, 6)} USDT`);
   line();
 
@@ -125,12 +136,28 @@ async function main() {
   const lines = [];
   for (const r of RUN) {
     const stableAmount = BigInt(Math.round(r.usd * 1e6));
-    const cashAmount = BigInt(Math.round(r.cash * 1e6));
-    const swapAmount = stableAmount - cashAmount;
+    const stock = assetOf(r.symbol);
+    const swapAmount = stock ? (stableAmount * BigInt(r.stockPct)) / 100n : 0n;
+    const cashAmount = stableAmount - swapAmount;
+
+    if (!stock || swapAmount === 0n) {
+      // All in dollars: no route, no floor, and no stock named.
+      lines.push({
+        recipient: r.to as Address,
+        asset: zeroAddress,
+        stableAmount,
+        cashAmount,
+        minOut: 0n,
+        reasonHash: reasonHash(r.why),
+        routerCalldata: "0x" as Hex,
+      });
+      process.stdout.write(".");
+      continue;
+    }
 
     const route = await swap({
       from: STABLE.address,
-      to: asset.address,
+      to: stock.address,
       amount: swapAmount.toString(),
       slippagePercent: "1",
       userWalletAddress: payroll,
@@ -143,6 +170,7 @@ async function main() {
 
     lines.push({
       recipient: r.to as Address,
+      asset: stock.address,
       stableAmount,
       cashAmount,
       minOut,
@@ -193,16 +221,15 @@ async function main() {
     return fail("The payer already had an allowance; this proves nothing.");
   }
 
-  const before = await Promise.all(
-    RUN.map((x) =>
-      client.readContract({
-        address: asset.address,
-        abi: erc20Abi,
-        functionName: "balanceOf",
-        args: [x.to as Address],
-      }),
-    ),
-  );
+  // What each person holds of what they chose (dollars for the one who chose dollars).
+  const tokenOf = (x: (typeof RUN)[number]) => (assetOf(x.symbol)?.address ?? STABLE.address) as Address;
+  const balances = () =>
+    Promise.all(
+      RUN.map((x) =>
+        client.readContract({address: tokenOf(x), abi: erc20Abi, functionName: "balanceOf", args: [x.to as Address]}),
+      ),
+    );
+  const before = await balances();
 
   // --- one transaction ------------------------------------------------------------------
   const runId = runIdFromName(reuse ? `run-${Date.now().toString(36).slice(-6)}` : "run-fork-proof");
@@ -214,20 +241,11 @@ async function main() {
     functionName: "payManyWithPermit",
     account: payer,
     chain: null,
-    args: [lines, asset.address, runId, {value: total, deadline, v, r, s}],
+    args: [lines, runId, {value: total, deadline, v, r, s}],
   });
   const receipt = await client.waitForTransactionReceipt({hash});
 
-  const after = await Promise.all(
-    RUN.map((x) =>
-      client.readContract({
-        address: asset.address,
-        abi: erc20Abi,
-        functionName: "balanceOf",
-        args: [x.to as Address],
-      }),
-    ),
-  );
+  const after = await balances();
 
   const paid = parseEventLogs({abi: payrollAbi, logs: receipt.logs, eventName: "Paid"});
 
@@ -243,28 +261,37 @@ async function main() {
   const runIds = new Set<string>();
 
   for (const [i, r0] of RUN.entries()) {
-    const delivered = after[i]! - before[i]!;
-    const ok = delivered >= lines[i]!.minOut && delivered > 0n;
+    const got = after[i]! - before[i]!;
+    const stock = assetOf(r0.symbol);
     const ev = paid[i]?.args as Record<string, unknown> | undefined;
     if (ev) runIds.add(String(ev.runId));
+    // The receipt must name exactly what was bought: the chosen stock, or none at all.
+    const named = String(ev?.asset ?? "").toLowerCase();
+    const namesRight = named === (stock ? stock.address.toLowerCase() : zeroAddress);
+    const ok = namesRight && (stock ? got >= lines[i]!.minOut && got > 0n : got === lines[i]!.stableAmount);
     if (!ok) allGood = false;
     console.log(
-      `  ${ok ? "ok  " : "FAIL"} ${r0.to.slice(0, 10)}…  ` +
-        `$${r0.usd}${r0.cash ? ` ($${r0.cash} cash)` : ""}  ->  ` +
-        `${formatUnits(delivered, asset.decimals)} ${asset.symbol}   "${r0.why}"`,
+      `  ${ok ? "ok  " : "FAIL"} ${r0.to.slice(0, 10)}…  $${r0.usd}  chose ` +
+        `${stock ? `${r0.stockPct}% ${stock.symbol}` : "all USDT"}  ->  ` +
+        (stock
+          ? `${formatUnits(got, stock.decimals)} ${stock.symbol}` +
+            (lines[i]!.cashAmount > 0n ? ` + ${formatUnits(lines[i]!.cashAmount, 6)} USDT` : "")
+          : `${formatUnits(got, 6)} USDT`) +
+        `   "${r0.why}"`,
     );
   }
 
-  const held = await client.readContract({
-    address: asset.address,
-    abi: erc20Abi,
-    functionName: "balanceOf",
-    args: [payroll],
-  });
+  // The contract keeps nothing of anything: every stock chosen, and the dollars.
+  const kept = await Promise.all(
+    [STABLE.address, ...new Set(RUN.map((x) => assetOf(x.symbol)?.address).filter(Boolean) as Address[])].map(
+      (t) => client.readContract({address: t as Address, abi: erc20Abi, functionName: "balanceOf", args: [payroll]}),
+    ),
+  );
+  const held = kept.reduce((a, b) => a + b, 0n);
 
   console.log();
   console.log(`  run ids across every receipt: ${runIds.size} (${[...runIds][0]?.slice(0, 22)}…)`);
-  console.log(`  contract holds afterwards:    ${formatUnits(held, asset.decimals)} ${asset.symbol}`);
+  console.log(`  contract holds afterwards:    ${held === 0n ? "nothing" : held.toString()}`);
   line();
 
   if (!allGood || runIds.size !== 1 || held !== 0n) {
@@ -272,9 +299,9 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`\n${RUN.length} PEOPLE PAID IN ONE TRANSACTION, ONE SIGNATURE, ONE RUN ID.`);
+  console.log(`\n${RUN.length} PEOPLE, ${RUN.length} CHOICES, ONE TRANSACTION, ONE SIGNATURE, ONE RUN ID.`);
   console.log(`A permit signed with the derived domain was accepted by the real USDT.`);
-  console.log(`Every asset landed in its recipient's own wallet. The contract kept nothing.`);
+  console.log(`Each person got what they chose, in their own wallet. The contract kept nothing.`);
 }
 
 function fail(why: string): never {
