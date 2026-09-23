@@ -30,7 +30,7 @@ rsync -az --delete -e "$SSH" \
   --exclude node_modules --exclude .next --exclude var --exclude .env.local --exclude .git \
   --exclude from-scrip --exclude contracts/out --exclude contracts/cache --exclude contracts/lib \
   --exclude tsconfig.tsbuildinfo --exclude .DS_Store --exclude deploy.log --exclude .lock-hash \
-  --exclude .next-build --exclude .next-prev --exclude .build.log \
+  --exclude .next-build --exclude .next-prev --exclude .build.log --exclude .claude/worktrees \
   ./ "$HOST:~/warrant/"
 
 echo "→ building on the VM (the live site keeps serving meanwhile)"
