@@ -5,7 +5,10 @@ import {Stub} from "@/components/stub/stub";
 import {PrintButton} from "@/components/app/print-button";
 import {EXPLORER_ADDRESS, EXPLORER_TX, STABLE, xLayer} from "@/lib/chain";
 import {paidInTransaction, type Receipt} from "@/lib/receipts";
+import {readGrantMoments} from "@/lib/grant-receipts";
+import {escrowAddress} from "@/lib/grants";
 import {runLabel, settledUnitPrice, short, stampUTC, unitsFromRaw, usdt} from "@/lib/format";
+import {GrantMomentReceipt} from "./grant-stubs";
 import {Address, AssetIdentity, Line, Note, Sheet} from "./parts";
 import "./receipt.css";
 
@@ -16,6 +19,11 @@ import "./receipt.css";
  * no session, and the page a judge is handed on a phone. It reads the transaction
  * directly, so it needs no indexer and no cursor — a receipt is anchored to a transaction,
  * so the transaction is where it is read from.
+ *
+ * A GRANT'S TRANSACTIONS ARE RECEIPTS TOO. Opening one, each release, a cancel, sealing and
+ * closing: when a transaction is not a payment, it is read for the escrow's events
+ * (lib/grant-receipts.ts), and each one prints its own stub. A payment is read first and
+ * exactly as it always was, so a payment's receipt costs nothing extra.
  *
  * THE PRICE ON THIS PAGE IS ARITHMETIC ON A SETTLED PAYMENT: what was paid divided by what
  * arrived. It is not a quote, not a mark, and not what the asset is worth now.
@@ -140,9 +148,39 @@ export default async function ReceiptPage({params}: Params) {
   const found = await paidInTransaction(tx as `0x${string}`);
 
   if (!found.ok) {
+    // Not a payment. It may be one of a grant's moments; if it is not, the payment reader's
+    // sentence stands. A grant the escrow's events do not back says so in its own words.
+    const granted = await readGrantMoments(tx as `0x${string}`);
+    if (granted.ok && granted.value.length > 0) {
+      const escrow = escrowAddress();
+      const facts = new Map<string, {symbol: string; decimals: number}>();
+      for (const r of granted.value) {
+        const a = r.opening.moment.asset;
+        if (!facts.has(a)) facts.set(a, await assetFacts(a));
+      }
+      return (
+        <main className="wa-receipt">
+          {granted.value.length > 1 ? (
+            <p className="wa-r-many">
+              This one transaction did {granted.value.length} things to grants. Here is the
+              receipt for each.
+            </p>
+          ) : null}
+          {granted.value.map((r) => (
+            <GrantMomentReceipt
+              key={`${r.txHash}-${r.moment.logIndex}`}
+              r={r}
+              facts={facts.get(r.opening.moment.asset)!}
+              escrow={escrow.ok ? escrow.value : null}
+            />
+          ))}
+        </main>
+      );
+    }
+
     return (
       <main className="wa-receipt">
-        <p className="wa-r-held">{found.why}</p>
+        <p className="wa-r-held">{granted.ok ? found.why : granted.why}</p>
         <p className="wa-r-note">
           <a href={EXPLORER_TX(tx)}>Look it up on the X Layer explorer</a>.
         </p>
