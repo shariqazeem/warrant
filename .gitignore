@@ -12,3 +12,6 @@ contracts/out
 contracts/cache
 contracts/broadcast
 tsconfig.tsbuildinfo
+
+# agents' scratch checkouts
+.claude/worktrees/

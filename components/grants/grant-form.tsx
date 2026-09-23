@@ -20,6 +20,7 @@ import {useTxToast} from "@/components/toast/use-tx-toast";
 import {useOpenGrant} from "./use-open-grant";
 import "@/components/pay/pay.css";
 import "./grants.css";
+import {syncFromChain} from "@/app/sync/actions";
 
 const DAY = 86_400;
 
@@ -166,6 +167,9 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
       setBeneficiary("");
       setReason("");
       setQuoted(null);
+      // Put the new grant on the public record, and clear the cached pages, before the
+      // list reloads — otherwise the refresh can show the list without it.
+      await syncFromChain(tx).catch(() => undefined);
       router.refresh();
     }
   }, [open, quote, router]);

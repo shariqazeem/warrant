@@ -20,7 +20,7 @@
  */
 import {mkdirSync, writeFileSync} from "node:fs";
 import {loadEnv} from "../lib/env";
-import {allTokens, quote, liquiditySources, credentials, type TokenInfo} from "../lib/okx";
+import {allTokens, quote, liquiditySources, credentials, type TokenInfo, BUSY, TIMED_OUT} from "../lib/okx";
 import {DEFAULT_ASSET, STABLE} from "../lib/chain";
 import {isOk} from "../lib/outcome";
 
@@ -49,7 +49,9 @@ type Rung = {
 };
 
 /** The sentence lib/okx.ts holds with once it has exhausted its retries. */
-const isThrottle = (why: string) => /rate-limiting this run/i.test(why);
+// "Not an answer": the aggregator throttled us, our own queue was full, or the request ran
+// out of time. None of these says anything about the market, so none is recorded as depth.
+const isThrottle = (why: string) => why === BUSY || why === TIMED_OUT || /rate-limiting this run/i.test(why);
 
 type Depth = {
   symbol: string;

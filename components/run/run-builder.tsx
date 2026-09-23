@@ -173,7 +173,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
       // Receipt first, as in pay-form: it reads its own transaction, so it is already true.
       // The run and company pages catch up behind it, without holding the payer here.
       router.push(`/receipt/${result.hash}`);
-      void syncFromChain().catch(() => undefined);
+      void syncFromChain(result.hash).catch(() => undefined);
     }
   }, [built, signature, asset, pay, router]);
 

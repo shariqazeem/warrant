@@ -172,7 +172,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
       // first. Bringing the company page and the tape up to date follows without holding
       // the payer here, and a sync that fails costs nothing — the indexer catches up.
       router.push(`/receipt/${result.hash}`);
-      void syncFromChain().catch(() => undefined);
+      void syncFromChain(result.hash).catch(() => undefined);
     }
   }, [pay, quote, router]);
 
