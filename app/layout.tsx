@@ -16,11 +16,22 @@ const plexMono = IBM_Plex_Mono({
 });
 const fraunces = Fraunces({subsets: ["latin"], variable: "--font-fraunces"});
 
+/**
+ * THE PUBLIC ADDRESS, FOR EVERY ABSOLUTE URL THE PAGES ADVERTISE.
+ *
+ * Without it Next.js falls back to http://localhost:3000, so every share card on the live
+ * site pointed at localhost — a receipt posted anywhere unfurled into a broken image,
+ * which quietly throws away the one piece of growth this product has built in. Set it to
+ * whatever domain the site is served on; it is read at build time on the server.
+ */
+const SITE_URL = process.env.SITE_URL?.trim() || "http://localhost:3000";
+
 export const metadata: Metadata = {
-  title: "Warrant — a company pays its people in ownership",
+  metadataBase: new URL(SITE_URL),
+  title: "Warrant — pay your team in stocks",
   description:
-    "Upload a file of names and amounts, sign once, and every person is paid in a " +
-    "tokenized stock in their own wallet, each with a receipt carrying the reason.",
+    "Payroll paid in tokenized stocks. Send USDT; each person receives stock like the " +
+    "S&P 500 in their own wallet, with a receipt for every payment. On X Layer.",
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
