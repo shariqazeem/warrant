@@ -62,7 +62,9 @@ else
 fi
 echo "  SITE_URL=https://${DOMAIN}"
 NODE_OPTIONS=--max-old-space-size=700 npm run build 2>&1 | grep -E "Compiled|Failed|rror" | head -3
-pm2 restart warrant --update-env >/dev/null
+# Every stream closed: a restarted server that inherits this SSH session's output keeps
+# the session open forever, and the deploy never returns even though it finished.
+pm2 restart warrant --update-env </dev/null >/dev/null 2>&1
 REMOTE
 
 echo "→ waiting for a certificate"

@@ -47,7 +47,9 @@ else
 fi
 
 NODE_OPTIONS=--max-old-space-size=700 npm run build 2>&1 | grep -E "Compiled|Failed|rror" | head -5
-pm2 restart warrant --update-env >/dev/null
+# Every stream closed: a restarted server that inherits this SSH session's output keeps
+# the session open forever, and the deploy never returns even though it finished.
+pm2 restart warrant --update-env </dev/null >/dev/null 2>&1
 sleep 4
 for p in "" pay run grants; do
   printf "  /%-7s %s\n" "$p" "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:3000/$p")"
