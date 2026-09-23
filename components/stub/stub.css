@@ -320,3 +320,27 @@ a.stub:hover,
 .stub-stack.is-printed .stub {
   max-width: none;
 }
+
+/* "Where is it?" — the token's address, and a button when a wallet is in the page. */
+.wa-addwallet {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-5);
+}
+.wa-addwallet .wa-btn {
+  justify-self: start;
+}
+.wa-addwallet .wa-fine {
+  margin: 0;
+}
+.wa-addwallet-addr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+}
+.wa-addwallet-addr code {
+  overflow-wrap: anywhere;
+  font-size: var(--fs-caption);
+}
