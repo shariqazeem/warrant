@@ -3,13 +3,14 @@
 import {AlertCircle, Download, FileText, Loader2} from "lucide-react";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
-import {buildPayment, type BuiltLine} from "@/app/pay/actions";
+import {buildPayment, type BuiltLine, type BuiltPayment} from "@/app/pay/actions";
 import {ASSETS, defaultAsset} from "@/lib/assets";
 import {MAX_RUN_LINES, RUN_TEMPLATE, parseRunFile, type ParsedRow} from "@/lib/csv";
 import {short, unitsFromRaw, usdt} from "@/lib/format";
 import {impactText, worstPriceImpact} from "@/lib/payment";
 import {newRunId} from "@/lib/run-id";
-import {freshness, quoteAge} from "@/lib/quote-age";
+import {held, type Outcome} from "@/lib/outcome";
+import {QUOTE_LOST, freshness, quoteAge} from "@/lib/quote-age";
 import {WalletPanel} from "@/components/wallet/wallet-panel";
 import {useWallet} from "@/components/wallet/use-wallet";
 import {syncFromChain} from "@/app/sync/actions";
@@ -84,9 +85,12 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
   }, [builtAt]);
 
   const busy = phase === "building" || phase === "signing" || phase === "confirming";
-  // While prices are loading, or a payment is in flight, the lines on screen must stay the
-  // lines being priced or paid.
-  const locked = building || busy;
+  // Once paid, these routes are spent: the button stays down while the receipt opens and
+  // never offers to pay the same prices again.
+  const paid = phase === "done";
+  // While prices are loading, or a payment is in flight or done, the lines on screen must
+  // stay the lines being priced or paid.
+  const locked = building || busy || paid;
 
   // Each build takes a number. A build whose number is no longer the latest — stopped, or
   // superseded — drops whatever it was about to write.
@@ -115,13 +119,20 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
 
     for (const row of rows) {
       const askedAt = Date.now();
-      const res = await buildPayment({
-        recipient: row.recipient,
-        usd: row.usd,
-        cashUsd: row.cashUsd,
-        asset,
-        reason: row.reason,
-      });
+      let res: Outcome<BuiltPayment>;
+      try {
+        res = await buildPayment({
+          recipient: row.recipient,
+          usd: row.usd,
+          cashUsd: row.cashUsd,
+          asset,
+          reason: row.reason,
+        });
+      } catch {
+        // The request never came back. The build stops here rather than spinning for ever,
+        // and "Get prices" is the way to try again.
+        res = held(QUOTE_LOST);
+      }
       if (mine !== seq.current) return;
       if (!res.ok) {
         setBuilding(false);
@@ -159,9 +170,10 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
       total,
     );
     if (result) {
-      // See the note in pay-form: the record must be true by the time anyone looks at it.
-      await syncFromChain();
+      // Receipt first, as in pay-form: it reads its own transaction, so it is already true.
+      // The run and company pages catch up behind it, without holding the payer here.
       router.push(`/receipt/${result.hash}`);
+      void syncFromChain().catch(() => undefined);
     }
   }, [built, signature, asset, pay, router]);
 
@@ -393,19 +405,21 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
             return (
               <button
                 type="button"
-                className={`wa-btn is-primary is-wide${blocker ? " is-blocked" : ""}`}
-                disabled={Boolean(blocker) || busy}
+                className={`wa-btn is-primary is-wide${blocker && !busy && !paid ? " is-blocked" : ""}`}
+                disabled={Boolean(blocker) || busy || paid}
                 onClick={() => void send()}
               >
-                {busy ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
-                {phase === "signing"
-                  ? "Confirm in your wallet…"
-                  : phase === "confirming"
-                    ? "Sending…"
-                    : phase === "building"
-                      ? "Preparing…"
-                      : (blocker ??
-                        `Pay ${parsed.good.length} ${parsed.good.length === 1 ? "person" : "people"} · ${usdt(parsed.total)}`)}
+                {busy || paid ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
+                {paid
+                  ? "Paid — opening the receipt…"
+                  : phase === "signing"
+                    ? "Confirm in your wallet…"
+                    : phase === "confirming"
+                      ? "Sending…"
+                      : phase === "building"
+                        ? "Preparing…"
+                        : (blocker ??
+                          `Pay ${parsed.good.length} ${parsed.good.length === 1 ? "person" : "people"} · ${usdt(parsed.total)}`)}
               </button>
             );
           })()}
@@ -426,7 +440,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
               <button
                 type="button"
                 className="wa-linkish"
-                disabled={building || busy}
+                disabled={locked}
                 onClick={() => void buildRoutes()}
               >
                 {building ? "Refreshing…" : "Refresh prices"}

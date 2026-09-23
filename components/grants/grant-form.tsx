@@ -9,7 +9,9 @@ import {ASSETS, defaultAsset} from "@/lib/assets";
 import {AssetNote} from "@/components/pay/asset-note";
 import {STABLE} from "@/lib/chain";
 import {parseMoney} from "@/lib/csv";
-import {impactText} from "@/lib/payment";
+import {held, type Outcome} from "@/lib/outcome";
+import {checkAddress, impactText} from "@/lib/payment";
+import {QUOTE_LOST} from "@/lib/quote-age";
 import {settledUnitPrice, unitsFromRaw, usdt} from "@/lib/format";
 import {humanDuration} from "@/lib/schedule";
 import {WalletPanel} from "@/components/wallet/wallet-panel";
@@ -58,7 +60,10 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
 
   const [quoted, setQuoted] = useState<{sig: string; value: BuiltGrant} | null>(null);
   const [quoteWhy, setQuoteWhy] = useState<string | null>(null);
+  /** The price request itself failed — it never came back — rather than being refused. */
+  const [quoteLost, setQuoteLost] = useState(false);
   const [quoting, setQuoting] = useState(false);
+  const [refreshAt, setRefreshAt] = useState(0);
 
   const {open, phase, why, reset} = useOpenGrant(escrow);
 
@@ -66,7 +71,11 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
   // Read as /pay and a run file read it: "2,50" is refused, not taken as $250.
   const amountRead = amount.trim() === "" ? null : parseMoney(amount);
   const usd = amountRead?.ok ? amountRead.value : 0;
-  const ready = beneficiary.length > 0 && usd > 0 && reason.trim().length > 0;
+  // A mistyped address is named here, by the same check the server runs, and never sent
+  // for a price.
+  const checkedAddress = beneficiary.length > 0 ? checkAddress(beneficiary, "someone to grant to") : null;
+  const addressWhy = checkedAddress && !checkedAddress.ok ? checkedAddress.why : null;
+  const ready = beneficiary.length > 0 && !addressWhy && usd > 0 && reason.trim().length > 0;
 
   // A quote belongs to the terms that produced it. See the note in pay-form.tsx.
   const signature = JSON.stringify([
@@ -86,24 +95,37 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
   const seq = useRef(0);
   useEffect(() => {
     if (!ready) {
+      // Anything still in flight was asked for terms that no longer stand; drop it.
+      seq.current++;
       setQuoted(null);
       setQuoteWhy(null);
+      setQuoteLost(false);
+      setQuoting(false);
       return;
     }
     const mine = ++seq.current;
     setQuoting(true);
     const t = setTimeout(async () => {
-      const out = await buildGrant({
-        beneficiary,
-        asset,
-        usd,
-        cliffSeconds,
-        durationSeconds,
-        tipBps,
-        reason,
-      });
+      let out: Outcome<BuiltGrant>;
+      let lost = false;
+      try {
+        out = await buildGrant({
+          beneficiary,
+          asset,
+          usd,
+          cliffSeconds,
+          durationSeconds,
+          tipBps,
+          reason,
+        });
+      } catch {
+        // Never came back. Say so, rather than "Getting the price…" for ever.
+        out = held(QUOTE_LOST);
+        lost = true;
+      }
       if (mine !== seq.current) return;
       setQuoting(false);
+      setQuoteLost(lost);
       if (out.ok) {
         setQuoted({sig: signature, value: out.value});
         setQuoteWhy(null);
@@ -113,7 +135,7 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
       }
     }, 450);
     return () => clearTimeout(t);
-  }, [ready, beneficiary, usd, asset, cliffSeconds, durationSeconds, tipBps, reason, signature]);
+  }, [ready, beneficiary, usd, asset, cliffSeconds, durationSeconds, tipBps, reason, signature, refreshAt]);
 
   const send = useCallback(async () => {
     if (!quote) return;
@@ -275,19 +297,23 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
                   ? "Switch to X Layer to continue"
                   : beneficiary.length === 0
                     ? "Add their wallet address"
-                    : amountRead !== null && !amountRead.ok
-                      ? amountRead.why
-                      : !(usd > 0)
-                        ? "Enter the grant value"
-                        : reason.trim().length === 0
-                          ? "Add a note"
-                          : quoteWhy
-                            ? "Fix the problem above"
-                            : !quote
-                              ? "Getting the price…"
-                              : wallet.usdt !== undefined && wallet.usdt < BigInt(quote.terms.stableAmount)
-                                ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
-                                : null;
+                    : addressWhy
+                      ? "Fix the problem above"
+                      : amountRead !== null && !amountRead.ok
+                        ? amountRead.why
+                        : !(usd > 0)
+                          ? "Enter the grant value"
+                          : reason.trim().length === 0
+                            ? "Add a note"
+                            : quoteLost
+                              ? "Could not get the price — try again"
+                              : quoteWhy
+                                ? "Fix the problem above"
+                                : !quote
+                                  ? "Getting the price…"
+                                  : wallet.usdt !== undefined && wallet.usdt < BigInt(quote.terms.stableAmount)
+                                    ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
+                                    : null;
             return (
               <button
                 type="submit"
@@ -316,8 +342,22 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
       </form>
 
       <aside className="wa-quote" aria-live="polite">
-        {quoteWhy ? (
-          <p className="wa-refusal">{quoteWhy}</p>
+        {addressWhy ? (
+          <p className="wa-refusal">{addressWhy}</p>
+        ) : quoteWhy ? (
+          // The price service's refusals can pass — a busy minute, a thin market that
+          // refills — so the same terms can always be asked again.
+          <p className="wa-refusal">
+            {quoteWhy}{" "}
+            <button
+              type="button"
+              className="wa-linkish"
+              disabled={quoting || busy}
+              onClick={() => setRefreshAt(Date.now())}
+            >
+              {quoting ? "Trying again…" : "Try again"}
+            </button>
+          </p>
         ) : quote ? (
           <>
             <p className="wa-quote-lead">Held for them in escrow</p>
