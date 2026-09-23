@@ -1,13 +1,14 @@
 # Warrant
 
-**Pay your team. They choose the stock.**
+**Get paid in stocks.**
 
-The company pays in dollars; the person decides. Each person signs, once and for free, how
-much of their pay becomes stock and which one: a quarter into the S&P 500, all of it into
-NVIDIA, or none at all. The company uploads a file of names, amounts and notes and signs
-once; everyone is paid their own way in one transaction, into their own wallet, with a
-public receipt that says why. For the people a company wants to keep, a grant vests stock
-on a schedule out of an escrow the company cannot spend.
+Choose how much of every payment becomes stock, and which stock (the S&P 500, NVIDIA,
+Apple and twelve more), and share your link, warrant.world/@you. Whoever pays you through
+it pays in dollars and never picks your stock; you get your split in your own wallet, with
+a public receipt that says why. The choice is an EIP-712 signature from your own wallet: free,
+checkable by anyone. A company paying many people pays them all in one signature, each their
+own way; for the people it wants to keep, a grant vests stock on a schedule out of an escrow
+the company cannot spend.
 
 Built for **OKX Dev Day 2026** on **X Layer**, with **xStocks** as the asset, the **OKX DEX
 aggregator** as the route and **OKX Wallet** (by QR, through OKX Connect) as the wallet.
@@ -40,8 +41,9 @@ and is not used.
 
 ## The demo, in six beats
 
-1. **A person chooses.** On `/me`, in their own wallet, for free: "25% of each payment into
-   the S&P 500." The choice is an EIP-712 signature anyone can verify.
+1. **A person gets their link.** On `/me`, in their own wallet, for free: "25% of each payment
+   into the S&P 500." The choice is an EIP-712 signature anyone can verify; the link is
+   `warrant.world/@them`.
 2. A file of names and amounts, dropped onto `/run`. Each line shows the choice it will
    follow; a line that will not pay is shown in place with the rule it broke named.
 3. **One signature.** USD₮0 on X Layer implements EIP-2612, so approval is a signature
