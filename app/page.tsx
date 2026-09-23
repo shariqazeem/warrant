@@ -34,18 +34,19 @@ export default async function Home() {
         <SiteNav />
         <div className="wa-open">
           <p className="wa-kicker">Payroll on X Layer · priced by OKX DEX</p>
-          <h1 className="wa-display">Pay your team in stocks.</h1>
+          <h1 className="wa-display">Pay your team. They choose the stock.</h1>
           <p className="wa-lede">
-            You send USDT. Each person receives a tokenized stock — like the S&amp;P 500 — in
-            their own wallet, with a receipt that says why they were paid. One signature pays
-            everyone.
+            You pay in dollars, with one signature for everyone. Each person has chosen how
+            much of their pay becomes stock — a quarter into the S&amp;P 500, all of it into
+            NVIDIA, or none at all — and gets exactly that, in their own wallet, with a receipt
+            that says why they were paid.
           </p>
           <div className="wa-actions">
             <Link href="/run" className="wa-btn is-primary">
               Run payroll
             </Link>
-            <Link href="/pay" className="wa-btn">
-              Pay one person
+            <Link href="/me" className="wa-btn">
+              Choose how you&rsquo;re paid
             </Link>
           </div>
 
@@ -138,24 +139,27 @@ export default async function Home() {
       <section className="wa-sec">
         <p className="wa-kicker">How it works</p>
         <div className="wa-rule-row">
-          <span className="k">1. Add your people</span>
+          <span className="k">1. Each person chooses</span>
+          <p className="v">
+            Once, in their own wallet, for free: how much of each payment becomes stock, and
+            which stock. The choice is signed, so anyone can check it, and it follows them to
+            every company that pays them through Warrant. <Link href="/me">Choose yours</Link>.
+          </p>
+        </div>
+        <div className="wa-rule-row">
+          <span className="k">2. You pay in dollars</span>
           <p className="v">
             One person, or your whole team as a CSV: wallet address, amount, and a note for
-            each. Anything wrong with a line is flagged before you sign.
+            each. You never pick anyone&rsquo;s stock. One signature pays everyone in a single
+            transaction, and OKX DEX finds the price for each person&rsquo;s choice.
           </p>
         </div>
         <div className="wa-rule-row">
-          <span className="k">2. Sign once</span>
+          <span className="k">3. Everyone is paid their way</span>
           <p className="v">
-            One signature approves and pays everyone in a single transaction. OKX DEX finds
-            the best price for each payment.
-          </p>
-        </div>
-        <div className="wa-rule-row">
-          <span className="k">3. They own it</span>
-          <p className="v">
-            The stock lands in each person&rsquo;s own wallet — Warrant never holds it. Each
-            payment gets a public receipt with your note on it.
+            The stock and the dollars land in each person&rsquo;s own wallet — Warrant never
+            holds either. Each payment gets a public receipt with your note on it and the choice
+            it followed.
           </p>
         </div>
         <div className="wa-rule-row">
@@ -169,7 +173,8 @@ export default async function Home() {
         <div className="wa-rule-row">
           <span className="k">Vesting grants</span>
           <p className="v">
-            Give someone stock that vests over time. It is bought on day one and held in an
+            For the people you want to keep: stock that vests over time, for anyone you
+            can&rsquo;t give company shares to. It is bought on day one and held in an
             escrow the company cannot spend, and what has vested is theirs. You can cancel the
             part that has not vested — or give that up too, by making the grant irrevocable.
           </p>
@@ -177,7 +182,7 @@ export default async function Home() {
       </section>
 
       <section className="wa-sec">
-        <p className="wa-kicker">What people are paid in</p>
+        <p className="wa-kicker">The stocks people can choose</p>
         {/*
           PER-ROW DISCLOSURE, NEVER A BANNER. An asset carries issuer powers and they belong
           beside the asset, on the row where someone decides to be paid in it. One list, in
