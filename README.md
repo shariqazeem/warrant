@@ -19,14 +19,20 @@ Primary track: X Layer, tokenized stocks and RWA.
 
 | | |
 | --- | --- |
-| `Payroll` | [`0xbe70cb6941e9943ad00968858388c580E0DBb5cD`](https://www.oklink.com/x-layer/address/0xbe70cb6941e9943ad00968858388c580E0DBb5cD), deployed in block 71309331 ([tx](https://www.oklink.com/x-layer/tx/0xab4079a6d409df8d017621de8b09d1ed260a92fb28becb6671c876e6876225dc)) |
-| `GrantEscrow` | [`0x5A5AF2d85e46b56e8F6DE73D273eEA9e868C71DC`](https://www.oklink.com/x-layer/address/0x5A5AF2d85e46b56e8F6DE73D273eEA9e868C71DC), deployed in block 71309334 ([tx](https://www.oklink.com/x-layer/tx/0x1006428a0a5f55b6bbecdccc01c28c2405a32ab5e76fd1a2af9a83df72565c62)) |
-| Stablecoin | USDT, `0x1E4a5963aBFD975d8c9021ce480b42188849D41d` (6 decimals, EIP-2612 permit) |
+| `Payroll` | [`0xBf9C067056DA555Dd99D14694B9BC771Fab7AE09`](https://www.oklink.com/x-layer/address/0xBf9C067056DA555Dd99D14694B9BC771Fab7AE09), deployed in block 71416682 ([tx](https://www.oklink.com/x-layer/tx/0xaf364c9b36a7bceba680cf45308bf9634c09b7659da859f541cab334dc9bfd24)) |
+| `GrantEscrow` | [`0xB238D76499616377abD4908E46F29C7CE50908D1`](https://www.oklink.com/x-layer/address/0xB238D76499616377abD4908E46F29C7CE50908D1), deployed in block 71416683 ([tx](https://www.oklink.com/x-layer/tx/0xaefe42748f057cde7a7c7df2850b94ea6ebfef82f888bf5092c9c886e7284d21)) |
+| Stablecoin | USDT on X Layer, the USD₮0 token: `0x779Ded0c9e1022225f8E0630b35a9b54bE713736` (6 decimals, EIP-2612 permit, domain "USD₮0" v1) |
 | Route | The OKX DEX router `0x7c5bEE2a8091C3ef39072f64F18Fac913060AEaF`, approval spender `0x8b773D83bc66Be128c60e07E17C8901f7a64F000` |
 | Assets | SPYx, NVDAx, QQQx |
 
 The deployed runtime bytecode matches this source (immutables masked). The first real
 payments will be listed here, each beside its transaction, as they happen.
+
+**Why USD₮0.** X Layer has two tokens that call themselves USDT. The first deployment (22
+Sep: Payroll `0xbe70…b5cD`, GrantEscrow `0x5A5A…71DC`) used the older bridged USDT, 3.3M
+on chain; OKX Wallet's swap hands out USD₮0, 106.6M. A payer who swapped to "USDT" saw $0,
+so on 23 Sep the same code was redeployed on USD₮0. The first deployment never paid anyone
+and is not used.
 
 ## The demo, in six beats
 

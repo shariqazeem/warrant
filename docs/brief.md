@@ -72,7 +72,8 @@ agent service or payment flow does.
 | xStocks | Live since June 2026. About **836 tokenized assets, $91.5M market cap**, 88% equities and 12% ETFs. Largest holding MSTRx at about $8.45M |
 | Addressable xStocks | **43**, per Swapper's public integration |
 | wNVDAx | **Verified on chain** at `0xa8ddb5cd96b5222afe198316e9a57caa642850d5`. Name "Wrapped NVIDIA xStock". Supply grew from 2,501.95 to 2,561.64 tokens during the check, so it is actively being minted |
-| USDT | `0x1E4a5963aBFD975d8c9021ce480b42188849D41d`, symbol confirmed by `eth_call` |
+| USDT (what Warrant pays with) | **USD₮0** `0x779Ded0c9e1022225f8E0630b35a9b54bE713736`: Tether's current token, 106.6M supply on 23 Sep, what OKX Wallet's swap gives. EIP-2612 permit, domain "USD₮0" v1 |
+| USDT (the older one) | `0x1E4a5963aBFD975d8c9021ce480b42188849D41d`, "Tether USD", 3.3M supply. Warrant's first deployment used it; a wallet holding it is told to swap |
 | Rebasing | On EVM, xStocks handle corporate actions **inside `balanceOf`**. Unlike Solana, no multiplier arithmetic is needed |
 | Not verified | Which of the 43 have live on-chain liquidity, and how deep. **This is the first thing to establish.** |
 
