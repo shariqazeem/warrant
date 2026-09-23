@@ -86,7 +86,7 @@ export default async function Home() {
                     <span className="wa-mono">{short(r.recipient)}</span>
                     <span className="wa-tape-why">{r.reason ?? ""}</span>
                     <span className="wa-tape-amt wa-mono">
-                      {unitsFromRaw(r.assetAmount, r.assetDecimals)}
+                      {unitsFromRaw(r.assetAmount, r.assetDecimals)} {r.assetSymbol}
                     </span>
                     <span className="wa-tape-meta">
                       for {usdt(r.stableAmount)}
