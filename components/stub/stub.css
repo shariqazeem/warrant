@@ -344,3 +344,8 @@ a.stub:hover,
   overflow-wrap: anywhere;
   font-size: var(--fs-caption);
 }
+.wa-addwallet-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
