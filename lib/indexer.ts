@@ -14,6 +14,12 @@
  *
  * 3. THE CHAIN IS THE SOURCE OF TRUTH, NOT THIS. Everything here is a copy for speed.
  *    Delete var/warrant.db and it rebuilds; nothing is stored here that cannot be.
+ *
+ * And one learned on this one: X Layer's public endpoints answer about two or three reads a
+ * second from one address (measured 23 Sep: 12 of 80 back-to-back reads came back 429,
+ * "over rate limit"). A throttle is not about the window, so halving is the wrong answer to
+ * it; the walk waits and asks again, and the long walk paces itself so the site, which
+ * shares the address, still gets its reads.
  */
 import {createPublicClient, http, parseAbiItem, type Address} from "viem";
 import {LOG_WINDOW, xLayer} from "./chain";
@@ -74,6 +80,11 @@ async function findDeployBlock(address: Address, head: bigint): Promise<bigint> 
 
 const client = () => createPublicClient({chain: xLayer, transport: http()});
 
+const THROTTLED = /429|rate limit|too many/i;
+/** How long `npm run index` rests between windows. Page loads never pace; they read two. */
+const PACE_MS = Number(process.env.WARRANT_INDEX_PACE_MS ?? 400);
+const rest = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export type IndexReport = {
   contract: string;
   /** True when this pass had to find the contract's deploy block first. */
@@ -97,7 +108,7 @@ type Walker = {
  * on a long chain makes progress and returns rather than running for an hour — the cursor
  * is durable, so the next pass continues where this one stopped.
  */
-async function walk(w: Walker, maxWindows = 400): Promise<Outcome<IndexReport>> {
+async function walk(w: Walker, maxWindows = 400, paceMs = 0): Promise<Outcome<IndexReport>> {
   return attempt(`the ${w.name} log`, async () => {
     const rpc = client();
     const head = await rpc.getBlockNumber();
@@ -122,6 +133,7 @@ async function walk(w: Walker, maxWindows = 400): Promise<Outcome<IndexReport>> 
     let windows = 0;
     let narrowings = 0;
     let rows = 0;
+    let waits = 0;
 
     while (from <= head && windows < maxWindows) {
       const to = from + window - 1n > head ? head : from + window - 1n;
@@ -129,6 +141,16 @@ async function walk(w: Walker, maxWindows = 400): Promise<Outcome<IndexReport>> 
       try {
         rows += await w.read(from, to);
       } catch (err) {
+        const why = err instanceof Error ? err.message : String(err);
+        if (THROTTLED.test(why)) {
+          // A page load does not wait on a throttle: behind is fine, the indexer catches up.
+          if (paceMs === 0) break;
+          // The indexer asks for the same window a little later: 1s, 2s, 4s… a minute in all.
+          if (waits < 6) {
+            await rest(1000 * 2 ** waits++);
+            continue;
+          }
+        }
         // Some endpoints refuse by block range and some by result count, and the error
         // does not say which. Halving handles both. The cursor does not move.
         if (window > 1n) {
@@ -136,7 +158,6 @@ async function walk(w: Walker, maxWindows = 400): Promise<Outcome<IndexReport>> 
           narrowings++;
           continue;
         }
-        const why = err instanceof Error ? err.message : String(err);
         throw new Error(`${w.name}: even a single block was refused at ${from} (${why})`);
       }
 
@@ -144,6 +165,8 @@ async function walk(w: Walker, maxWindows = 400): Promise<Outcome<IndexReport>> 
       writeCursor(w.name, Number(to));
       from = to + 1n;
       windows++;
+      waits = 0;
+      if (paceMs > 0 && from <= head) await rest(paceMs);
 
       // Creep back up so one bad patch does not slow the whole walk forever.
       if (window < LOG_WINDOW) window = window * 2n > LOG_WINDOW ? LOG_WINDOW : window * 2n;
@@ -330,7 +353,7 @@ function walkers(): Walker[] {
 export async function indexOnce(): Promise<IndexReport[]> {
   const reports: IndexReport[] = [];
   for (const w of walkers()) {
-    const r = await walk(w);
+    const r = await walk(w, 400, PACE_MS);
     if (!r.ok) throw new Error(r.why);
     reports.push(r.value);
   }

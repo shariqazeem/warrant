@@ -38,8 +38,16 @@ async function main() {
     console.log(`Cursors cleared. The next pass reads from WARRANT_START_BLOCK.`);
   }
 
-  await pass();
-  if (!flag("watch")) return;
+  if (!flag("watch")) return pass();
+
+  // Watching: a refused first pass is the same as a refused later one — behind, not dead.
+  // Letting it throw here made pm2 restart the process in a loop against a throttled
+  // endpoint, which only made the throttling worse.
+  try {
+    await pass();
+  } catch (err) {
+    console.error(`${stamp()}  pass failed: ${err instanceof Error ? err.message : err}`);
+  }
 
   const every = Math.max(5, Number(arg("every", "20")));
   console.log(`\nWatching, every ${every}s. The cursor only moves on a window that read cleanly.\n`);
