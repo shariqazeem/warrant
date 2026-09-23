@@ -13,6 +13,9 @@
 import Database from "better-sqlite3";
 import {mkdirSync} from "node:fs";
 import {dirname} from "node:path";
+import type {Choice, StoredChoice} from "./choice";
+import {stampUTC} from "./format";
+import {held, ok, type Outcome} from "./outcome";
 import {MAX_REASON_LENGTH, normaliseReason, reasonHash} from "./reason";
 
 const PATH = process.env.WARRANT_DB_PATH ?? "var/warrant.db";
@@ -100,6 +103,21 @@ export function database(): Database.Database {
       last_block    INTEGER NOT NULL,
       updated_at    INTEGER NOT NULL
     );
+
+    -- How each person chose to be paid, as they signed it (lib/choice.ts). NOT A CACHE:
+    -- these are off chain, so this table is the record, and the signature is kept so anyone
+    -- can check a row against the wallet that made it. Append-only: a change is a new row,
+    -- so a receipt can say which choice stood when it was paid. Addresses are lowercase.
+    CREATE TABLE IF NOT EXISTS choices (
+      person        TEXT NOT NULL,
+      stock_bps     INTEGER NOT NULL,
+      asset         TEXT NOT NULL,
+      eligible      INTEGER NOT NULL,
+      issued_at     INTEGER NOT NULL,
+      signature     TEXT NOT NULL,
+      saved_at      INTEGER NOT NULL,
+      PRIMARY KEY (person, issued_at)
+    );
   `);
   return db;
 }
@@ -163,4 +181,89 @@ export function reasonFor(hash: string): StoredReason {
 
   if (!row) return {found: false};
   return {found: true, text: row.text, verified: reasonHash(row.text) === hash.toLowerCase()};
+}
+
+type ChoiceRow = {
+  person: string;
+  stock_bps: number;
+  asset: string;
+  eligible: number;
+  issued_at: number;
+  signature: string;
+  saved_at: number;
+};
+
+function toStoredChoice(r: ChoiceRow): StoredChoice {
+  return {
+    person: r.person as `0x${string}`,
+    stockBps: r.stock_bps,
+    asset: r.asset as `0x${string}`,
+    eligible: r.eligible === 1,
+    issuedAt: r.issued_at,
+    signature: r.signature as `0x${string}`,
+    savedAt: r.saved_at,
+  };
+}
+
+/**
+ * Keep a choice that `verifyChoice` (lib/choice.ts) has already checked.
+ *
+ * REFUSES ONE THAT IS NOT NEWER THAN THE LATEST KEPT FOR THAT WALLET. A signature stays a
+ * valid signature for ever, and every choice is on its person's public page — so without
+ * this, anyone could put back a choice the person has since changed. The check and the
+ * write are one IMMEDIATE transaction: nothing can land between them.
+ */
+export function rememberChoice(
+  choice: Choice,
+  savedAt: number = Math.floor(Date.now() / 1000),
+): Outcome<StoredChoice> {
+  const conn = database();
+  const person = choice.person.toLowerCase();
+  const write = conn.transaction((): Outcome<StoredChoice> => {
+    const latest = conn
+      .prepare(`SELECT MAX(issued_at) AS at FROM choices WHERE person = ?`)
+      .get(person) as {at: number | null};
+    if (latest.at !== null && choice.issuedAt <= latest.at) {
+      return held(
+        `A newer choice is already saved for this wallet (signed ${stampUTC(latest.at)}), so ` +
+          "an older one cannot replace it. To change it, sign a new one.",
+      );
+    }
+    const row: ChoiceRow = {
+      person,
+      stock_bps: choice.stockBps,
+      asset: choice.asset.toLowerCase(),
+      eligible: choice.eligible ? 1 : 0,
+      issued_at: choice.issuedAt,
+      signature: choice.signature.toLowerCase(),
+      saved_at: savedAt,
+    };
+    conn
+      .prepare(
+        `INSERT INTO choices (person, stock_bps, asset, eligible, issued_at, signature, saved_at)
+         VALUES (@person, @stock_bps, @asset, @eligible, @issued_at, @signature, @saved_at)`,
+      )
+      .run(row);
+    return ok(toStoredChoice(row));
+  });
+  return write.immediate();
+}
+
+/** The latest choice kept for a wallet, whatever case its address arrives in, or null. */
+export function readLatestChoice(person: string): StoredChoice | null {
+  const row = database()
+    .prepare(`SELECT * FROM choices WHERE person = ? ORDER BY issued_at DESC LIMIT 1`)
+    .get(person.toLowerCase()) as ChoiceRow | undefined;
+  return row ? toStoredChoice(row) : null;
+}
+
+/** The latest choice a wallet had signed at or before a moment (unix seconds), or null. */
+export function readChoiceAt(person: string, unixSeconds: number): StoredChoice | null {
+  const row = database()
+    .prepare(
+      `SELECT * FROM choices WHERE person = ? AND issued_at <= ?
+        ORDER BY issued_at DESC LIMIT 1`,
+    )
+    .get(person.toLowerCase(), unixSeconds) as ChoiceRow | undefined;
+  return row ? toStoredChoice(row) : null;
 }
