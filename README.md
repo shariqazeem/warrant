@@ -1,11 +1,13 @@
 # Warrant
 
-**Pay your team in stocks.**
+**Pay your team. They choose the stock.**
 
-A company uploads a file of names, amounts and a note for each person, and signs once. Each
-person receives a tokenized stock (an xStock, such as SPYx for the S&P 500) in their own
-wallet, with a public receipt that says why they were paid. Or give someone a grant that
-vests on a schedule, out of an escrow the payer cannot spend.
+The company pays in dollars; the person decides. Each person signs, once and for free, how
+much of their pay becomes stock and which one: a quarter into the S&P 500, all of it into
+NVIDIA, or none at all. The company uploads a file of names, amounts and notes and signs
+once; everyone is paid their own way in one transaction, into their own wallet, with a
+public receipt that says why. For the people a company wants to keep, a grant vests stock
+on a schedule out of an escrow the company cannot spend.
 
 Built for **OKX Dev Day 2026** on **X Layer**, with **xStocks** as the asset, the **OKX DEX
 aggregator** as the route and **OKX Wallet** (by QR, through OKX Connect) as the wallet.
@@ -19,7 +21,7 @@ Primary track: X Layer, tokenized stocks and RWA.
 
 | | |
 | --- | --- |
-| `Payroll` | [`0xBf9C067056DA555Dd99D14694B9BC771Fab7AE09`](https://www.oklink.com/x-layer/address/0xBf9C067056DA555Dd99D14694B9BC771Fab7AE09), deployed in block 71416682 ([tx](https://www.oklink.com/x-layer/tx/0xaf364c9b36a7bceba680cf45308bf9634c09b7659da859f541cab334dc9bfd24)) |
+| `Payroll` | [`0xD9d06266B9290bA5ee81Cc54657844D4a874431d`](https://www.oklink.com/x-layer/address/0xD9d06266B9290bA5ee81Cc54657844D4a874431d), deployed in block 71420033 ([tx](https://www.oklink.com/x-layer/tx/0x9ee05c1e18ddc4108b1d959473dc08154e769b554d7d2df391dfddba05b02824)). Each line names its own stock |
 | `GrantEscrow` | [`0xB238D76499616377abD4908E46F29C7CE50908D1`](https://www.oklink.com/x-layer/address/0xB238D76499616377abD4908E46F29C7CE50908D1), deployed in block 71416683 ([tx](https://www.oklink.com/x-layer/tx/0xaefe42748f057cde7a7c7df2850b94ea6ebfef82f888bf5092c9c886e7284d21)) |
 | Stablecoin | USDT on X Layer, the USD₮0 token: `0x779Ded0c9e1022225f8E0630b35a9b54bE713736` (6 decimals, EIP-2612 permit, domain "USD₮0" v1) |
 | Route | The OKX DEX router `0x7c5bEE2a8091C3ef39072f64F18Fac913060AEaF`, approval spender `0x8b773D83bc66Be128c60e07E17C8901f7a64F000` |
@@ -28,7 +30,9 @@ Primary track: X Layer, tokenized stocks and RWA.
 The deployed runtime bytecode matches this source (immutables masked). The first real
 payments will be listed here, each beside its transaction, as they happen.
 
-**Why USD₮0.** X Layer has two tokens that call themselves USDT. The first deployment (22
+**Earlier deployments.** Payroll `0xBf9C…AE09` (23 Sep) carried one stock per run; it made
+the first real payment, whose receipt still opens, and is otherwise retired. **Why USD₮0.**
+X Layer has two tokens that call themselves USDT. The first deployment (22
 Sep: Payroll `0xbe70…b5cD`, GrantEscrow `0x5A5A…71DC`) used the older bridged USDT, 3.3M
 on chain; OKX Wallet's swap hands out USD₮0, 106.6M. A payer who swapped to "USDT" saw $0,
 so on 23 Sep the same code was redeployed on USD₮0. The first deployment never paid anyone
@@ -36,15 +40,16 @@ and is not used.
 
 ## The demo, in six beats
 
-1. A file of names and amounts, dropped onto `/run`. It becomes lines, with a line that
-   will not pay shown in place and the rule it broke named.
-2. **One signature.** USDT on X Layer implements EIP-2612, so approval is a signature
-   rather than a transaction, and the whole run is one transaction.
-3. The receipts print. One transaction, N stubs, one run id.
+1. **A person chooses.** On `/me`, in their own wallet, for free: "25% of each payment into
+   the S&P 500." The choice is an EIP-712 signature anyone can verify.
+2. A file of names and amounts, dropped onto `/run`. Each line shows the choice it will
+   follow; a line that will not pay is shown in place with the rule it broke named.
+3. **One signature.** USD₮0 on X Layer implements EIP-2612, so approval is a signature
+   rather than a transaction, and the whole run, with everyone's different choices, is one
+   transaction. The receipts print: one transaction, N stubs, one run id.
 4. Open one on a phone: what was paid, what it became, at what price, why, and the
    transaction it is anchored to. No account needed.
-5. The company's public page: paying people in stock since, people paid, the total, every
-   payment with its reason.
+5. The public page: every payment with its reason, and each person's signed choice.
 6. A grant: stock bought on day one, held in escrow, released on a schedule by anyone who
    calls `vest`, with a receipt for each release.
 
@@ -52,7 +57,7 @@ and is not used.
 
 | | |
 | --- | --- |
-| `contracts/src/Payroll.sol` | `payOne` / `payMany`, and the permit variants. Pulls the stablecoin once, routes each line through the OKX aggregator with the person being paid as the receiver, measures what reached their wallet, and reverts the whole run if any line is below its minimum |
+| `contracts/src/Payroll.sol` | `payOne` / `payMany`, and the permit variants. Pulls the stablecoin once; each line names its own stock (or none, for someone paid all in dollars), is routed through the OKX aggregator with the person as the receiver, and is measured in its own stock; the whole run reverts if any line is below its minimum |
 | `contracts/src/GrantEscrow.sol` | `open`, `seal`, `vest`, `revoke`, `close`. Buys the asset once and holds it in shares of a pool, so an issuer's mint, burn or rebase is shared fairly. `vest` is permissionless and tips whoever calls it |
 | `lib/okx.ts` | The signed OKX aggregator client, V6, server only |
 | `lib/confirm.ts` | An event is only as honest as the call that made it. Nothing is shown as a payment unless its asset is a listed xStock and the payer's USDT really left, read from the transaction's own transfers |
