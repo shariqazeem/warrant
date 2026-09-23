@@ -1,4 +1,5 @@
 import type {MetadataRoute} from "next";
+import {siteUrl} from "@/lib/site";
 
 /**
  * EVERY PAGE MAY BE READ. A receipt is public on purpose: the point of a stub is that a
@@ -8,7 +9,7 @@ import type {MetadataRoute} from "next";
  * The sitemap's address must be absolute, so it is built from SITE_URL exactly as
  * app/layout.tsx builds metadataBase; without it every absolute URL points at localhost.
  */
-const SITE_URL = process.env.SITE_URL?.trim() || "http://localhost:3000";
+const SITE_URL = siteUrl();
 
 export default function robots(): MetadataRoute.Robots {
   return {

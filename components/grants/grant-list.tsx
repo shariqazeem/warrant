@@ -10,6 +10,7 @@ import {humanDuration} from "@/lib/schedule";
 import {dateUTC, short, unitsFromRaw, usdt} from "@/lib/format";
 import {NEEDS_OKB, useWallet} from "@/components/wallet/use-wallet";
 import "./grants.css";
+import {syncFromChain} from "@/app/sync/actions";
 
 /**
  * THE GRANTS THAT EXIST, and what can still be done to each.
@@ -50,7 +51,10 @@ export function GrantList({
   const act = async (id: number, which: "vest" | "seal" | "revoke" | "close") => {
     if (blocker || anyBusy) return;
     const tx = await run(id, which);
-    if (tx) router.refresh();
+    if (!tx) return;
+    // On the public record first (a release has a receipt), then the list.
+    await syncFromChain(tx).catch(() => undefined);
+    router.refresh();
   };
 
   if (grants.length === 0) {

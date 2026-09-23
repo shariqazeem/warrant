@@ -1,8 +1,8 @@
 import {ImageResponse} from "next/og";
-import {erc20Abi, createPublicClient, http} from "viem";
-import {xLayer} from "@/lib/chain";
 import {assetByAddress} from "@/lib/assets";
+import {readGrantMoments, type GrantReceipt} from "@/lib/grant-receipts";
 import {paidInTransaction} from "@/lib/receipts";
+import {humanDuration} from "@/lib/schedule";
 import {reasonFor} from "@/lib/db";
 import {settledUnitPrice, short, unitsFromRaw, usdt} from "@/lib/format";
 import {OG, OG_SIZE, OG_TYPE} from "@/lib/og-theme";
@@ -64,6 +64,12 @@ export default async function Image({params}: {params: {tx: string}}) {
   const found = await paidInTransaction(tx as `0x${string}`);
 
   if (!found.ok || found.value.length === 0) {
+    // Not a payment: it may be one of a grant's moments, whose page prints a stub too. The
+    // card must agree with the page it stands for.
+    const granted = await readGrantMoments(tx as `0x${string}`);
+    if (granted.ok && granted.value.length > 0) {
+      return new ImageResponse(<GrantCard g={granted.value[0]!} many={granted.value.length} tx={tx} />, size);
+    }
     return new ImageResponse(
       (
         <Card>
@@ -82,22 +88,10 @@ export default async function Image({params}: {params: {tx: string}}) {
   const r = found.value[0]!;
   const many = found.value.length;
 
+  // Only a listed stock reaches a stub (lib/confirm.ts), so the list names it without a read.
   const known = assetByAddress(r.asset);
-  let symbol = known?.symbol ?? "units";
-  let decimals = known?.decimals ?? 18;
-  if (!known) {
-    try {
-      const rpc = createPublicClient({chain: xLayer, transport: http()});
-      const [s, d] = await Promise.all([
-        rpc.readContract({address: r.asset, abi: erc20Abi, functionName: "symbol"}),
-        rpc.readContract({address: r.asset, abi: erc20Abi, functionName: "decimals"}),
-      ]);
-      symbol = s;
-      decimals = d;
-    } catch {
-      // the payment still happened; say the units without a symbol
-    }
-  }
+  const symbol = known?.symbol ?? "units";
+  const decimals = known?.decimals ?? 18;
 
   const stored = reasonFor(r.reasonHash);
   const reason = stored.found && stored.verified ? stored.text : null;
@@ -184,5 +178,70 @@ export default async function Image({params}: {params: {tx: string}}) {
       </Card>
     ),
     size,
+  );
+}
+/**
+ * A GRANT MOMENT'S CARD. Same rules as the payment's: every figure from the events the page
+ * itself prints, the units the largest thing on it.
+ */
+function GrantCard({g, many, tx}: {g: GrantReceipt; many: number; tx: string}) {
+  const o = g.opening.moment;
+  const known = assetByAddress(o.asset);
+  const symbol = known?.symbol ?? "units";
+  const decimals = known?.decimals ?? 18;
+  const m = g.moment;
+
+  const [label, lead, units, tail] =
+    m.kind === "opened"
+      ? [
+          "Grant opened",
+          `${usdt(m.stableCost)} bought, held in escrow`,
+          `${unitsFromRaw(m.units, decimals)} ${symbol}`,
+          `for ${short(m.beneficiary)}, vesting over ${humanDuration(m.durationSeconds)}` +
+            (m.cliffSeconds > 0 ? ` after a ${humanDuration(m.cliffSeconds)} cliff` : ""),
+        ]
+      : m.kind === "vested"
+        ? [
+            "Released from a grant",
+            `released to ${short(m.beneficiary)}\u2019s own wallet`,
+            `${unitsFromRaw(m.unitsToBeneficiary, decimals)} ${symbol}`,
+            `grant #${m.id}`,
+          ]
+        : m.kind === "revoked"
+          ? [
+              "Grant cancelled",
+              `${short(o.beneficiary)} keeps what had vested`,
+              `${unitsFromRaw(m.vestedUnits, decimals)} ${symbol}`,
+              `${unitsFromRaw(m.returnedUnits, decimals)} ${symbol} went back to the company`,
+            ]
+          : m.kind === "sealed"
+            ? ["Grant made irrevocable", "nobody can cancel it now", `Grant #${m.id}`, `for ${short(o.beneficiary)}`]
+            : ["Grant fully released", "everything owed has been paid out", `Grant #${m.id}`, `for ${short(o.beneficiary)}`];
+
+  return (
+    <Card>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          background: SHEET,
+          border: `1px solid ${LINE}`,
+          borderRadius: 16,
+          padding: 44,
+        }}
+      >
+        <div style={{display: "flex", justifyContent: "space-between", fontSize: 22, color: FAINT}}>
+          <div style={{display: "flex", color: OK}}>{label}</div>
+          <div style={{display: "flex"}}>Warrant</div>
+        </div>
+        <div style={{display: "flex", fontSize: 30, color: MUTED, marginTop: 32}}>{lead}</div>
+        <div style={{display: "flex", fontSize: 96, color: INK, letterSpacing: -4, marginTop: 6}}>{units}</div>
+        <div style={{display: "flex", fontSize: 24, color: MUTED, marginTop: 16}}>{tail}</div>
+        <div style={{display: "flex", fontSize: 18, color: FAINT, marginTop: 28}}>
+          {(many > 1 ? `${many} grant moments in this transaction \u00b7 ` : "") + short(tx)}
+        </div>
+      </div>
+    </Card>
   );
 }

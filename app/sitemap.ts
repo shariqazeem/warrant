@@ -1,4 +1,5 @@
 import type {MetadataRoute} from "next";
+import {siteUrl} from "@/lib/site";
 
 /**
  * THE DOORS. The records — receipts, runs, grants, companies — are reached from them and
@@ -7,7 +8,7 @@ import type {MetadataRoute} from "next";
  *
  * Absolute, from SITE_URL, as app/layout.tsx and app/robots.ts read it.
  */
-const SITE_URL = process.env.SITE_URL?.trim() || "http://localhost:3000";
+const SITE_URL = siteUrl();
 
 const DOORS = ["/", "/pay", "/run", "/grants"] as const;
 

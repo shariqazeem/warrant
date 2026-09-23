@@ -2,6 +2,7 @@ import type {Metadata} from "next";
 import {Fraunces, IBM_Plex_Mono, Instrument_Sans} from "next/font/google";
 import "@/styles/globals.css";
 import "@/styles/tokens.css";
+import {siteUrl} from "@/lib/site";
 
 /**
  * Words: Instrument Sans. Figures: IBM Plex Mono, tabular, at every size. The wordmark and
@@ -16,15 +17,8 @@ const plexMono = IBM_Plex_Mono({
 });
 const fraunces = Fraunces({subsets: ["latin"], variable: "--font-fraunces"});
 
-/**
- * THE PUBLIC ADDRESS, FOR EVERY ABSOLUTE URL THE PAGES ADVERTISE.
- *
- * Without it Next.js falls back to http://localhost:3000, so every share card on the live
- * site pointed at localhost — a receipt posted anywhere unfurled into a broken image,
- * which quietly throws away the one piece of growth this product has built in. Set it to
- * whatever domain the site is served on; it is read at build time on the server.
- */
-const SITE_URL = process.env.SITE_URL?.trim() || "http://localhost:3000";
+/** Every absolute URL the pages advertise (share cards above all) is built on this. */
+const SITE_URL = siteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

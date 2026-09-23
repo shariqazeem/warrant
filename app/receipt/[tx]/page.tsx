@@ -1,9 +1,10 @@
 import type {Metadata} from "next";
 import Link from "next/link";
-import {createPublicClient, erc20Abi, http} from "viem";
 import {Stub} from "@/components/stub/stub";
+import {AddToWallet} from "@/components/stub/add-to-wallet";
+import {assetByAddress} from "@/lib/assets";
 import {PrintButton} from "@/components/app/print-button";
-import {EXPLORER_ADDRESS, EXPLORER_TX, STABLE, xLayer} from "@/lib/chain";
+import {EXPLORER_ADDRESS, EXPLORER_TX, STABLE} from "@/lib/chain";
 import {paidInTransaction, type Receipt} from "@/lib/receipts";
 import {readGrantMoments} from "@/lib/grant-receipts";
 import {escrowAddress} from "@/lib/grants";
@@ -40,19 +41,15 @@ export async function generateMetadata({params}: Params): Promise<Metadata> {
   };
 }
 
+/**
+ * What the asset is called and how its units divide. Only a listed stock ever reaches a
+ * stub — lib/confirm.ts refuses anything else before a payment or a grant is shown — so the
+ * list answers this without a read, and a shared stub opened by a crowd costs the chain
+ * nothing. The fallback is never expected; it keeps a stub printable if it ever is.
+ */
 async function assetFacts(address: `0x${string}`) {
-  const rpc = createPublicClient({chain: xLayer, transport: http()});
-  try {
-    const [symbol, decimals] = await Promise.all([
-      rpc.readContract({address, abi: erc20Abi, functionName: "symbol"}),
-      rpc.readContract({address, abi: erc20Abi, functionName: "decimals"}),
-    ]);
-    return {symbol, decimals};
-  } catch {
-    // An asset that will not answer is still a payment that happened. Say the units
-    // without a symbol rather than refuse to print the stub.
-    return {symbol: "units", decimals: 18};
-  }
+  const known = assetByAddress(address);
+  return known ? {symbol: known.symbol, decimals: known.decimals} : {symbol: "units", decimals: 18};
 }
 
 function One({r, symbol, decimals}: {r: Receipt; symbol: string; decimals: number}) {
@@ -99,6 +96,9 @@ function One({r, symbol, decimals}: {r: Receipt; symbol: string; decimals: numbe
       </Sheet>
 
       <Note hash={r.reasonHash} />
+
+      {/* The recipient's first question: where is it? */}
+      {r.assetAmount > 0n ? <AddToWallet address={r.asset} symbol={symbol} decimals={decimals} /> : null}
 
       <Sheet title="Proof on X Layer">
         <Line k="Transaction">
