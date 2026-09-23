@@ -14,6 +14,7 @@ import {useWallet} from "@/components/wallet/use-wallet";
 import {syncFromChain} from "@/app/sync/actions";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {usePay} from "@/components/pay/use-pay";
+import {AssetNote} from "@/components/pay/asset-note";
 import "@/components/pay/pay.css";
 import "./run.css";
 
@@ -237,22 +238,27 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
       {/* ── the asset ────────────────────────────────────────────── */}
       <label className="wa-field">
         <span className="k">Everyone receives</span>
-        <select
-          className="wa-input"
-          value={asset}
-          disabled={locked}
-          onChange={(e) => {
-            setAsset(e.target.value as typeof asset);
-            setBuilt(null);
-            setBuildWhy(null);
-          }}
-        >
-          {ASSETS.map((a) => (
-            <option key={a.address} value={a.address}>
-              {a.name} ({a.symbol})
-            </option>
-          ))}
-        </select>
+        <span className="wa-field-v">
+          <select
+            className="wa-input"
+            value={asset}
+            disabled={locked}
+            onChange={(e) => {
+              setAsset(e.target.value as typeof asset);
+              setBuilt(null);
+              setBuildWhy(null);
+            }}
+          >
+            {ASSETS.map((a) => (
+              <option key={a.address} value={a.address}>
+                {a.name} ({a.symbol})
+              </option>
+            ))}
+          </select>
+          {/* What the issuer can do, and who may hold it, on the row where it is chosen —
+              the same note /pay and /grants carry. */}
+          <AssetNote symbol={chosen.symbol} name={chosen.name} />
+        </span>
       </label>
 
       {/* ── the lines ────────────────────────────────────────────── */}
