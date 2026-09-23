@@ -161,15 +161,17 @@ export default async function Home() {
         <div className="wa-rule-row">
           <span className="k">Safe by default</span>
           <p className="v">
-            Every payment has a guaranteed minimum. If the price moves too far while it is
-            being sent, it is cancelled and nobody is charged.
+            Every payment has a minimum amount of stock that the contract enforces. If the
+            price moves too far while it is being sent, the payment is cancelled and no USDT
+            leaves your wallet.
           </p>
         </div>
         <div className="wa-rule-row">
           <span className="k">Vesting grants</span>
           <p className="v">
-            Give someone stock that vests over years, held in an escrow the company cannot
-            take back — and make it irrevocable if you want.
+            Give someone stock that vests over time. It is bought on day one and held in an
+            escrow the company cannot spend, and what has vested is theirs. You can cancel the
+            part that has not vested — or give that up too, by making the grant irrevocable.
           </p>
         </div>
       </section>

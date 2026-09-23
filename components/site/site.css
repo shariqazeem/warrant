@@ -91,7 +91,7 @@
 .wa-site-foot {
   max-width: var(--measure-wide);
   margin: var(--s-10) auto 0;
-  padding: var(--s-6) var(--pad-x) var(--s-8);
+  padding: var(--s-6) var(--pad) var(--s-8);
   display: flex;
   flex-wrap: wrap;
   gap: var(--s-3) var(--s-5);

@@ -365,8 +365,9 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
           </p>
         ) : (
           <p className="wa-quote-waiting">
-            The stock is bought today and held in an escrow you cannot take back from. Fill
-            in the form to see exactly how much it will hold.
+            The stock is bought today and held in escrow. What vests is theirs; until you
+            make the grant irrevocable, you can cancel the part that has not vested. Fill in
+            the form to see exactly how much it will hold.
           </p>
         )}
       </aside>

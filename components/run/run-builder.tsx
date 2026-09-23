@@ -356,9 +356,9 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
           ) : null}
 
           <p className="wa-fine">
-            One signature pays everyone in a single transaction. Each payment has a
-            guaranteed minimum; if the price moves too far, the whole batch is cancelled and
-            nobody is charged.
+            One signature pays everyone in a single transaction. Each payment has a minimum
+            amount of stock that the contract enforces; if the price moves too far on any
+            line, the whole batch is cancelled and no USDT leaves your wallet.
           </p>
         </div>
       ) : null}

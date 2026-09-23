@@ -341,8 +341,23 @@
   }
 
   .wa-nav {
-    gap: var(--s-4);
+    gap: var(--s-3) var(--s-4);
     flex-wrap: wrap;
+  }
+
+  /* A phone has no ⌘K, and every page's own button is a thumb away. Without this the nav
+   * wrapped into three rows at 375px and pushed the headline below the fold. */
+  .wa-nav .wa-jump-hint,
+  .wa-nav > .wa-btn,
+  .wa-nav-spacer {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  /* The word on one line, the three doors on the next. */
+  .wa-nav-brand {
+    flex-basis: 100%;
   }
 }
 
