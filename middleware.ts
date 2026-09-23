@@ -19,7 +19,7 @@ const LIMITS = {
   // run at once, then refills at one ask every two seconds.
   action: {capacity: 120, perSecond: 0.5},
   // Pages that read the record or the chain: receipts, runs, grants, companies, share cards.
-  record: {capacity: 60, perSecond: 1},
+  record: {capacity: 120, perSecond: 2},
 } satisfies Record<string, Limit>;
 
 type Bucket = {tokens: number; at: number};
@@ -52,8 +52,12 @@ const RECORD = /^\/(receipt|grant)\/|^\/run\/[^/]+|^\/(@|%40|0x)|\/opengraph-ima
 
 export function middleware(req: NextRequest) {
   const isAction = req.method === "POST" && req.headers.has("next-action");
+  // A link prefetch renders only the page's loading shell, never its data, so it costs
+  // nothing worth counting — and counting it would spend a visitor's allowance on links
+  // they only scrolled past, so the one they then click gets a 429.
+  const isPrefetch = req.headers.get("next-router-prefetch") === "1";
   const path = req.nextUrl.pathname;
-  const kind = isAction ? "action" : RECORD.test(path) ? "record" : null;
+  const kind = isAction ? "action" : !isPrefetch && RECORD.test(path) ? "record" : null;
   if (!kind) return NextResponse.next();
 
   if (take(`${kind}:${visitor(req)}`, LIMITS[kind], Date.now())) return NextResponse.next();
