@@ -5,11 +5,12 @@
  * sealed, revoked, released — and a page should show what is true now, not what was
  * announced once. `grantCount()` then `grant(id)` is two reads and no cursor.
  */
-import {createPublicClient, erc20Abi, http} from "viem";
+import {BaseError, ContractFunctionRevertedError, createPublicClient, erc20Abi, http} from "viem";
 import {grantEscrowAbi} from "./payroll-abi";
 import {xLayer} from "./chain";
 import {assetByAddress} from "./assets";
 import {reasonFor} from "./db";
+import {dateUTC} from "./format";
 import {attempt, held, ok, type Outcome} from "./outcome";
 
 export type GrantState = "open" | "closed";
@@ -88,19 +89,48 @@ async function assetFacts(address: `0x${string}`) {
   }
 }
 
-/** One grant, with the live unit figures the contract alone can compute. */
-export function readGrant(id: number): Promise<Outcome<Grant>> {
+/** The contract refused the read with this custom error, rather than the endpoint failing. */
+function revertedWith(err: unknown, name: string): boolean {
+  if (!(err instanceof BaseError)) return false;
+  const reverted = err.walk((e) => e instanceof ContractFunctionRevertedError);
+  return reverted instanceof ContractFunctionRevertedError && reverted.data?.errorName === name;
+}
+
+/**
+ * A grant's id as it is written in a link: a whole number from 1, with no leading zero, so
+ * each grant has exactly one address. Anything else is not a grant, and is null.
+ */
+export function parseGrantId(raw: string): number | null {
+  if (!/^[1-9][0-9]{0,8}$/.test(raw)) return null;
+  return Number(raw);
+}
+
+/**
+ * One grant, or null when the escrow has never opened one with this id.
+ *
+ * The two are told apart by the contract itself: an id it has never used reverts with
+ * `NoSuchGrant`, which the public endpoint returns and viem names (checked against the live
+ * escrow on 23 Sep). Anything else — a throttle, a timeout — is a read that failed, and a
+ * page must say so rather than tell a visitor the grant does not exist.
+ */
+export function findGrant(id: number): Promise<Outcome<Grant | null>> {
   return attempt(`grant ${id}`, async () => {
     const escrow = escrowAddress();
     if (!escrow.ok) return escrow;
 
     const rpc = client();
-    const g = await rpc.readContract({
-      address: escrow.value,
-      abi: grantEscrowAbi,
-      functionName: "grant",
-      args: [BigInt(id)],
-    });
+    let g;
+    try {
+      g = await rpc.readContract({
+        address: escrow.value,
+        abi: grantEscrowAbi,
+        functionName: "grant",
+        args: [BigInt(id)],
+      });
+    } catch (err) {
+      if (revertedWith(err, "NoSuchGrant")) return ok(null);
+      throw err;
+    }
 
     const [heldUnits, releasableUnits] = await Promise.all([
       rpc.readContract({
@@ -150,6 +180,13 @@ export function readGrant(id: number): Promise<Outcome<Grant>> {
   });
 }
 
+/** One grant, with the live unit figures the contract alone can compute. */
+export async function readGrant(id: number): Promise<Outcome<Grant>> {
+  const found = await findGrant(id);
+  if (!found.ok) return found;
+  return found.value === null ? held(`There is no grant ${id}.`) : ok(found.value);
+}
+
 /**
  * Every grant, newest first. A hackathon-scale read: the contract has one counter and a
  * handful of grants, so this is honest and simple. When there are thousands it becomes an
@@ -171,4 +208,93 @@ export function readGrants(limit = 50): Promise<Outcome<Grant[]>> {
     }
     return ok(grants);
   });
+}
+
+/** Where a grant stands, in the words a page shows beside it. */
+export type Standing = {
+  kind: "closed" | "cancelled" | "fully-vested" | "not-started" | "before-cliff" | "vesting";
+  /** The chip. */
+  label: string;
+  /** What is true of it now, in plain sentences. Dates only; the figures sit in their rows. */
+  words: string;
+  /** Sealed: nobody can cancel it, including the company that opened it. */
+  irrevocable: boolean;
+};
+
+/**
+ * WHAT STATE A GRANT IS IN, from its terms on chain and the clock.
+ *
+ * The order matters. Closed and cancelled are facts the contract records and time cannot
+ * undo, so they are asked first; the schedule only speaks for a grant still running on it.
+ * "Cancelled" keeps the promise the contract makes: what had vested stays theirs.
+ */
+export function grantStanding(
+  g: Pick<Grant, "state" | "revoked" | "isSealed" | "start" | "cliffSeconds" | "durationSeconds">,
+  now: number,
+): Standing {
+  const irrevocable = g.isSealed;
+  const ends = g.start + g.durationSeconds;
+  const cliff = g.start + g.cliffSeconds;
+
+  if (g.state === "closed") {
+    return {
+      kind: "closed",
+      label: "Closed",
+      words: g.revoked
+        ? "Closed. It was cancelled, and everything that had vested by then was released to them."
+        : "Closed. It vested in full and everything was released to them.",
+      irrevocable,
+    };
+  }
+
+  if (g.revoked) {
+    return {
+      kind: "cancelled",
+      label: "Cancelled",
+      words:
+        "Cancelled by the company. What had vested by then stays theirs and can still be " +
+        "released to them; the rest went back to the company. Nothing more will vest.",
+      irrevocable,
+    };
+  }
+
+  // Only an unsealed grant with something still to vest can lose anything to a cancel.
+  const lock = irrevocable
+    ? " It is irrevocable: nobody can cancel it, including the company."
+    : now < ends
+      ? " The company can still cancel the part that has not vested yet."
+      : "";
+
+  if (now >= ends) {
+    return {
+      kind: "fully-vested",
+      label: "Fully vested",
+      words: `Fully vested on ${dateUTC(ends)}: all of it is theirs.${lock}`,
+      irrevocable,
+    };
+  }
+  if (now < g.start) {
+    return {
+      kind: "not-started",
+      label: "Not started",
+      words: `Vesting starts on ${dateUTC(g.start)} and ends on ${dateUTC(ends)}.${lock}`,
+      irrevocable,
+    };
+  }
+  if (now < cliff) {
+    return {
+      kind: "before-cliff",
+      label: "Vesting",
+      words:
+        `Vesting. Nothing can be released before the cliff on ${dateUTC(cliff)}, when ` +
+        `everything vested up to then becomes theirs at once.${lock}`,
+      irrevocable,
+    };
+  }
+  return {
+    kind: "vesting",
+    label: "Vesting",
+    words: `Vesting a little every second until it is fully vested on ${dateUTC(ends)}.${lock}`,
+    irrevocable,
+  };
 }

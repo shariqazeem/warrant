@@ -1,0 +1,18 @@
+/**
+ * parts.css — what the shared sheets add to receipt.css: an address that is short on screen
+ * and whole on paper, where there is no hover to reveal it. Nothing else is declared here.
+ */
+
+.wa-r-addr-full {
+  display: none;
+}
+
+@media print {
+  .wa-r-addr-short {
+    display: none;
+  }
+
+  .wa-r-addr-full {
+    display: inline;
+  }
+}
