@@ -1,0 +1,294 @@
+/**
+ * choice.css — /me, where a person chooses how they are paid: the questions as ruled rows,
+ * the share printed as a figure, the summary beside them. The public page's sections have
+ * their own sheet, record.css. Aliases only; every value comes from styles/tokens.css.
+ */
+
+/* ── /me: the frame ────────────────────────────────────────────────── */
+
+.wa-me {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.wa-me .wa-wallet {
+  margin-bottom: 0;
+}
+
+.wa-me-lead-note,
+.wa-me-reading {
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  color: var(--ink-muted);
+  max-width: 62ch;
+}
+
+/* ── the questions, as ruled rows ──────────────────────────────────── */
+
+.wa-me-q {
+  display: block;
+  padding: var(--s-5) 0;
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+
+.wa-me-q > * + * {
+  margin-top: var(--s-3);
+}
+
+/* Floated, so the legend sits in the fieldset's flow under the rule instead of on its
+ * border, where browsers otherwise draw it. */
+.wa-me-legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin: 0 0 var(--s-3);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.wa-me-legend + * {
+  clear: both;
+  margin-top: 0;
+}
+
+/* ── the share: a row of figures to pick from ──────────────────────── */
+
+.wa-me-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.wa-me-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.5rem;
+  padding: var(--s-2) var(--s-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--fs-body);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-1) var(--ease-out),
+    background var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out);
+}
+
+/* The radio itself is the control: kept in the tab order and read by a screen reader, just
+ * not drawn, because the whole figure is the target. */
+.wa-me-chip input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.wa-me-chip:hover {
+  border-color: var(--accent);
+}
+
+.wa-me-chip.is-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.wa-me-chip:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.wa-me-q[disabled] .wa-me-chip {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.wa-me-custom {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-1);
+  padding: var(--s-2) 0 var(--s-2) var(--s-2);
+  font-family: var(--font-mono);
+  color: var(--ink-muted);
+}
+
+.wa-me-custom .wa-input {
+  width: 4ch;
+  font-size: var(--fs-body);
+  text-align: right;
+  border-bottom: 1px solid var(--accent);
+}
+
+/* ── the stock: one ruled row each, the disclosure beside it ───────── */
+
+.wa-me-stocks {
+  border-top: 1px solid var(--border);
+}
+
+.wa-me-stock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.wa-me-stock:last-child {
+  border-bottom: none;
+}
+
+.wa-me-stock-pick {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  cursor: pointer;
+  font-size: var(--fs-body);
+  color: var(--ink);
+}
+
+.wa-me-stock-pick input,
+.wa-me-attest input {
+  accent-color: var(--accent);
+  flex: 0 0 auto;
+  transform: translateY(0.1em);
+}
+
+.wa-me-stock.is-on .wa-me-stock-name {
+  color: var(--accent-strong);
+}
+
+.wa-me-stock-sym {
+  color: var(--ink-muted);
+}
+
+.wa-me-stock .wa-assetnote {
+  padding-left: calc(1em + var(--s-3));
+}
+
+/* ── the statement ─────────────────────────────────────────────────── */
+
+.wa-me-attest {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  cursor: pointer;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--ink);
+}
+
+/* ── the summary beside the form ───────────────────────────────────── */
+
+/* The share is the figure on this page, so it is the largest thing on it. */
+.wa-me-share {
+  font-family: var(--font-mono);
+  font-size: var(--fs-units-sm);
+  line-height: 1.1;
+  letter-spacing: var(--tracking-h1);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.wa-me-rest {
+  margin-top: var(--s-2);
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  color: var(--ink-muted);
+}
+
+.wa-me-example {
+  margin-top: var(--s-4);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  color: var(--ink);
+}
+
+.wa-me-example .k {
+  display: block;
+  margin-bottom: var(--s-1);
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+}
+
+.wa-me-fields dd {
+  font-size: var(--fs-caption);
+  line-height: 1.8;
+  color: var(--ink-muted);
+}
+
+.wa-me-fields .wa-mono {
+  color: var(--ink);
+}
+
+/* ── the choice standing ───────────────────────────────────────────── */
+
+.wa-me-current {
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--border);
+  max-width: var(--measure);
+}
+
+.wa-me-saved {
+  margin-bottom: var(--s-5);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--ink);
+  max-width: 56ch;
+}
+
+.wa-me-now {
+  font-size: var(--fs-lead);
+  line-height: var(--lh-lead);
+  color: var(--ink);
+  max-width: 44ch;
+}
+
+.wa-me-now-share {
+  font-family: var(--font-mono);
+  font-size: var(--fs-units-sm);
+  line-height: 1;
+  letter-spacing: var(--tracking-h2);
+  font-variant-numeric: tabular-nums;
+  margin-inline-end: var(--s-1);
+}
+
+.wa-me-when {
+  margin-top: var(--s-2);
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+}
+
+.wa-me-note {
+  margin-top: var(--s-3);
+}
+
+.wa-me-fine {
+  margin-top: var(--s-4);
+  max-width: 56ch;
+}
+
+.wa-me .wa-actions {
+  margin-top: var(--s-5);
+}
+
+@media (max-width: 520px) {
+  .wa-me-chip {
+    min-width: 3.75rem;
+    padding: var(--s-2) var(--s-3);
+  }
+}
