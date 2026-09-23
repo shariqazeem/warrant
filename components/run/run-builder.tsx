@@ -3,7 +3,7 @@
 import {AlertCircle, Download, FileText, Loader2} from "lucide-react";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
-import {buildPayment, type BuiltLine, type BuiltPayment} from "@/app/pay/actions";
+import {buildPayment, type BuiltLine, type BuiltPayment, readChoices, type ChoiceView} from "@/app/pay/actions";
 import {ASSETS, defaultAsset} from "@/lib/assets";
 import {MAX_RUN_LINES, RUN_TEMPLATE, parseRunFile, type ParsedRow} from "@/lib/csv";
 import {short, unitsFromRaw, usdt} from "@/lib/format";
@@ -19,9 +19,20 @@ import {usePay} from "@/components/pay/use-pay";
 import {AssetNote} from "@/components/pay/asset-note";
 import "@/components/pay/pay.css";
 import "./run.css";
+import {zeroAddress} from "viem";
 
 /** One priced line. `impact` is the aggregator's price impact for it, or null if unsaid. */
-type Built = {row: ParsedRow; line: BuiltLine; expectedOut: string; impact: number | null};
+type Built = {
+  row: ParsedRow;
+  line: BuiltLine;
+  expectedOut: string;
+  impact: number | null;
+  decidedBy: BuiltPayment["decidedBy"];
+  tooSmall: boolean;
+};
+
+/** For people who haven't chosen: all in dollars, or one stock the payer picks. */
+const DOLLARS = "dollars";
 
 /**
  * Priced lines, and the lines they were priced FOR. `sig` is the run's inputs at the
@@ -44,7 +55,13 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
   const wallet = useWallet();
 
   const [text, setText] = useState("");
-  const [asset, setAsset] = useState(defaultAsset().address);
+  // FOR PEOPLE WHO HAVEN'T CHOSEN ONLY. Everyone who has signed a choice is paid their way,
+  // whatever this says; by default the rest are paid in dollars, since Warrant never decides
+  // for someone who hasn't.
+  const [fallback, setFallback] = useState<string>(DOLLARS);
+  const asset = fallback === DOLLARS ? defaultAsset().address : fallback;
+  /** Each person's signed choice, looked up once their address is whole. */
+  const [choices, setChoices] = useState<Record<string, ChoiceView | null>>({});
   const [built, setBuilt] = useState<BuiltRun | null>(null);
   /** Ticks so the age of the prices stays true on screen. */
   const [, setTick] = useState(0);
@@ -56,6 +73,8 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
 
   const {pay, phase, why, note, reset} = usePay(payroll);
   const chosen = ASSETS.find((a) => a.address === asset) ?? defaultAsset();
+  const symbolOf = (address: string) =>
+    ASSETS.find((a) => a.address.toLowerCase() === address.toLowerCase()) ?? null;
 
   const parsed = useMemo(() => parseRunFile(text, asset), [text, asset]);
 
@@ -66,12 +85,30 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
   const signature = useMemo(
     () =>
       JSON.stringify([
-        asset,
+        fallback,
         parsed.good.map((r) => [r.lineNumber, r.recipient, r.usd, r.cashUsd, r.reason]),
       ]),
-    [asset, parsed.good],
+    [fallback, parsed.good],
   );
   const current = built?.sig === signature ? built : null;
+
+  // Everyone's choice, read as soon as the lines are whole — before anything is priced, so
+  // the payer sees who chose what.
+  const people = useMemo(() => parsed.good.map((r) => r.recipient.toLowerCase()).sort().join(","), [parsed.good]);
+  useEffect(() => {
+    const list = people ? people.split(",") : [];
+    if (list.length === 0) return;
+    let live = true;
+    readChoices(list)
+      .then((m) => {
+        if (live) setChoices((c) => ({...c, ...m}));
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [people]);
+  const choiceOf = (recipient: string) => choices[recipient.toLowerCase()];
 
   useTxToast(phase === "idle" ? "idle" : phase, `Pay ${parsed.good.length} ${parsed.good.length === 1 ? "person" : "people"}`, {
     detail: why ?? undefined,
@@ -124,7 +161,8 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
         res = await buildPayment({
           recipient: row.recipient,
           usd: row.usd,
-          cashUsd: row.cashUsd,
+          // Used only if this person hasn't chosen: the server follows their choice if they have.
+          cashUsd: fallback === DOLLARS ? row.usd : row.cashUsd,
           asset,
           reason: row.reason,
         });
@@ -145,13 +183,15 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
         line: res.value.line,
         expectedOut: res.value.expectedOut,
         impact: res.value.priceImpactPercent,
+        decidedBy: res.value.decidedBy,
+        tooSmall: res.value.tooSmall,
       });
       setBuildDone(out.length);
     }
 
     setBuilt({sig, lines: out, at: firstAskedAt ?? Date.now()});
     setBuilding(false);
-  }, [parsed.good, parsed.tooMany, asset, signature]);
+  }, [parsed.good, parsed.tooMany, asset, fallback, signature]);
 
   const stopBuilding = useCallback(() => {
     seq.current++;
@@ -181,7 +221,37 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
   // old — the gap between pricing a run and connecting a wallet is exactly where minutes
   // go, and a run that reverts in front of an audience is worth avoiding.
   const age = builtAt === null ? null : freshness(builtAt);
-  const totalOut = current?.lines.reduce((sum, b) => sum + BigInt(b.expectedOut), 0n) ?? 0n;
+  // What the run delivers, stock by stock, and the dollars: never units of two stocks added.
+  const byStock = new Map<string, bigint>();
+  let dollars = 0n;
+  for (const b of current?.lines ?? []) {
+    dollars += BigInt(b.line.cashAmount);
+    if (b.line.asset !== zeroAddress) {
+      byStock.set(b.line.asset.toLowerCase(), (byStock.get(b.line.asset.toLowerCase()) ?? 0n) + BigInt(b.expectedOut));
+    }
+  }
+  const deliveredWords = [
+    ...[...byStock.entries()].map(([a, units]) => {
+      const s = symbolOf(a);
+      return `${unitsFromRaw(units, s?.decimals ?? 18)} ${s?.symbol ?? "units"}`;
+    }),
+    ...(dollars > 0n ? [`${usdt(dollars)} in dollars`] : []),
+  ];
+  const chose = (current?.lines ?? []).filter((b) => b.decidedBy === "their-choice").length;
+
+  function getsText(b: Built): string {
+    if (b.line.asset === zeroAddress) return `${usdt(BigInt(b.line.cashAmount))} USDT`;
+    const s = symbolOf(b.line.asset);
+    const units = `${unitsFromRaw(BigInt(b.expectedOut), s?.decimals ?? 18)} ${s?.symbol ?? ""}`;
+    return BigInt(b.line.cashAmount) > 0n ? `${units} + ${usdt(BigInt(b.line.cashAmount))}` : units;
+  }
+
+  function choiceChip(c: ChoiceView | null | undefined): string {
+    if (c === undefined) return "…";
+    if (c === null) return fallback === DOLLARS ? "not chosen · dollars" : `not chosen · ${chosen.symbol}`;
+    if (c.stockBps === 0 || !c.asset) return "chose dollars";
+    return `chose ${Number((c.stockBps / 100).toFixed(2))}% ${c.symbol ?? ""}`;
+  }
   // The run's price impact is its worst line's. A line paid all in USDT swaps nothing and
   // has none; if any line that swaps went unmeasured, the run's figure is not claimed.
   const worstImpact = worstPriceImpact(
@@ -262,27 +332,32 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
 
       {/* ── the asset ────────────────────────────────────────────── */}
       <label className="wa-field">
-        <span className="k">Everyone receives</span>
+        <span className="k">Who hasn&rsquo;t chosen gets</span>
         <span className="wa-field-v">
           <select
             className="wa-input"
-            value={asset}
+            value={fallback}
             disabled={locked}
             onChange={(e) => {
-              setAsset(e.target.value as typeof asset);
+              setFallback(e.target.value);
               setBuilt(null);
               setBuildWhy(null);
             }}
           >
+            <option value={DOLLARS}>All in dollars (USDT)</option>
             {ASSETS.map((a) => (
               <option key={a.address} value={a.address}>
-                {a.name} ({a.symbol})
+                All in {a.name} ({a.symbol})
               </option>
             ))}
           </select>
+          <span className="wa-field-help">
+            Everyone who has chosen how they&rsquo;re paid gets exactly their choice; this only
+            covers people who haven&rsquo;t yet. They can choose at warrant.world/me.
+          </span>
           {/* What the issuer can do, and who may hold it, on the row where it is chosen —
               the same note /pay and /grants carry. */}
-          <AssetNote symbol={chosen.symbol} name={chosen.name} />
+          {fallback === DOLLARS ? null : <AssetNote symbol={chosen.symbol} name={chosen.name} />}
         </span>
       </label>
 
@@ -310,11 +385,8 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
                       <span className="wa-line-amt wa-mono">
                         {usdt(row.verdict.value.total)}
                       </span>
-                      <span className="wa-line-gets wa-mono">
-                        {route
-                          ? `${unitsFromRaw(BigInt(route.expectedOut), chosen.decimals)} ${chosen.symbol}`
-                          : ""}
-                      </span>
+                      <span className="wa-line-choice">{choiceChip(choiceOf(row.recipient))}</span>
+                      <span className="wa-line-gets wa-mono">{route ? getsText(route) : ""}</span>
                     </>
                   ) : (
                     <span className="wa-line-refusal">
@@ -343,9 +415,12 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
               <p className="wa-run-out">
                 Together they receive{" "}
                 <strong className="wa-mono">
-                  {unitsFromRaw(totalOut, chosen.decimals)} {chosen.symbol}
+                  {deliveredWords.length > 1
+                    ? `${deliveredWords.slice(0, -1).join(", ")} and ${deliveredWords.at(-1)}`
+                    : (deliveredWords[0] ?? "")}
                 </strong>
-                , each straight into their own wallet.
+                , each straight into their own wallet. {chose} of {current.lines.length}{" "}
+                {current.lines.length === 1 ? "person is" : "people are"} paid their own way.
               </p>
             ) : null}
             {current && worstImpact !== null ? (

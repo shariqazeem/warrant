@@ -3,14 +3,14 @@
 import {ChevronDown, Loader2} from "lucide-react";
 import {useCallback, useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
-import {buildPayment, type BuiltPayment} from "@/app/pay/actions";
+import {buildPayment, type BuiltPayment, readChoices, type ChoiceView} from "@/app/pay/actions";
 import {syncFromChain} from "@/app/sync/actions";
 import {ASSETS, defaultAsset} from "@/lib/assets";
 import {STABLE} from "@/lib/chain";
 import {parseMoney} from "@/lib/csv";
 import {held, type Outcome} from "@/lib/outcome";
 import {checkLine, impactText} from "@/lib/payment";
-import {settledUnitPrice, unitsFromRaw, usdt} from "@/lib/format";
+import {settledUnitPrice, unitsFromRaw, usdt, dateUTC} from "@/lib/format";
 import {singlePayRunId} from "@/lib/run-id";
 import {QUOTE_FRESH_MS, QUOTE_LOST, freshness, quoteAge} from "@/lib/quote-age";
 import {WalletPanel} from "@/components/wallet/wallet-panel";
@@ -19,6 +19,7 @@ import {useTxToast} from "@/components/toast/use-tx-toast";
 import {AssetNote} from "./asset-note";
 import {usePay} from "./use-pay";
 import "./pay.css";
+import {zeroAddress} from "viem";
 
 /**
  * PAY ONE PERSON.
@@ -33,6 +34,16 @@ import "./pay.css";
  * minimum is enforced by the contract: below it the payment is cancelled and no USDT
  * leaves the payer's wallet.
  */
+/** A signed choice in plain words, the way a payer reads it beside the address. */
+function choiceSentence(c: ChoiceView): string {
+  if (c.stockBps === 0 || !c.asset) return "All in dollars (USDT), no stock.";
+  const pct = `${Number((c.stockBps / 100).toFixed(2))}%`;
+  const name = ASSETS.find((a) => a.address.toLowerCase() === c.asset!.toLowerCase())?.name ?? c.symbol ?? "stock";
+  return c.stockBps === 10_000
+    ? `All of each payment into ${name} (${c.symbol}).`
+    : `${pct} of each payment into ${name} (${c.symbol}), the rest in dollars.`;
+}
+
 export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
   const router = useRouter();
   const wallet = useWallet();
@@ -50,11 +61,33 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
   const [quoteLost, setQuoteLost] = useState(false);
   const [quoting, setQuoting] = useState(false);
   const [refreshAt, setRefreshAt] = useState(0);
+  /** The person's signed choice: undefined until looked up, null when they have none. */
+  const [their, setTheir] = useState<ChoiceView | null | undefined>(undefined);
   const [, setTick] = useState(0);
 
   const {pay, phase, why, note, reset} = usePay(payroll);
 
   const chosen = ASSETS.find((a) => a.address === asset) ?? defaultAsset();
+
+  // WHO DECIDES THE SPLIT. Look up the person as soon as the address is whole: if they have
+  // signed a choice, it is what they get, and the stock picker below is not the payer's to use.
+  useEffect(() => {
+    if (!/^0x[0-9a-fA-F]{40}$/.test(recipient)) {
+      setTheir(undefined);
+      return;
+    }
+    let live = true;
+    readChoices([recipient])
+      .then((m) => {
+        if (live) setTheir(m[recipient.toLowerCase()] ?? null);
+      })
+      .catch(() => {
+        if (live) setTheir(null);
+      });
+    return () => {
+      live = false;
+    };
+  }, [recipient]);
   // Read the way a file's amounts are read: a comma only between thousands, so "2,50" is
   // refused rather than becoming $250.
   const amountRead = amount.trim() === "" ? null : parseMoney(amount);
@@ -92,7 +125,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
   // stale instantly; a timed refresh does not — the old price stays on screen, and the
   // button stays live, until the new one lands. Only age can retire a quote whose inputs
   // still match, and `age` below is what does that.
-  const signature = JSON.stringify([recipient, usd, cashUsd, asset, reason.trim()]);
+  const signature = JSON.stringify([recipient, usd, cashUsd, asset, reason.trim(), their?.issuedAt ?? null]);
   const quote = quoted?.sig === signature ? quoted.value : null;
   const age = quoted && quote ? freshness(quoted.at) : null;
 
@@ -210,12 +243,18 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
           ? "Preparing…"
           : (blocker ?? `Pay ${usdt(total)}`);
 
+  // What this payment actually buys: their choice when they made one, the picker otherwise.
+  const bought =
+    quote && quote.asset !== zeroAddress
+      ? (ASSETS.find((a) => a.address.toLowerCase() === quote.asset.toLowerCase()) ?? chosen)
+      : chosen;
+
   const price =
     quote && quote.expectedOut !== "0"
       ? settledUnitPrice(
           BigInt(quote.line.stableAmount) - BigInt(quote.line.cashAmount),
           BigInt(quote.expectedOut),
-          chosen.decimals,
+          bought.decimals,
         )
       : null;
 
@@ -261,24 +300,49 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
           </span>
         </label>
 
-        <label className="wa-field">
-          <span className="k">They receive</span>
-          <span className="wa-field-v">
-            <select
-              className="wa-input"
-              value={asset}
-              disabled={locked}
-              onChange={(e) => setAsset(e.target.value as typeof asset)}
-            >
-              {ASSETS.map((a) => (
-                <option key={a.address} value={a.address}>
-                  {a.name} ({a.symbol})
-                </option>
-              ))}
-            </select>
-            <AssetNote symbol={chosen.symbol} name={chosen.name} />
-          </span>
-        </label>
+        {their ? (
+          <div className="wa-field">
+            <span className="k">They chose</span>
+            <span className="wa-field-v">
+              <span className="wa-their-choice">{choiceSentence(their)}</span>
+              <span className="wa-field-help">
+                Signed by them on {dateUTC(their.issuedAt)}. Every payment to them follows it, so
+                there is nothing for you to pick.
+              </span>
+              {their.asset ? (
+                <AssetNote
+                  symbol={their.symbol ?? ""}
+                  name={ASSETS.find((a) => a.address.toLowerCase() === their.asset!.toLowerCase())?.name ?? ""}
+                />
+              ) : null}
+            </span>
+          </div>
+        ) : (
+          <label className="wa-field">
+            <span className="k">They receive</span>
+            <span className="wa-field-v">
+              <select
+                className="wa-input"
+                value={asset}
+                disabled={locked}
+                onChange={(e) => setAsset(e.target.value as typeof asset)}
+              >
+                {ASSETS.map((a) => (
+                  <option key={a.address} value={a.address}>
+                    {a.name} ({a.symbol})
+                  </option>
+                ))}
+              </select>
+              {their === null ? (
+                <span className="wa-field-help">
+                  They haven&rsquo;t chosen how they&rsquo;re paid yet, so you decide for this
+                  payment. They can choose any time at warrant.world/me.
+                </span>
+              ) : null}
+              <AssetNote symbol={chosen.symbol} name={chosen.name} />
+            </span>
+          </label>
+        )}
 
         <label className="wa-field">
           <span className="k">Note</span>
@@ -295,6 +359,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
           </span>
         </label>
 
+        {their ? null : (
         <div className="wa-fold">
           <button
             type="button"
@@ -324,6 +389,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
             </label>
           ) : null}
         </div>
+        )}
 
         <div className="wa-pay-act">
           <button
@@ -363,7 +429,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
             <dd className="wa-mono">
               {quote && quote.expectedOut !== "0" ? (
                 <>
-                  {unitsFromRaw(BigInt(quote.expectedOut), chosen.decimals)} <span className="u">{chosen.symbol}</span>
+                  {unitsFromRaw(BigInt(quote.expectedOut), bought.decimals)} <span className="u">{bought.symbol}</span>
                 </>
               ) : quote ? (
                 <>
@@ -378,6 +444,15 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
             ) : null}
           </div>
         </dl>
+        {quote ? (
+          <p className="wa-quote-aside wa-whose">
+            {quote.tooSmall
+              ? "Their stock share of this payment is under $0.50, too small to buy, so it is paid in dollars."
+              : quote.decidedBy === "their-choice"
+                ? "Split the way they chose."
+                : "Split the way you chose, because they haven't chosen yet."}
+          </p>
+        ) : null}
 
         {lineWhy ? (
           <p className="wa-refusal">{lineWhy}</p>
@@ -399,7 +474,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
           <dl className="wa-quote-rows">
             <div>
               <dt>Price</dt>
-              <dd>{price === null ? "not available" : `1 ${chosen.symbol} = $${price.toFixed(2)}`}</dd>
+              <dd>{price === null ? "not available" : `1 ${bought.symbol} = $${price.toFixed(2)}`}</dd>
             </div>
             {/* The aggregator's own figure. When it gives none, the row is left out rather
                 than showing a zero it never said. */}
@@ -412,7 +487,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
             <div>
               <dt>At least</dt>
               <dd>
-                {unitsFromRaw(BigInt(quote.minOut), chosen.decimals)} {chosen.symbol} — the
+                {unitsFromRaw(BigInt(quote.minOut), bought.decimals)} {bought.symbol} — the
                 contract refuses less
                 <span className="wa-quote-aside">
                   If the price moves and they would get less, the payment is cancelled and no
@@ -457,7 +532,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
         ) : null}
 
         <p className="wa-quote-foot">
-          {STABLE.symbol} and {chosen.symbol} on X Layer. Network fees are paid in OKB and
+          {STABLE.symbol} and {bought.symbol} on X Layer. Network fees are paid in OKB and
           are typically a fraction of a cent.
         </p>
       </aside>

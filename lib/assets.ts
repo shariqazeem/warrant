@@ -215,6 +215,9 @@ export const ISSUER_NOTE =
  * it. Source: xStocks' published FAQ (support.kraken.com/articles/xstocks-faq), read
  * 2026-09-23: "not accessible in the US (or to US persons), Canada, UK, or Australia."
  */
+export const ELIGIBILITY_FACT = "Not available to US persons, or in Canada, the UK or Australia.";
+
+/** The same, as a reminder to the payer, who chooses who receives it. */
 export const ELIGIBILITY_NOTE =
   "Not available to US persons, or in Canada, the UK or Australia — check that the " +
   "person you pay may hold it.";

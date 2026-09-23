@@ -400,20 +400,13 @@ select.wa-input {
   color: var(--ink-faint);
 }
 
-.wa-assetnote {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  font-size: var(--fs-caption);
-}
 
-.wa-assetnote .wa-linkish {
-  align-self: flex-start;
-  font-size: var(--fs-caption);
+/* Their signed choice, where a payer would otherwise pick a stock. */
+.wa-their-choice {
+  display: block;
+  color: var(--ink);
+  font-weight: 500;
 }
-
-.wa-assetnote-body {
-  color: var(--ink-muted);
-  line-height: var(--lh-body);
-  max-width: 56ch;
+.wa-whose {
+  margin-top: var(--s-3);
 }

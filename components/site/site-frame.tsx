@@ -18,6 +18,7 @@ export const DOORS = [
   {href: "/pay", label: "Pay someone"},
   {href: "/run", label: "Payroll"},
   {href: "/grants", label: "Vesting grants"},
+  {href: "/me", label: "How you get paid"},
 ] as const;
 
 export function SiteNav() {

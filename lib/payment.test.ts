@@ -318,3 +318,25 @@ describe("resolveSplit: whose split a line follows", () => {
     }
   });
 });
+
+describe("two copies of the split: resolveSplit and splitByChoice", () => {
+  // lib/choice.ts splits for the person's own page; lib/payment.ts splits the line that is
+  // actually paid. They must never disagree about what a choice means.
+  it("agree on every choice above the smallest stock purchase", async () => {
+    const {splitByChoice} = await import("./choice");
+    const SPYX = "0x90a2a4c76b5d8c0bc892a69ea28aa775a8f2dd48" as const;
+    for (const total of [500_000n, 1_000_000n, 7_777_777n, 25_000_000n, 123_456_789n]) {
+      for (const bps of [0, 1, 999, 2500, 3333, 5000, 7500, 9999, 10_000]) {
+        const mine = resolveSplit(total, {stockBps: bps, asset: bps > 0 ? SPYX : null}, {cash: total, asset: SPYX});
+        const theirs = splitByChoice(total, bps);
+        if (!mine.tooSmall) {
+          expect(mine.stock).toBe(theirs.stock);
+          expect(mine.cash).toBe(theirs.cash);
+        } else {
+          expect(theirs.stock).toBeLessThan(MIN_STOCK);
+          expect(mine.cash).toBe(total);
+        }
+      }
+    }
+  });
+});

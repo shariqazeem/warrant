@@ -17,6 +17,7 @@ const PAGES: Destination[] = [
   {kind: "page", href: "/pay", label: "Pay one person", hint: "Address, amount, reason"},
   {kind: "page", href: "/run", label: "Pay a run", hint: "A file of names, one signature"},
   {kind: "page", href: "/grants", label: "Grants", hint: "Ownership that vests"},
+  {kind: "page", href: "/me", label: "How you get paid", hint: "Choose how much of your pay becomes stock"},
   {kind: "page", href: "/", label: "The front door", hint: "The tape, and what the rail has done"},
 ];
 

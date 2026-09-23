@@ -166,7 +166,7 @@ describe("the rules a choice must meet", () => {
   it("refuses a stock Warrant does not pay in", () => {
     const got = checkChoice(stockChoice(person, {asset: "0x1111111111111111111111111111111111111111"}));
     expect(got.ok).toBe(false);
-    if (!got.ok) expect(got.why).toContain("not one of them");
+    if (!got.ok) expect(got.why).toMatch(/not one of the \d+ stocks Warrant lists/);
   });
 
   it("refuses the stablecoin as the stock", () => {

@@ -59,7 +59,7 @@ export function TheirChoice({choice}: {choice: StoredChoice}) {
       </p>
       {stock ? (
         <div className="wa-their-note">
-          <AssetNote symbol={stock.symbol} name={stock.name} />
+          <AssetNote symbol={stock.symbol} name={stock.name} audience="anyone" />
         </div>
       ) : null}
 

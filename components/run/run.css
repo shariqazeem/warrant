@@ -77,7 +77,8 @@
 
 .wa-line {
   display: grid;
-  grid-template-columns: 2rem 9rem minmax(0, 1fr) 6rem 9rem;
+  /* number · who · why · amount · their choice · what they get */
+  grid-template-columns: 2rem 9rem minmax(0, 1fr) 6rem 9rem 12rem;
   gap: var(--s-4);
   align-items: baseline;
   padding: var(--s-3) 0;
@@ -112,6 +113,12 @@
 .wa-line-gets {
   text-align: right;
   color: var(--ok);
+}
+
+/* Whose split the line follows: the person's own choice, or "not chosen". */
+.wa-line-choice {
+  color: var(--ink-muted);
+  font-size: var(--fs-caption);
 }
 
 /* A line that will not pay is shown IN PLACE, with the rule it broke. */
@@ -184,7 +191,8 @@
     font-size: var(--fs-caption);
   }
 
-  .wa-line-gets {
+  .wa-line-gets,
+  .wa-line-choice {
     grid-column: 2 / -1;
     text-align: left;
   }

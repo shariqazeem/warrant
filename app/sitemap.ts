@@ -10,7 +10,7 @@ import {siteUrl} from "@/lib/site";
  */
 const SITE_URL = siteUrl();
 
-const DOORS = ["/", "/pay", "/run", "/grants"] as const;
+const DOORS = ["/", "/pay", "/run", "/grants", "/me"] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return DOORS.map((path) => ({url: new URL(path, SITE_URL).toString()}));

@@ -270,7 +270,7 @@ export function ChoiceForm() {
           <p className="wa-me-when">Signed {stampUTC(current.issuedAt)}</p>
           {stock ? (
             <div className="wa-me-note">
-              <AssetNote symbol={stock.symbol} name={stock.name} />
+              <AssetNote symbol={stock.symbol} name={stock.name} audience="anyone" />
             </div>
           ) : null}
           <div className="wa-actions">
@@ -383,7 +383,7 @@ export function ChoiceForm() {
                       <span className="wa-me-stock-name">{a.name}</span>
                       <span className="wa-me-stock-sym wa-mono">{a.symbol}</span>
                     </label>
-                    <AssetNote symbol={a.symbol} name={a.name} />
+                    <AssetNote symbol={a.symbol} name={a.name} audience="anyone" />
                   </div>
                 ))}
               </div>
