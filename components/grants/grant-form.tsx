@@ -3,14 +3,15 @@
 import {ChevronDown, Loader2} from "lucide-react";
 import {useCallback, useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
-import {useAccount} from "wagmi";
 import {buildGrant, type BuiltGrant} from "@/app/grants/actions";
 import {MAX_TIP_BPS} from "@/lib/grant-terms";
-import {ASSETS, ISSUER_NOTE, defaultAsset} from "@/lib/assets";
+import {ASSETS, defaultAsset} from "@/lib/assets";
+import {AssetNote} from "@/components/pay/asset-note";
 import {STABLE} from "@/lib/chain";
 import {settledUnitPrice, unitsFromRaw, usdt} from "@/lib/format";
 import {humanDuration} from "@/lib/schedule";
-import {Connect} from "@/components/wallet/connect";
+import {WalletPanel} from "@/components/wallet/wallet-panel";
+import {useWallet} from "@/components/wallet/use-wallet";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {useOpenGrant} from "./use-open-grant";
 import "@/components/pay/pay.css";
@@ -27,7 +28,7 @@ const TERMS = [
 ] as const;
 
 const CLIFFS = [
-  {label: "No cliff", seconds: 0},
+  {label: "No cliff — starts vesting now", seconds: 0},
   {label: "3 months", seconds: 90 * DAY},
   {label: "6 months", seconds: 180 * DAY},
   {label: "1 year", seconds: 365 * DAY},
@@ -42,7 +43,7 @@ const CLIFFS = [
  */
 export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
   const router = useRouter();
-  const {isConnected} = useAccount();
+  const wallet = useWallet();
 
   const [beneficiary, setBeneficiary] = useState("");
   const [amount, setAmount] = useState("");
@@ -137,42 +138,47 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
           void send();
         }}
       >
+        <WalletPanel need={quote ? BigInt(quote.terms.stableAmount) : undefined} />
+
         <label className="wa-field">
-          <span className="k">To</span>
+          <span className="k">Their wallet</span>
           <input
             className="wa-input wa-mono"
             value={beneficiary}
             onChange={(e) => setBeneficiary(e.target.value.trim())}
-            placeholder="0x…"
+            placeholder="0x… their X Layer address"
             spellCheck={false}
             autoComplete="off"
           />
         </label>
 
         <label className="wa-field">
-          <span className="k">Worth</span>
+          <span className="k">Grant value</span>
           <span className="wa-money">
             <span className="wa-money-sign">$</span>
             <input
               className="wa-input is-amount"
               value={amount}
               onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
-              placeholder="12000"
+              placeholder="0"
               inputMode="decimal"
             />
-            <span className="wa-money-unit">of {chosen.symbol}, bought now</span>
+            <span className="wa-money-unit">in USDT, turned into {chosen.symbol} today</span>
           </span>
         </label>
 
         <label className="wa-field">
-          <span className="k">In what</span>
-          <select className="wa-input" value={asset} onChange={(e) => setAsset(e.target.value as typeof asset)}>
-            {ASSETS.map((a) => (
-              <option key={a.address} value={a.address}>
-                {a.symbol} — {a.name}
-              </option>
-            ))}
-          </select>
+          <span className="k">They receive</span>
+          <span className="wa-field-v">
+            <select className="wa-input" value={asset} onChange={(e) => setAsset(e.target.value as typeof asset)}>
+              {ASSETS.map((a) => (
+                <option key={a.address} value={a.address}>
+                  {a.name} ({a.symbol})
+                </option>
+              ))}
+            </select>
+            <AssetNote symbol={chosen.symbol} name={chosen.name} />
+          </span>
         </label>
 
         <label className="wa-field">
@@ -191,7 +197,7 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
         </label>
 
         <label className="wa-field">
-          <span className="k">With a cliff of</span>
+          <span className="k">Nothing vests before</span>
           <select className="wa-input" value={cliffSeconds} onChange={(e) => setCliff(Number(e.target.value))}>
             {CLIFFS.filter((c) => c.seconds <= durationSeconds).map((c) => (
               <option key={c.seconds} value={c.seconds}>
@@ -202,14 +208,17 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
         </label>
 
         <label className="wa-field">
-          <span className="k">Why</span>
-          <input
-            className="wa-input"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Founding engineer, four year grant"
-            maxLength={200}
-          />
+          <span className="k">Note</span>
+          <span className="wa-field-v">
+            <input
+              className="wa-input"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Founding engineer, four year grant"
+              maxLength={200}
+            />
+            <span className="wa-field-help">Shown on the grant. Required.</span>
+          </span>
         </label>
 
         <div className="wa-fold">
@@ -220,12 +229,12 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
             onClick={() => setKeeperOpen((v) => !v)}
           >
             <ChevronDown size={14} strokeWidth={2} aria-hidden className={keeperOpen ? "is-open" : ""} />
-            The keeper&rsquo;s share
+            Automatic release
           </button>
           {keeperOpen ? (
             <>
               <label className="wa-field is-nested">
-                <span className="k">Of each release</span>
+                <span className="k">Release fee</span>
                 <span className="wa-money">
                   <input
                     className="wa-input is-amount"
@@ -244,30 +253,51 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
                 </span>
               </label>
               <p className="wa-quote-aside" style={{marginTop: "var(--s-3)"}}>
-                Anyone may release what is due on this grant, and whoever does is paid this
-                share of it. That is what makes the grant vest whether or not anyone
-                remembers. The beneficiary pays nothing to release it themselves, and the
-                total ever paid to keepers cannot exceed this share of the grant.
+                Anyone can release what is due on this grant and earns this small fee for
+                doing it — so it pays out on schedule even if nobody remembers. The
+                recipient pays nothing when they claim it themselves, and the fees can never
+                add up to more than this share of the grant.
               </p>
             </>
           ) : null}
         </div>
 
         <div className="wa-pay-act">
-          {isConnected ? (
-            <button type="submit" className="wa-btn is-primary" disabled={!quote || busy}>
-              {busy ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
-              {phase === "signing"
-                ? "Waiting for your wallet"
-                : phase === "confirming"
-                  ? "Confirming"
-                  : quote
-                    ? `Open a ${humanDuration(durationSeconds)} grant, ${usdt(BigInt(quote.terms.stableAmount))}`
-                    : "Open the grant"}
-            </button>
-          ) : (
-            <Connect />
-          )}
+          {(() => {
+            const blocker =
+              wallet.status === "disconnected" || wallet.status === "connecting"
+                ? "Connect a wallet to create a grant"
+                : wallet.status === "wrong-chain"
+                  ? "Switch to X Layer to continue"
+                  : beneficiary.length === 0
+                    ? "Add their wallet address"
+                    : !(usd > 0)
+                      ? "Enter the grant value"
+                      : reason.trim().length === 0
+                        ? "Add a note"
+                        : quoteWhy
+                          ? "Fix the problem above"
+                          : !quote
+                            ? "Getting the price…"
+                            : wallet.usdt !== undefined && wallet.usdt < BigInt(quote.terms.stableAmount)
+                              ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
+                              : null;
+            return (
+              <button
+                type="submit"
+                className={`wa-btn is-primary is-wide${blocker ? " is-blocked" : ""}`}
+                disabled={Boolean(blocker) || busy}
+              >
+                {busy ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
+                {phase === "signing"
+                  ? "Confirm in your wallet…"
+                  : phase === "confirming"
+                    ? "Creating the grant…"
+                    : (blocker ??
+                      `Create a ${humanDuration(durationSeconds)} grant · ${usdt(BigInt(quote!.terms.stableAmount))}`)}
+              </button>
+            );
+          })()}
           {phase === "failed" && why ? (
             <p className="wa-refusal">
               {why}{" "}
@@ -284,32 +314,33 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
           <p className="wa-refusal">{quoteWhy}</p>
         ) : quote ? (
           <>
-            <p className="wa-quote-lead">The escrow buys and holds</p>
+            <p className="wa-quote-lead">Held for them in escrow</p>
             <p className="wa-units">
               {unitsFromRaw(BigInt(quote.expectedUnits), chosen.decimals)}
               <span className="sym">{chosen.symbol}</span>
             </p>
             <dl className="wa-quote-rows">
               <div>
-                <dt>At</dt>
+                <dt>Price</dt>
                 {/* A price that cannot be computed is not zero. See the note in pay-form. */}
                 <dd>
                   {price === null
-                    ? "not computable from this quote"
-                    : `$${price.toFixed(2)} per whole ${chosen.symbol}`}
+                    ? "not available"
+                    : `1 ${chosen.symbol} = $${price.toFixed(2)}`}
                 </dd>
               </div>
               <div>
-                <dt>At least</dt>
+                <dt>Guaranteed at least</dt>
                 <dd>
                   {unitsFromRaw(BigInt(quote.minUnits), chosen.decimals)} {chosen.symbol}
                   <span className="wa-quote-aside">
-                    below this the grant is not opened at all
+                    If the price moves and the escrow would get less, nothing happens and you
+                    are not charged.
                   </span>
                 </dd>
               </div>
               <div>
-                <dt>First vests</dt>
+                <dt>When it vests</dt>
                 <dd>
                   {cliffSeconds === 0 ? "immediately, and then continuously" : `after ${humanDuration(cliffSeconds)}`}
                   <span className="wa-quote-aside">
@@ -326,19 +357,16 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
                 </div>
               ) : null}
             </dl>
-            <p className="wa-quote-issuer">
-              {chosen.symbol} — {ISSUER_NOTE}
-            </p>
+
           </>
         ) : quoting || restating ? (
           <p className="wa-quote-waiting">
-            {restating ? "The terms changed. Repricing…" : "Asking the aggregator for a route…"}
+            {restating ? "The terms changed. Updating the price…" : "Getting the live price from OKX DEX…"}
           </p>
         ) : (
           <p className="wa-quote-waiting">
-            A grant buys its asset once, now, and holds it in an escrow you cannot reach
-            into. What it would buy appears here once there is someone to grant to, an
-            amount and a reason.
+            The stock is bought today and held in an escrow you cannot take back from. Fill
+            in the form to see exactly how much it will hold.
           </p>
         )}
       </aside>

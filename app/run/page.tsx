@@ -7,7 +7,7 @@ import {payrollAddress} from "@/lib/receipts";
 import "@/app/landing.css";
 
 export const metadata: Metadata = {
-  title: "Pay a run — Warrant",
+  title: "Payroll — Warrant",
   description: "A file of names and amounts becomes lines, then one signature, then a receipt each.",
 };
 
@@ -23,11 +23,11 @@ export default function RunPage() {
       <div className="wa-tear" aria-hidden />
 
       <main className="wa-sec is-wide">
-        <p className="wa-kicker">Pay a run</p>
-        <h1 className="wa-h2">A file of names and amounts. One signature. A receipt each.</h1>
+        <p className="wa-kicker">Payroll</p>
+        <h1 className="wa-h2">Pay your whole team at once.</h1>
         <p className="wa-lede">
-          Every line becomes a payment in the same transaction, sharing one run. Each person
-          gets the asset in their own wallet and a stub carrying the reason they were paid.
+          Paste or upload a list. Everyone is paid in stock in a single transaction, with one
+          signature — and each person gets their own receipt.
         </p>
 
         <div style={{marginTop: "var(--s-7)"}}>
@@ -38,7 +38,7 @@ export default function RunPage() {
             </WalletProvider>
           ) : (
             <div className="wa-nothing">
-              <strong>Nothing can be paid yet.</strong>
+              <strong>Payroll is not switched on yet.</strong>
               {payroll.why}
             </div>
           )}

@@ -55,16 +55,16 @@ function Reason({hash}: {hash: string}) {
   if (!stored.found) {
     return (
       <p className="wa-r-note">
-        Only the hash of the reason is on chain. The text was not written to this
-        installation&rsquo;s cache, so it cannot be shown here.
+        The note for this payment is not available here. Only its fingerprint is stored on
+        chain, shown below.
       </p>
     );
   }
   if (!stored.verified) {
     return (
       <p className="wa-r-note is-err">
-        The stored text does not hash to the reason on this transaction, so it is not shown.
-        The payment is real; the reason recorded beside it is not the one that was signed.
+        The note stored for this payment does not match its on-chain fingerprint, so it is
+        not shown. The payment itself is real.
       </p>
     );
   }
@@ -153,39 +153,37 @@ function One({r, symbol, decimals}: {r: Receipt; symbol: string; decimals: numbe
         <Line k="Paid">{usdt(r.stableAmount)} in {STABLE.symbol}</Line>
         {r.cashAmount > 0n ? (
           <>
-            <Line k="Stayed cash">{usdt(r.cashAmount)}, untouched</Line>
-            <Line k="Became ownership">{usdt(swapped)}</Line>
+            <Line k="Kept as USDT">{usdt(r.cashAmount)}</Line>
+            <Line k="Turned into stock">{usdt(swapped)}</Line>
           </>
         ) : null}
-        <Line k="Arrived">
+        <Line k="Received">
           {unitsFromRaw(r.assetAmount, decimals)} {symbol}
         </Line>
-        <Line k="Which is">
+        <Line k="Asset">
           <AssetIdentity address={r.asset} symbol={symbol} />
         </Line>
-        <Line k="At">
-          {price === null ? "not computable" : `$${price.toFixed(2)} per whole ${symbol}`}
-          <span className="wa-r-aside">
-            arithmetic on this payment, not a quote and not a mark
-          </span>
+        <Line k="Price paid">
+          {price === null ? "not available" : `1 ${symbol} = $${price.toFixed(2)}`}
+          <span className="wa-r-aside">what this payment actually paid per unit</span>
         </Line>
-        <Line k="To">
+        <Line k="Paid to">
           <Address value={r.recipient} />
         </Line>
-        <Line k="From">
+        <Line k="Paid by">
           <Address value={r.payer} />
         </Line>
       </Sheet>
 
-      <Sheet title="Why">
+      <Sheet title="Note">
         <Reason hash={r.reasonHash} />
         <p className="wa-r-hashline">
-          <span className="k">On chain</span>
+          <span className="k">On-chain fingerprint</span>
           <span className="v wa-mono">{r.reasonHash}</span>
         </p>
       </Sheet>
 
-      <Sheet title="Where it is anchored">
+      <Sheet title="Proof on X Layer">
         <Line k="Transaction">
           <a href={EXPLORER_TX(r.txHash)} className="wa-mono">
             {r.txHash}
@@ -198,7 +196,7 @@ function One({r, symbol, decimals}: {r: Receipt; symbol: string; decimals: numbe
             {r.asset}
           </a>
         </Line>
-        <Line k="Run">
+        <Line k="Payroll batch">
           <Link href={`/run/${r.runId}`} className="wa-mono">
             {runLabel(r.runId)}
           </Link>
@@ -223,8 +221,8 @@ export default async function ReceiptPage({params}: Params) {
     return (
       <main className="wa-receipt">
         <p className="wa-r-held">
-          That is not a transaction hash. A stub is anchored to one, and its address is the
-          hash of the transaction that settled it.
+          That is not a transaction hash. A receipt&rsquo;s address is the hash of the
+          transaction that paid it — 0x followed by 64 characters.
         </p>
       </main>
     );
@@ -237,8 +235,7 @@ export default async function ReceiptPage({params}: Params) {
       <main className="wa-receipt">
         <p className="wa-r-held">{found.why}</p>
         <p className="wa-r-note">
-          <a href={EXPLORER_TX(tx)}>Open the transaction on X Layer</a> to see it for
-          yourself.
+          <a href={EXPLORER_TX(tx)}>Look it up on the X Layer explorer</a>.
         </p>
       </main>
     );
@@ -253,8 +250,8 @@ export default async function ReceiptPage({params}: Params) {
     <main className="wa-receipt">
       {found.value.length > 1 ? (
         <p className="wa-r-many">
-          {found.value.length} people were paid in this one transaction. Every stub below
-          shares its run.
+          {found.value.length} people were paid in this one transaction. Here is each
+          receipt.
         </p>
       ) : null}
       {found.value.map((r) => {

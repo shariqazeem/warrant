@@ -33,19 +33,19 @@ export default async function Home() {
       <section className="wa-dark">
         <SiteNav />
         <div className="wa-open">
-          <p className="wa-kicker">There is no opening bell.</p>
-          <h1 className="wa-display">A company pays its people in ownership.</h1>
+          <p className="wa-kicker">Payroll on X Layer · priced by OKX DEX</p>
+          <h1 className="wa-display">Pay your team in stocks.</h1>
           <p className="wa-lede">
-            Upload a file of names and amounts, sign once, and every person is paid in a
-            tokenized stock in their own wallet — each with a receipt carrying the reason
-            they were paid.
+            You send USDT. Each person receives a tokenized stock — like the S&amp;P 500 — in
+            their own wallet, with a receipt that says why they were paid. One signature pays
+            everyone.
           </p>
           <div className="wa-actions">
-            <Link href="/pay" className="wa-btn is-primary">
-              Pay someone
+            <Link href="/run" className="wa-btn is-primary">
+              Run payroll
             </Link>
-            <Link href="/run" className="wa-btn">
-              Pay a run
+            <Link href="/pay" className="wa-btn">
+              Pay one person
             </Link>
           </div>
 
@@ -77,7 +77,7 @@ export default async function Home() {
         </div>
 
         <div className="wa-sec is-wide" style={{paddingTop: 0}}>
-          <p className="wa-kicker">The tape</p>
+          <p className="wa-kicker">Recent payments</p>
           {rail.ok && rail.value.recent.length > 0 ? (
             <>
               <ol className="wa-tape">
@@ -93,7 +93,7 @@ export default async function Home() {
                       {r.blockTime === null ? null : `, ${since(r.blockTime, now * 1000)}`}
                     </span>
                     <Link className="wa-tape-link wa-mono" href={`/receipt/${r.txHash}`}>
-                      open
+                      receipt
                     </Link>
                   </li>
                 ))}
@@ -109,7 +109,7 @@ export default async function Home() {
                   <dd>{rail.value.paymentCount}</dd>
                 </div>
                 <div>
-                  <dt>Paid in ownership</dt>
+                  <dt>Total paid</dt>
                   <dd>{usdt(rail.value.totalStable)}</dd>
                 </div>
                 {rail.value.deliveredByAsset.map((a) => (
@@ -122,11 +122,11 @@ export default async function Home() {
             </>
           ) : (
             <div className="wa-nothing">
-              <strong>{rail.ok ? "No payments yet." : "The tape is not reading."}</strong>
+              <strong>{rail.ok ? "No payments yet." : "Payments could not be loaded."}</strong>
               {rail.ok
-                ? "Every payment made through Warrant prints here as it settles, newest " +
-                  "first, with the reason it was made and the transaction it is anchored " +
-                  "to. Nothing is shown until there is something real to show."
+                ? "Every real payment appears here the moment it settles, with its note and " +
+                  "a receipt anyone can open. There are no sample rows — only real payments " +
+                  "on X Layer."
                 : rail.why}
             </div>
           )}
@@ -136,41 +136,46 @@ export default async function Home() {
       <div className="wa-tear" aria-hidden />
 
       <section className="wa-sec">
-        <p className="wa-kicker">What a stock could not do before</p>
+        <p className="wa-kicker">How it works</p>
         <div className="wa-rule-row">
-          <span className="k">Be paid, not bought</span>
+          <span className="k">1. Add your people</span>
           <p className="v">
-            A stock position could only be acquired by the person who ends up holding it.
-            Here the company sends it, as the payment itself, in one signature.
+            One person, or your whole team as a CSV: wallet address, amount, and a note for
+            each. Anything wrong with a line is flagged before you sign.
           </p>
         </div>
         <div className="wa-rule-row">
-          <span className="k">Carry a reason</span>
+          <span className="k">2. Sign once</span>
           <p className="v">
-            Every payment prints a stub with the reason written on it. Only the hash of the
-            reason goes on chain; the text is stored, and the two are checked against each
-            other on the receipt.
+            One signature approves and pays everyone in a single transaction. OKX DEX finds
+            the best price for each payment.
           </p>
         </div>
         <div className="wa-rule-row">
-          <span className="k">Land in their own wallet</span>
+          <span className="k">3. They own it</span>
           <p className="v">
-            The asset is delivered to the recipient&rsquo;s own address. Warrant holds
-            nothing between transactions, and the contract reverts if the amount that
-            arrives is below the floor the payer signed for.
+            The stock lands in each person&rsquo;s own wallet — Warrant never holds it. Each
+            payment gets a public receipt with your note on it.
           </p>
         </div>
         <div className="wa-rule-row">
-          <span className="k">Vest without a custodian</span>
+          <span className="k">Safe by default</span>
           <p className="v">
-            A grant sits in an escrow the payer cannot reach into. Vesting is permissionless:
-            anyone can release what is due, and is paid a fixed tip for doing it.
+            Every payment has a guaranteed minimum. If the price moves too far while it is
+            being sent, it is cancelled and nobody is charged.
+          </p>
+        </div>
+        <div className="wa-rule-row">
+          <span className="k">Vesting grants</span>
+          <p className="v">
+            Give someone stock that vests over years, held in an escrow the company cannot
+            take back — and make it irrevocable if you want.
           </p>
         </div>
       </section>
 
       <section className="wa-sec">
-        <p className="wa-kicker">What you are being paid in</p>
+        <p className="wa-kicker">What people are paid in</p>
         {/*
           PER-ROW DISCLOSURE, NEVER A BANNER. An asset carries issuer powers and they belong
           beside the asset, on the row where someone decides to be paid in it. One list, in
@@ -194,7 +199,8 @@ export default async function Home() {
         <div className="wa-rule-row">
           <span className="k">What the issuer can do</span>
           <p className="v">
-            All three sit behind one upgradeable contract with one owner,{" "}
+            These are tokenized stocks, not shares, and carry no voting rights. All three sit
+            behind one upgradeable contract with one owner,{" "}
             <span className="wa-mono">{ISSUER.owner}</span>, which can{" "}
             {ISSUER_POWERS.map((p, i) => (
               <span key={p}>
@@ -208,48 +214,34 @@ export default async function Home() {
           </p>
         </div>
 
-        <div className="wa-rule-row">
-          <span className="k">{STABLE.symbol}</span>
-          <p className="v">
-            What the payer pays with, and what a split leaves as cash. Six decimals on X
-            Layer.
-          </p>
-        </div>
-        <div className="wa-rule-row">
-          <span className="k">The route</span>
-          <p className="v">
-            The swap is routed by the OKX DEX aggregator. Warrant never chooses the asset,
-            the amount or the reason — the payer does, and the contract checks what arrived
-            against what was promised.
-          </p>
-        </div>
+
       </section>
 
       <section className="wa-sec">
-        <p className="wa-kicker">The public record</p>
+        <p className="wa-kicker">Every payment is public</p>
         {latest ? (
           <p className="wa-lede" style={{marginTop: 0}}>
-            Every payment is openable by a stranger with no session: its{" "}
-            <Link href={`/receipt/${latest.txHash}`}>stub</Link>, the{" "}
-            <Link href={`/run/${latest.runId}`}>run</Link> it belonged to, the{" "}
+            Anyone can open any payment, no account needed: its{" "}
+            <Link href={`/receipt/${latest.txHash}`}>receipt</Link>, the{" "}
+            <Link href={`/run/${latest.runId}`}>payroll batch</Link> it was part of, the{" "}
             <Link href={`/@${latest.payer}`}>company</Link> that paid it, and{" "}
             <Link href={EXPLORER_TX(latest.txHash)}>the transaction on X Layer</Link>.
           </p>
         ) : (
           <div className="wa-nothing">
-            <strong>Nothing is published yet.</strong>
-            When payments exist, every one of them is openable by a stranger with no
-            session: the stub, the reason, and the transaction it is anchored to.
+            <strong>Nothing to show yet.</strong>
+            Every payment gets a receipt anyone can open — no account needed — showing what
+            was paid, what it became, the note, and the proof on X Layer.
           </div>
         )}
       </section>
 
       <section className="wa-dark">
         <div className="wa-close">
-          <h2 className="wa-h2">The same rail pays agents.</h2>
+          <h2 className="wa-h2">Works for AI agents too.</h2>
           <p className="wa-lede">
-            A person earning a bounty and an agent earning through x402 are the same line in
-            the same run. The reason is written on both.
+            An agent that earns through x402 is just one more line on the same payroll — paid
+            in stock, with a receipt, like everyone else.
           </p>
         </div>
         <SiteFoot />

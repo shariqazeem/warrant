@@ -40,9 +40,8 @@ export function GrantList({
     return (
       <div className="wa-nothing">
         <strong>No grants yet.</strong>
-        A grant opened here buys its asset once and holds it in an escrow the payer cannot
-        reach into. It appears in this list with its schedule, and vests whether or not
-        anyone remembers to come back.
+        Grants you create appear here with their vesting schedule. They release on time
+        whether or not anyone remembers to come back.
       </div>
     );
   }
@@ -66,7 +65,7 @@ export function GrantList({
               {g.isSealed ? (
                 <span className="wa-chip is-sealed">
                   <Lock size={14} strokeWidth={2} aria-hidden />
-                  Sealed, cannot be revoked
+                  Irrevocable
                 </span>
               ) : null}
               {g.revoked ? <span className="wa-chip is-revoked">Revoked</span> : null}
@@ -74,7 +73,7 @@ export function GrantList({
 
               <span className="wa-grant-units">
                 {unitsFromRaw(g.heldUnits, g.assetDecimals)}
-                <span className="sym">{g.assetSymbol} held</span>
+                <span className="sym">{g.assetSymbol} in escrow</span>
               </span>
             </div>
 
@@ -95,17 +94,17 @@ export function GrantList({
 
             <div className="wa-grant-rows">
               <span>
-                Due now
+                Ready to release
                 <b>
                   {unitsFromRaw(g.releasableUnits, g.assetDecimals)} {g.assetSymbol}
                 </b>
               </span>
               <span>
-                Cost to open
+                Grant value
                 <b>{usdt(g.stableCost)}</b>
               </span>
               <span>
-                Term
+                Vests over
                 <b>{humanDuration(g.durationSeconds)}</b>
               </span>
               <span>
@@ -115,11 +114,11 @@ export function GrantList({
                 </b>
               </span>
               <span>
-                Keeper&rsquo;s share
+                Release fee
                 <b>{(g.tipBps / 100).toFixed(2)}%</b>
               </span>
               <span>
-                Opened by
+                Granted by
                 <b>{short(g.payer)}</b>
               </span>
             </div>
@@ -142,7 +141,7 @@ export function GrantList({
                         ? "Nothing further will vest"
                         : "Nothing due yet"
                     : isBeneficiary
-                      ? `Take ${unitsFromRaw(g.releasableUnits, g.assetDecimals)} ${g.assetSymbol}`
+                      ? `Claim ${unitsFromRaw(g.releasableUnits, g.assetDecimals)} ${g.assetSymbol}`
                       : `Release ${unitsFromRaw(g.releasableUnits, g.assetDecimals)} ${g.assetSymbol} to them`}
                 </button>
 
@@ -154,7 +153,7 @@ export function GrantList({
                       disabled={busy}
                       onClick={() => void act(g.id, "seal")}
                     >
-                      Give up the right to revoke
+                      Make irrevocable
                     </button>
                     <button
                       type="button"
@@ -162,7 +161,7 @@ export function GrantList({
                       disabled={busy}
                       onClick={() => void act(g.id, "revoke")}
                     >
-                      Revoke what has not vested
+                      Cancel the unvested part
                     </button>
                   </>
                 ) : null}
@@ -174,15 +173,15 @@ export function GrantList({
                     disabled={busy}
                     onClick={() => void act(g.id, "close")}
                   >
-                    Close it
+                    Archive
                   </button>
                 ) : null}
 
                 {!g.isSealed && !g.revoked && isPayer ? (
                   <span className="wa-grant-rows" style={{marginTop: 0}}>
                     <span>
-                      Sealing is permanent. It is what makes this a grant rather than a
-                      promise.
+                      Making it irrevocable is permanent — after that, nobody can cancel it,
+                      including you.
                     </span>
                   </span>
                 ) : null}
@@ -200,16 +199,16 @@ export function GrantList({
 
             {g.revoked ? (
               <p className="wa-grant-why">
-                Vesting stopped on this grant. What had already vested is still owed and can
-                still be taken; nothing further ever will be.
+                This grant was cancelled. Whatever had already vested still belongs to them and
+                can be claimed; nothing more will vest.
               </p>
             ) : null}
 
             <p className="wa-grant-why">
-              Opened {dateUTC(g.start)}.{" "}
+              Started {dateUTC(g.start)}.{" "}
               {g.isSealed
-                ? "The company gave up the right to revoke it."
-                : "The company may still revoke what has not vested."}
+                ? "Irrevocable: nobody can cancel it."
+                : "The company can still cancel the part that has not vested yet."}
             </p>
           </article>
         );

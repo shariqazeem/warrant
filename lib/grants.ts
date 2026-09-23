@@ -48,8 +48,7 @@ export function escrowAddress(): Outcome<`0x${string}`> {
   const a = process.env.NEXT_PUBLIC_GRANT_ESCROW_ADDRESS?.trim();
   if (!a) {
     return held(
-      "GrantEscrow is not deployed yet, so there are no grants to read. " +
-        "Set NEXT_PUBLIC_GRANT_ESCROW_ADDRESS once it is.",
+      "Grants are not switched on for this site yet.",
     );
   }
   return ok(a as `0x${string}`);

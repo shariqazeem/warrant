@@ -50,20 +50,20 @@ export default async function RunPage({params}: Params) {
       <div className="wa-tear" aria-hidden />
 
       <main className="wa-sec is-wide">
-        <p className="wa-kicker">A run</p>
+        <p className="wa-kicker">Payroll batch</p>
         <h1 className="wa-co-name">{runLabel(runId)}</h1>
 
         {rows.length === 0 ? (
           <div className="wa-nothing" style={{marginTop: "var(--s-7)"}}>
-            <strong>No run by that id.</strong>
-            Either it has not been indexed yet, or nothing was ever paid under it. The run
-            id on a receipt is the one that works.
+            <strong>No payroll batch with that id.</strong>
+            Either nothing was ever paid under it, or it happened moments ago and is still
+            being read. The batch link on any receipt always works.
           </div>
         ) : (
           <>
             <p className="wa-lede">
               {rows.length} {rows.length === 1 ? "person" : "people"} paid{" "}
-              {rows[0]?.blockTime ? `on ${dateUTC(rows[0].blockTime)}` : ""}, in one
+              {rows[0]?.blockTime ? `on ${dateUTC(rows[0].blockTime)}` : ""}, with one
               signature.{" "}
               {payer ? (
                 <Link href={EXPLORER_TX(payer)}>The transaction on X Layer</Link>
@@ -89,7 +89,7 @@ export default async function RunPage({params}: Params) {
             </section>
 
             <section className="wa-co-section">
-              <p className="wa-kicker">Every line</p>
+              <p className="wa-kicker">Everyone in this batch</p>
               <ol className="wa-co-rows">
                 {rows.map((r) => (
                   <li className="wa-co-row" key={`${r.txHash}-${r.logIndex}`}>

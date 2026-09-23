@@ -1,0 +1,98 @@
+/** wallet.css — the payer's wallet, as one panel. Aliases only. */
+
+.wa-wallet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  margin-bottom: var(--s-5);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.wa-wallet.is-warn {
+  border-color: var(--warn-border);
+  background: var(--warn-soft);
+}
+
+.wa-wallet-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-small);
+  color: var(--ink);
+}
+
+.wa-wallet-ok {
+  color: var(--ok);
+}
+
+.wa-wallet-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+.wa-wallet-bal {
+  margin-inline-start: auto;
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+}
+
+.wa-wallet-sep {
+  margin: 0 var(--s-2);
+  color: var(--ink-faint);
+}
+
+.wa-wallet-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+.wa-wallet-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--fs-small);
+  cursor: pointer;
+  transition: border-color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out);
+}
+
+.wa-wallet-choice:hover:not([disabled]) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.wa-wallet-choice img {
+  border-radius: 4px;
+}
+
+.wa-wallet-note {
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  color: var(--ink-muted);
+}
+
+.wa-wallet-note.is-err {
+  color: var(--err);
+}
+
+.wa-wallet-note a {
+  color: var(--accent);
+}
+
+@media (max-width: 560px) {
+  .wa-wallet-bal {
+    margin-inline-start: 0;
+    width: 100%;
+  }
+}

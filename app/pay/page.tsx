@@ -29,11 +29,11 @@ export default function PayPage() {
       <div className="wa-tear" aria-hidden />
 
       <main className="wa-sec is-wide">
-        <p className="wa-kicker">Pay one person</p>
-        <h1 className="wa-h2">Ownership, in their own wallet, with the reason on it.</h1>
+        <p className="wa-kicker">Pay someone</p>
+        <h1 className="wa-h2">Pay someone in stock.</h1>
         <p className="wa-lede">
-          You choose the person, the amount, the asset and the reason. Warrant chooses
-          nothing. The contract refuses to settle below the floor you sign for.
+          You send USDT. They receive a tokenized stock — like the S&amp;P 500 — in their own
+          wallet, with a receipt that shows your note.
         </p>
 
         <div style={{marginTop: "var(--s-7)"}}>
@@ -44,7 +44,7 @@ export default function PayPage() {
             </WalletProvider>
           ) : (
             <div className="wa-nothing">
-              <strong>Nothing can be paid yet.</strong>
+              <strong>Payments are not switched on yet.</strong>
               {payroll.why}
             </div>
           )}

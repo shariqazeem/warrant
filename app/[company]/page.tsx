@@ -64,14 +64,14 @@ export default async function CompanyPage({params}: Params) {
       <div className="wa-tear" aria-hidden />
 
       <main className="wa-sec is-wide">
-        <p className="wa-kicker">A company&rsquo;s record</p>
+        <p className="wa-kicker">Company payroll record</p>
         <h1 className="wa-co-name wa-mono">{address}</h1>
         <p className="wa-lede">
           {c.since === null ? (
-            <>This address has not paid anyone in ownership through Warrant.</>
+            <>This wallet has not paid anyone through Warrant yet.</>
           ) : (
             <>
-              Paying people in ownership since {dateUTC(c.since)}, {sinceWords(c.since, now * 1000)}.
+              Paying people in stock since {dateUTC(c.since)} ({sinceWords(c.since, now * 1000)}).
             </>
           )}{" "}
           <Link href={EXPLORER_ADDRESS(address)}>See it on X Layer</Link>.
@@ -80,9 +80,8 @@ export default async function CompanyPage({params}: Params) {
         {c.paymentCount === 0 && c.grants.length === 0 ? (
           <div className="wa-nothing" style={{marginTop: "var(--s-7)"}}>
             <strong>Nothing to show yet.</strong>
-            When this company pays someone, the payment appears here with the reason it was
-            made and a link to the receipt it printed. Nothing is shown before that, because
-            there would be nothing real to show.
+            When this company pays someone, the payment appears here with its note and a
+            receipt anyone can open. Only real payments are ever shown.
           </div>
         ) : (
           <>
@@ -96,11 +95,11 @@ export default async function CompanyPage({params}: Params) {
                 <p className="wa-units-sm">{c.paymentCount}</p>
               </div>
               <div>
-                <p className="k">Runs</p>
+                <p className="k">Payroll batches</p>
                 <p className="wa-units-sm">{c.runCount}</p>
               </div>
               <div>
-                <p className="k">Paid out</p>
+                <p className="k">Total paid</p>
                 <p className="wa-units-sm">{usdt(c.totalStable)}</p>
               </div>
               {c.grants.length > 0 ? (
@@ -113,7 +112,7 @@ export default async function CompanyPage({params}: Params) {
 
             {c.deliveredByAsset.length > 0 ? (
               <section className="wa-co-section">
-                <p className="wa-kicker">Delivered into people&rsquo;s own wallets</p>
+                <p className="wa-kicker">Stock delivered to people&rsquo;s wallets</p>
                 {c.deliveredByAsset.map((a) => (
                   <div className="wa-rule-row" key={a.asset}>
                     <span className="k">{a.symbol}</span>
@@ -176,7 +175,7 @@ export default async function CompanyPage({params}: Params) {
 
             {c.receipts.length > 0 ? (
               <section className="wa-co-section">
-                <p className="wa-kicker">Every payment</p>
+                <p className="wa-kicker">Every payment, with its note</p>
                 <ol className="wa-co-rows">
                   {c.receipts.map((r) => (
                     <li className="wa-co-row" key={`${r.txHash}-${r.logIndex}`}>
@@ -185,7 +184,7 @@ export default async function CompanyPage({params}: Params) {
                       </Link>
                       <span className="wa-co-who wa-mono">{short(r.recipient)}</span>
                       <span className="wa-co-why">
-                        {r.reason ?? <em>reason not stored here</em>}
+                        {r.reason ?? <em>note not available</em>}
                       </span>
                       <span className="wa-co-paid wa-mono">{usdt(r.stableAmount)}</span>
                       <span className="wa-co-got wa-mono">

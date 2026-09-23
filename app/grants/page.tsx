@@ -31,12 +31,12 @@ export default async function GrantsPage() {
       <div className="wa-tear" aria-hidden />
 
       <main className="wa-sec is-wide">
-        <p className="wa-kicker">Grants</p>
-        <h1 className="wa-h2">Ownership that vests, out of an escrow you cannot reach into.</h1>
+        <p className="wa-kicker">Vesting grants</p>
+        <h1 className="wa-h2">Give someone stock that vests over time.</h1>
         <p className="wa-lede">
-          A grant buys its asset once and holds it. It vests on a schedule, and anyone may
-          release what is due — so it pays whether or not the company remembers. Seal it and
-          even the right to revoke is gone.
+          The stock is bought today and held in an escrow. It releases to them on a schedule —
+          with a cliff if you want one — and you can make it irrevocable so it can never be
+          taken back.
         </p>
 
         {escrow.ok ? (
@@ -47,13 +47,13 @@ export default async function GrantsPage() {
 
             <section style={{marginTop: "var(--s-9)"}}>
               <p className="wa-kicker">
-                {grants?.ok ? `${grants.value.length} open` : "The grants"}
+                {grants?.ok ? `Grants (${grants.value.length})` : "Grants"}
               </p>
               {grants?.ok ? (
                 <GrantList grants={grants.value} escrow={escrow.value} now={now} />
               ) : (
                 <div className="wa-nothing">
-                  <strong>The grants are not reading.</strong>
+                  <strong>Grants could not be loaded.</strong>
                   {grants?.ok === false ? grants.why : "The chain did not answer."}
                 </div>
               )}
@@ -62,7 +62,7 @@ export default async function GrantsPage() {
           </WalletProvider>
         ) : (
           <div className="wa-nothing" style={{marginTop: "var(--s-7)"}}>
-            <strong>No grant can be opened yet.</strong>
+            <strong>Grants are not switched on yet.</strong>
             {escrow.why}
           </div>
         )}

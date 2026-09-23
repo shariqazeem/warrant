@@ -311,3 +311,109 @@ select.wa-input {
 .wa-quote-age.is-stale {
   color: var(--warn);
 }
+
+/* ── the plain-language layout ─────────────────────────────────────── */
+
+.wa-field-v {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.wa-field-help {
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+}
+
+/* A placeholder must never look like an answer. The earlier one read as filled in. */
+.wa-input::placeholder {
+  color: var(--ink-faint);
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.wa-btn.is-wide {
+  width: 100%;
+  justify-content: center;
+  padding: var(--s-3) var(--s-4);
+  font-size: var(--fs-body);
+}
+
+/* A blocked button is still readable: it is telling the payer what to do next. */
+.wa-btn.is-primary.is-blocked[disabled] {
+  opacity: 1;
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--ink-muted);
+}
+
+.wa-fine {
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+  line-height: var(--lh-body);
+}
+
+.wa-quote-title {
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+  margin-bottom: var(--s-3);
+}
+
+.wa-sum > div {
+  padding: var(--s-3) 0;
+  border-top: 1px solid var(--border);
+}
+
+.wa-sum dt {
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+}
+
+.wa-sum dd {
+  margin: var(--s-1) 0 0;
+  font-size: var(--fs-lead);
+  color: var(--ink);
+}
+
+.wa-sum .is-big dd:not(.wa-sum-plus) {
+  font-size: var(--fs-units-sm);
+  line-height: 1.1;
+}
+
+.wa-sum .u {
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+}
+
+.wa-sum-plus {
+  font-size: var(--fs-small) !important;
+  color: var(--ink-muted) !important;
+}
+
+.wa-quote-foot {
+  margin-top: var(--s-5);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-body);
+  color: var(--ink-faint);
+}
+
+.wa-assetnote {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  font-size: var(--fs-caption);
+}
+
+.wa-assetnote .wa-linkish {
+  align-self: flex-start;
+  font-size: var(--fs-caption);
+}
+
+.wa-assetnote-body {
+  color: var(--ink-muted);
+  line-height: var(--lh-body);
+  max-width: 56ch;
+}

@@ -47,8 +47,7 @@ export function payrollAddress(): Outcome<`0x${string}`> {
   const a = process.env.NEXT_PUBLIC_PAYROLL_ADDRESS?.trim();
   if (!a) {
     return held(
-      "Payroll is not deployed yet, so there is nothing to read. " +
-        "Set NEXT_PUBLIC_PAYROLL_ADDRESS once it is.",
+      "Payments are not switched on for this site yet.",
     );
   }
   return ok(a as `0x${string}`);
@@ -174,8 +173,8 @@ export function paidInTransaction(hash: `0x${string}`): Promise<Outcome<Receipt[
 
     if (receipt.status !== "success") {
       return held(
-        "That transaction reverted, so nothing was paid. A refusal is a receipt too: " +
-          "the payment was refused before any money moved.",
+        "That transaction was cancelled on chain, so nothing was paid and nobody was " +
+          "charged.",
       );
     }
 
@@ -189,8 +188,8 @@ export function paidInTransaction(hash: `0x${string}`): Promise<Outcome<Receipt[
     const mine = logs.filter((l) => l.transactionHash?.toLowerCase() === hash.toLowerCase());
     if (mine.length === 0) {
       return held(
-        "That transaction exists and did not pay anyone through Warrant. " +
-          "There is no stub to print.",
+        "That transaction exists, but it was not a Warrant payment, so there is no " +
+          "receipt for it.",
       );
     }
 

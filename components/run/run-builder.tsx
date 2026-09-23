@@ -3,14 +3,14 @@
 import {AlertCircle, Download, FileText, Loader2} from "lucide-react";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
-import {useAccount} from "wagmi";
 import {buildPayment, type BuiltLine} from "@/app/pay/actions";
-import {ASSETS, ISSUER_NOTE, defaultAsset} from "@/lib/assets";
+import {ASSETS, defaultAsset} from "@/lib/assets";
 import {RUN_TEMPLATE, parseRunFile, type ParsedRow} from "@/lib/csv";
 import {short, unitsFromRaw, usdt} from "@/lib/format";
 import {newRunId} from "@/lib/run-id";
 import {freshness, quoteAge} from "@/lib/quote-age";
-import {Connect} from "@/components/wallet/connect";
+import {WalletPanel} from "@/components/wallet/wallet-panel";
+import {useWallet} from "@/components/wallet/use-wallet";
 import {syncFromChain} from "@/app/sync/actions";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {usePay} from "@/components/pay/use-pay";
@@ -31,7 +31,7 @@ type Built = {row: ParsedRow; line: BuiltLine; expectedOut: string};
  */
 export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
   const router = useRouter();
-  const {isConnected} = useAccount();
+  const wallet = useWallet();
 
   const [text, setText] = useState("");
   const [asset, setAsset] = useState(defaultAsset().address);
@@ -50,7 +50,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
 
   const parsed = useMemo(() => parseRunFile(text, asset), [text, asset]);
 
-  useTxToast(phase === "idle" ? "idle" : phase, `Pay ${parsed.good.length} people`, {
+  useTxToast(phase === "idle" ? "idle" : phase, `Pay ${parsed.good.length} ${parsed.good.length === 1 ? "person" : "people"}`, {
     detail: why ?? undefined,
   });
 
@@ -146,9 +146,9 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
             setBuiltAt(null);
             setBuildWhy(null);
           }}
-          placeholder={`address,amount,reason\n0x…,25,Design review week 38\n0x…,40,Shipped the indexer`}
+          placeholder={`address, amount, note\n0x…, 25, Design review week 38\n0x…, 40, Shipped the indexer`}
           rows={6}
-          aria-label="The run, as address, amount, reason"
+          aria-label="Your team, one per line: address, amount, note"
         />
         <div className="wa-drop-act">
           <input
@@ -163,7 +163,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
           />
           <button type="button" className="wa-btn" onClick={() => fileInput.current?.click()}>
             <FileText size={16} strokeWidth={2} aria-hidden />
-            Choose a file
+            Upload a CSV
           </button>
           <a
             className="wa-btn"
@@ -171,18 +171,19 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
             href={`data:text/csv;charset=utf-8,${encodeURIComponent(RUN_TEMPLATE)}`}
           >
             <Download size={16} strokeWidth={2} aria-hidden />
-            Template
+            Download template
           </a>
           <span className="wa-drop-hint">
-            Drop a CSV, or paste it. Columns: address, amount, reason, and an optional
-            fourth for the part paid as cash.
+            Paste your team or drop a CSV here — one person per line: wallet address,
+            amount in USD, and a note for their receipt. An optional fourth column pays
+            part of it as USDT instead.
           </span>
         </div>
       </section>
 
       {/* ── the asset ────────────────────────────────────────────── */}
       <label className="wa-field">
-        <span className="k">Everyone is paid in</span>
+        <span className="k">Everyone receives</span>
         <select
           className="wa-input"
           value={asset}
@@ -193,7 +194,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
         >
           {ASSETS.map((a) => (
             <option key={a.address} value={a.address}>
-              {a.symbol} — {a.name}
+              {a.name} ({a.symbol})
             </option>
           ))}
         </select>
@@ -202,8 +203,8 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
       {/* ── the lines ────────────────────────────────────────────── */}
       {parsed.rows.length === 0 ? (
         <p className="wa-quote-waiting">
-          The file becomes lines here before anything is signed, so you can read the whole
-          run — including anything wrong with it — before a wallet opens.
+          Your team appears here as a list before anything is signed, with any line that
+          needs fixing clearly marked.
         </p>
       ) : (
         <>
@@ -242,23 +243,23 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
 
           <div className="wa-run-sum">
             <p>
-              <strong>{parsed.good.length}</strong> {parsed.good.length === 1 ? "line" : "lines"} ready,
-              totalling <strong className="wa-mono">{usdt(parsed.total)}</strong>
+              <strong>{parsed.good.length}</strong> {parsed.good.length === 1 ? "person" : "people"} ready,{" "}
+              <strong className="wa-mono">{usdt(parsed.total)}</strong> in total
               {parsed.bad.length > 0 ? (
                 <>
                   {" "}
-                  — <span className="is-bad">{parsed.bad.length} will not pay</span> and are
-                  not included.
+                  — <span className="is-bad">{parsed.bad.length} {parsed.bad.length === 1 ? "line needs" : "lines need"} fixing</span>{" "}
+                  and will not be paid.
                 </>
               ) : null}
             </p>
             {built ? (
               <p className="wa-run-out">
-                They receive{" "}
+                Together they receive{" "}
                 <strong className="wa-mono">
                   {unitsFromRaw(totalOut, chosen.decimals)} {chosen.symbol}
-                </strong>{" "}
-                between them, each into their own wallet.
+                </strong>
+                , each straight into their own wallet.
               </p>
             ) : null}
           </div>
@@ -275,40 +276,60 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
       */}
       {parsed.good.length > 0 ? (
         <div className="wa-pay-act">
-          {!built ? (
-            <button type="button" className="wa-btn is-primary" disabled={building} onClick={() => void buildRoutes()}>
-              {building ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
-              {building
-                ? `Building routes, ${buildDone} of ${parsed.good.length}`
-                : `Build ${parsed.good.length} ${parsed.good.length === 1 ? "route" : "routes"}`}
-            </button>
-          ) : !isConnected ? (
-            <>
-              <p className="wa-run-sum">
-                The run is priced. Connect a wallet to sign it once.
-              </p>
-              <Connect />
-            </>
-          ) : (
-            <button
-              type="button"
-              className="wa-btn is-primary"
-              disabled={busy || age === "stale"}
-              onClick={() => void send()}
-            >
-              {busy ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
-              {phase === "signing"
-                ? "Waiting for your wallet"
-                : phase === "confirming"
-                  ? "Confirming"
-                  : `Pay ${parsed.good.length} people, ${usdt(parsed.total)}, one signature`}
-            </button>
-          )}
+          <WalletPanel need={built ? parsed.total : undefined} />
+
+          {(() => {
+            // THE BUTTON ALWAYS SAYS WHAT IT WILL DO, OR WHAT IS STOPPING IT.
+            if (!built) {
+              return (
+                <button
+                  type="button"
+                  className="wa-btn is-primary is-wide"
+                  disabled={building}
+                  onClick={() => void buildRoutes()}
+                >
+                  {building ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
+                  {building
+                    ? `Getting prices… ${buildDone} of ${parsed.good.length}`
+                    : `Get prices for ${parsed.good.length} ${parsed.good.length === 1 ? "person" : "people"}`}
+                </button>
+              );
+            }
+
+            const blocker =
+              wallet.status === "disconnected" || wallet.status === "connecting"
+                ? "Connect a wallet to pay"
+                : wallet.status === "wrong-chain"
+                  ? "Switch to X Layer to pay"
+                  : age === "stale"
+                    ? "Prices are out of date — refresh them"
+                    : wallet.usdt !== undefined && wallet.usdt < parsed.total
+                      ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
+                      : null;
+
+            return (
+              <button
+                type="button"
+                className={`wa-btn is-primary is-wide${blocker ? " is-blocked" : ""}`}
+                disabled={Boolean(blocker) || busy}
+                onClick={() => void send()}
+              >
+                {busy ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
+                {phase === "signing"
+                  ? "Confirm in your wallet…"
+                  : phase === "confirming"
+                    ? "Sending…"
+                    : phase === "building"
+                      ? "Preparing…"
+                      : (blocker ??
+                        `Pay ${parsed.good.length} ${parsed.good.length === 1 ? "person" : "people"} · ${usdt(parsed.total)}`)}
+              </button>
+            );
+          })()}
 
           {built && builtAt !== null ? (
             <p className={`wa-quote-age${age === "stale" ? " is-stale" : ""}`}>
-              {parsed.good.length} routes priced {quoteAge(builtAt)}
-              {age === "stale" ? ", which is too long ago to sign. " : ". "}
+              Prices from {quoteAge(builtAt)}.{" "}
               <button
                 type="button"
                 className="wa-linkish"
@@ -319,7 +340,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
                   void buildRoutes();
                 }}
               >
-                {building ? "Repricing…" : "Reprice them"}
+                {building ? "Refreshing…" : "Refresh prices"}
               </button>
             </p>
           ) : null}
@@ -334,11 +355,11 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
             </p>
           ) : null}
 
-          {built ? (
-            <p className="wa-quote-issuer">
-              {chosen.symbol} — {ISSUER_NOTE}
-            </p>
-          ) : null}
+          <p className="wa-fine">
+            One signature pays everyone in a single transaction. Each payment has a
+            guaranteed minimum; if the price moves too far, the whole batch is cancelled and
+            nobody is charged.
+          </p>
         </div>
       ) : null}
     </div>

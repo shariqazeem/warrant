@@ -87,16 +87,16 @@ function readable(which: GrantAction, err: unknown): string {
     return "You dismissed the request in your wallet, so nothing changed.";
   }
   if (/NothingDue/i.test(raw)) {
-    return "Nothing is due on this grant yet. The cliff has not passed, or everything vested so far has already been released.";
+    return "Nothing is ready to release yet — either the cliff has not passed, or everything vested so far has already been paid out.";
   }
   if (/SealedGrantCannotBeRevoked/i.test(raw)) {
-    return "This grant is sealed. Revocation was given up when it was sealed, and that cannot be undone.";
+    return "This grant is irrevocable, so it cannot be cancelled.";
   }
   if (/AlreadySealed/i.test(raw)) {
-    return "This grant is already sealed.";
+    return "This grant is already irrevocable.";
   }
   if (/AlreadyRevoked/i.test(raw)) {
-    return "This grant has already been revoked.";
+    return "This grant has already been cancelled.";
   }
   if (/NotThePayer/i.test(raw)) {
     return `Only the company that opened this grant can ${which} it.`;
