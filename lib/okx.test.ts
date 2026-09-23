@@ -6,7 +6,7 @@
  * end makes the last visitor wait minutes for a price. Both must come back as a sentence.
  */
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {BUSY, TIMED_OUT, fetchText, pacer} from "./okx";
+import {BUSY, TIMED_OUT, fetchText, pacer, routerOf} from "./okx";
 import {ok, type Outcome} from "./outcome";
 
 /** A promise the test resolves by hand, standing in for a slow aggregator. */
@@ -113,5 +113,57 @@ describe("one request to the aggregator", () => {
     vi.stubGlobal("fetch", async () => new Response('{"code":"0"}', {status: 200}));
     const out = await fetchText("https://aggregator.invalid", {}, 1_000);
     expect(out).toEqual({ok: true, value: {status: 200, text: '{"code":"0"}'}});
+  });
+});
+
+describe("the router a route is checked against", () => {
+  const ROUTER = "0x8b773d83bc66be128c60e07e17c8901f7a64f000";
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  /** An RPC that answers `router()` with ROUTER, counting how often it is asked. */
+  function chainAnswering() {
+    const asked = {count: 0};
+    vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {
+      asked.count++;
+      const {id} = JSON.parse(String(init.body)) as {id: number};
+      const result = `0x${ROUTER.slice(2).padStart(64, "0")}`;
+      return new Response(JSON.stringify({jsonrpc: "2.0", id, result}), {
+        headers: {"content-type": "application/json"},
+      });
+    });
+    return asked;
+  }
+
+  it("reads the contract's own router, once, because it can never change", async () => {
+    const asked = chainAnswering();
+    const contract = "0x00000000000000000000000000000000000ca511";
+    for (let i = 0; i < 2; i++) {
+      const out = await routerOf(contract);
+      // viem hands back the checksummed form; the check that uses it ignores case.
+      expect(out.ok && out.value.toLowerCase()).toBe(ROUTER);
+    }
+    expect(asked.count).toBe(1);
+  });
+
+  it("falls back to the router it was deployed with when the chain will not answer", async () => {
+    vi.stubGlobal("fetch", async () => {
+      throw new TypeError("fetch failed");
+    });
+    vi.stubEnv("OKX_ROUTER", ROUTER);
+    expect(await routerOf("0x00000000000000000000000000000000000ca512")).toEqual({ok: true, value: ROUTER});
+  });
+
+  it("prices nothing when it cannot tell which router the contract calls", async () => {
+    vi.stubGlobal("fetch", async () => {
+      throw new TypeError("fetch failed");
+    });
+    vi.stubEnv("OKX_ROUTER", "");
+    const out = await routerOf("0x00000000000000000000000000000000000ca513");
+    expect(out.ok).toBe(false);
+    expect(!out.ok && out.why).toMatch(/Could not confirm which exchange contract/);
   });
 });

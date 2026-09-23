@@ -7,13 +7,23 @@
  * as a payment's is — with one difference that matters: the asset is delivered to the
  * ESCROW, not to the beneficiary. They receive it later, on the schedule, and until then
  * it sits somewhere the payer cannot reach.
+ *
+ * The aggregator's answer is checked exactly as a payment's is (see app/pay/actions.ts),
+ * against the router GrantEscrow calls.
  */
 import {STABLE} from "@/lib/chain";
 import {rememberReason} from "@/lib/db";
 import {MAX_REASON_LENGTH} from "@/lib/reason";
-import {swap} from "@/lib/okx";
+import {routerOf, swap} from "@/lib/okx";
 import {held, ok, type Outcome} from "@/lib/outcome";
-import {checkAddress, toBase} from "@/lib/payment";
+import {
+  checkAddress,
+  checkListedAsset,
+  checkPriceImpact,
+  checkRoute,
+  readPriceImpact,
+  toBase,
+} from "@/lib/payment";
 import {escrowAddress} from "@/lib/grants";
 import {MAX_DURATION_SECONDS, MAX_TIP_BPS} from "@/lib/grant-terms";
 
@@ -36,7 +46,9 @@ export type BuiltGrant = {
   escrow: `0x${string}`;
   expectedUnits: string;
   minUnits: string;
-  priceImpactPercent: string | null;
+  /** How far buying the grant moves the price, as the aggregator reported it, in percent.
+   *  Null when it did not say — never a zero for unknown. */
+  priceImpactPercent: number | null;
   hops: string[];
 };
 
@@ -64,6 +76,8 @@ export async function buildGrant(req: GrantRequest): Promise<Outcome<BuiltGrant>
   if (asset.value.toLowerCase() === STABLE.address.toLowerCase()) {
     return held(`${STABLE.symbol} is what a grant is funded with, so it cannot be what it holds.`);
   }
+  const listed = checkListedAsset(asset.value);
+  if (!listed.ok) return listed;
 
   const amount = toBase(req.usd);
   if (!amount.ok) return amount;
@@ -89,6 +103,9 @@ export async function buildGrant(req: GrantRequest): Promise<Outcome<BuiltGrant>
 
   const reasonHash = rememberReason(req.reason);
 
+  const router = await routerOf(escrow.value);
+  if (!router.ok) return router;
+
   // The asset is bought now and delivered to the escrow, not to the person.
   const route = await swap({
     from: STABLE.address,
@@ -103,15 +120,28 @@ export async function buildGrant(req: GrantRequest): Promise<Outcome<BuiltGrant>
   const first = route.value[0];
   if (!first) return held("The aggregator built no route for this pair.");
 
+  // A route aimed anywhere but the escrow's router is refused here — a loop back into
+  // the escrow included.
+  const answer = checkRoute(first, {
+    router: router.value,
+    from: STABLE.address,
+    to: asset.value,
+    amount: amount.value,
+  });
+  if (!answer.ok) return answer;
+
+  const impact = checkPriceImpact(
+    readPriceImpact(first.routerResult.priceImpactPercent),
+    listed.value.symbol,
+  );
+  if (!impact.ok) return impact;
+
   const minOut = BigInt(first.tx.minReceiveAmount ?? "0");
   if (minOut === 0n) {
     return held(
       "The aggregator did not state a minimum it would deliver, so there is nothing for " +
         "the contract to hold it to. A grant is not opened without a floor.",
     );
-  }
-  if (first.tx.to.toLowerCase() === escrow.value.toLowerCase()) {
-    return held("The route points back at the escrow. That is not a route; it is a loop.");
   }
 
   return ok({
@@ -131,7 +161,7 @@ export async function buildGrant(req: GrantRequest): Promise<Outcome<BuiltGrant>
     escrow: escrow.value,
     expectedUnits: first.routerResult.toTokenAmount,
     minUnits: minOut.toString(),
-    priceImpactPercent: first.routerResult.priceImpactPercent ?? null,
+    priceImpactPercent: impact.value,
     hops: (first.routerResult.dexRouterList ?? [])
       .map((h) => h.dexProtocol?.dexName)
       .filter((n): n is string => Boolean(n)),

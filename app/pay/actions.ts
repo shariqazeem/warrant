@@ -11,12 +11,22 @@
  * Payroll contract, not the payer. `userWalletAddress` is Payroll; `swapReceiverAddress`
  * is the person being paid. Getting those two the wrong way round produces a route that
  * builds, sends, and pays the wrong address.
+ *
+ * THE AGGREGATOR'S ANSWER IS CHECKED, NOT TRUSTED. Before a line is handed to the browser,
+ * its route must target the router Payroll calls, spend exactly this line's USDT, buy the
+ * stock that was chosen, and move the price no more than MAX_PRICE_IMPACT_PERCENT.
  */
 import {STABLE} from "@/lib/chain";
 import {rememberReason} from "@/lib/db";
-import {swap} from "@/lib/okx";
+import {routerOf, swap} from "@/lib/okx";
 import {held, ok, type Outcome} from "@/lib/outcome";
-import {checkLine} from "@/lib/payment";
+import {
+  checkLine,
+  checkListedAsset,
+  checkPriceImpact,
+  checkRoute,
+  readPriceImpact,
+} from "@/lib/payment";
 import {payrollAddress} from "@/lib/receipts";
 
 /** One line of a payment, ready for the wallet to sign. Mirrors Payroll.Line exactly. */
@@ -36,7 +46,9 @@ export type BuiltPayment = {
   expectedOut: string;
   /** The floor the contract will enforce. Below this the whole payment reverts. */
   minOut: string;
-  priceImpactPercent: string | null;
+  /** How far this payment moves the price, as the aggregator reported it, in percent.
+   *  Null when it did not say, or when nothing is swapped — never a zero for unknown. */
+  priceImpactPercent: number | null;
   hops: string[];
   payroll: `0x${string}`;
   /** The total the payer must have approved to Payroll. */
@@ -62,6 +74,9 @@ export async function buildPayment(req: PaymentRequest): Promise<Outcome<BuiltPa
   if (!split.ok) return split;
   const {total, cash, swapAmount} = split.value;
 
+  const listed = checkListedAsset(req.asset);
+  if (!listed.ok) return listed;
+
   // The reason text is kept so the receipt can show it; only its hash goes on chain.
   const reasonHash = rememberReason(req.reason);
 
@@ -86,6 +101,9 @@ export async function buildPayment(req: PaymentRequest): Promise<Outcome<BuiltPa
     });
   }
 
+  const router = await routerOf(payroll.value);
+  if (!router.ok) return router;
+
   const route = await swap({
     from: STABLE.address,
     to: req.asset,
@@ -99,15 +117,28 @@ export async function buildPayment(req: PaymentRequest): Promise<Outcome<BuiltPa
   const first = route.value[0];
   if (!first) return held("The aggregator built no route for this pair.");
 
+  // A route aimed anywhere but Payroll's router is refused here — a loop back into
+  // Payroll included.
+  const answer = checkRoute(first, {
+    router: router.value,
+    from: STABLE.address,
+    to: req.asset,
+    amount: swapAmount,
+  });
+  if (!answer.ok) return answer;
+
+  const impact = checkPriceImpact(
+    readPriceImpact(first.routerResult.priceImpactPercent),
+    listed.value.symbol,
+  );
+  if (!impact.ok) return impact;
+
   const minOut = BigInt(first.tx.minReceiveAmount ?? "0");
   if (minOut === 0n) {
     return held(
       "The aggregator did not state a minimum it would deliver, so there is nothing for " +
         "the contract to hold it to. A payment is not sent without a floor.",
     );
-  }
-  if (first.tx.to.toLowerCase() === payroll.value.toLowerCase()) {
-    return held("The route points back at Payroll. That is not a route; it is a loop.");
   }
 
   return ok({
@@ -122,7 +153,7 @@ export async function buildPayment(req: PaymentRequest): Promise<Outcome<BuiltPa
     asset: req.asset as `0x${string}`,
     expectedOut: first.routerResult.toTokenAmount,
     minOut: minOut.toString(),
-    priceImpactPercent: first.routerResult.priceImpactPercent ?? null,
+    priceImpactPercent: impact.value,
     hops: (first.routerResult.dexRouterList ?? [])
       .map((h) => h.dexProtocol?.dexName)
       .filter((n): n is string => Boolean(n)),

@@ -21,6 +21,8 @@
  *                                                     all-tokens still says `decimals`
  */
 import {createHmac} from "node:crypto";
+import {createPublicClient, http} from "viem";
+import {xLayer} from "./chain";
 import {held, ok, type Outcome} from "./outcome";
 
 const BASE = process.env.OKX_API_BASE ?? "https://web3.okx.com";
@@ -369,6 +371,47 @@ export function swap(args: {
     userWalletAddress: args.userWalletAddress,
     swapReceiverAddress: args.receiver,
   });
+}
+
+const ROUTER_ABI = [
+  {
+    type: "function",
+    name: "router",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{name: "", type: "address"}],
+  },
+] as const;
+
+/** Read once per process: a contract's router is immutable, so it can never go stale. */
+const routers = new Map<string, `0x${string}`>();
+
+/**
+ * THE ROUTER A CONTRACT WILL ACTUALLY CALL.
+ *
+ * Payroll and GrantEscrow send a route's calldata to one router, fixed at deploy. Calldata
+ * the aggregator built for any other address cannot work through them, so a swap's `tx.to`
+ * is checked against the contract's own `router()`. When the chain cannot be read,
+ * OKX_ROUTER — the address they were deployed with — stands in; with neither, nothing is
+ * priced, because an unchecked route is not one a payer should sign.
+ */
+export async function routerOf(contract: `0x${string}`): Promise<Outcome<`0x${string}`>> {
+  const known = routers.get(contract.toLowerCase());
+  if (known) return ok(known);
+
+  try {
+    const rpc = createPublicClient({chain: xLayer, transport: http()});
+    const router = await rpc.readContract({address: contract, abi: ROUTER_ABI, functionName: "router"});
+    routers.set(contract.toLowerCase(), router);
+    return ok(router);
+  } catch {
+    const configured = process.env.OKX_ROUTER?.trim();
+    if (configured && /^0x[0-9a-fA-F]{40}$/.test(configured)) return ok(configured as `0x${string}`);
+    return held(
+      "Could not confirm which exchange contract payments go through, so no price is shown. " +
+        "Try again in a moment.",
+    );
+  }
 }
 
 /**
