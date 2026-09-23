@@ -9,8 +9,17 @@
  * to catch the day they stop agreeing.
  *
  * `depthUsd` is the largest payment the OKX aggregator would route at or under 1% price
- * impact, on `measuredAt`. It is a measurement of a market on a day, not a property of the
- * asset. `npm run probe` re-measures it; do that before submission and before the demo.
+ * impact, on `measuredAt`, asked at $1,000, $10,000 and $100,000. The top rung is a floor,
+ * not a ceiling: the ladder stopped asking. It is a measurement of a market on a day, not a
+ * property of the asset. `npm run probe` re-measures it; do that before submission and
+ * before the demo. docs/liquidity.md has the measurement behind every row.
+ *
+ * THE ORDER IS THE MENU'S ORDER. SPYx first, because it is the default; then the broad
+ * funds; then single stocks by name. A test holds it.
+ *
+ * Every row cleared one bar on 23 September 2026: the same implementation, owner and proxy
+ * code as the rest (so the one issuer disclosure below is true of it), 18 decimals, a route
+ * at $1,000 and at $10,000, and no more than 1% price impact at $1,000.
  */
 export type Asset = {
   address: `0x${string}`;
@@ -21,12 +30,16 @@ export type Asset = {
    *  but a judge who looks it up in OKX's own tooling will not find it. */
   listed: boolean;
   depthUsd: number;
-  /** Proved end to end through Payroll against real state. */
+  /** Proved end to end through Payroll against real state (`npm run prove-fork --
+   *  --asset=<address>`, on an anvil fork). False means quoted, not yet settled. */
   provedOnFork: boolean;
+  /** Legs in the aggregator's route for a $1,000 payment on `measuredAt`, counted the way
+   *  the pay form shows them: one per venue, so a split counts each side. A snapshot; the
+   *  route changes from quote to quote. */
   hops: number;
 };
 
-export const MEASURED_AT = "2026-09-22";
+export const MEASURED_AT = "2026-09-23";
 
 export const ASSETS: readonly Asset[] = [
   {
@@ -35,9 +48,119 @@ export const ASSETS: readonly Asset[] = [
     name: "S&P 500 xStock",
     decimals: 18,
     listed: true,
-    depthUsd: 10_000,
+    depthUsd: 100_000,
     provedOnFork: true,
     hops: 4,
+  },
+  {
+    address: "0xa753a7395cae905cd615da0b82a53e0560f250af",
+    symbol: "QQQx",
+    name: "Nasdaq 100 xStock",
+    decimals: 18,
+    listed: true,
+    depthUsd: 10_000,
+    provedOnFork: true,
+    hops: 5,
+  },
+  {
+    address: "0xdadfb355c6110eda0908740d52c834d6c2bcddc7",
+    symbol: "IWMx",
+    name: "Russell 2000 xStock",
+    decimals: 18,
+    listed: true,
+    depthUsd: 10_000,
+    provedOnFork: false,
+    hops: 5,
+  },
+  {
+    address: "0xe92f673ca36c5e2efd2de7628f815f84807e803f",
+    symbol: "GOOGLx",
+    name: "Alphabet xStock",
+    decimals: 18,
+    listed: true,
+    depthUsd: 10_000,
+    provedOnFork: false,
+    hops: 5,
+  },
+  {
+    address: "0x3557ba345b01efa20a1bddc61f573bfd87195081",
+    symbol: "AMZNx",
+    name: "Amazon xStock",
+    decimals: 18,
+    listed: true,
+    depthUsd: 10_000,
+    provedOnFork: false,
+    hops: 4,
+  },
+  {
+    address: "0x9d275685dc284c8eb1c79f6aba7a63dc75ec890a",
+    symbol: "AAPLx",
+    name: "Apple xStock",
+    decimals: 18,
+    listed: true,
+    depthUsd: 10_000,
+    provedOnFork: false,
+    hops: 4,
+  },
+  {
+    address: "0x38bac69cbbd28156796e4163b2b6dcb81e336565",
+    symbol: "AVGOx",
+    name: "Broadcom xStock",
+    decimals: 18,
+    listed: true,
+    depthUsd: 10_000,
+    provedOnFork: false,
+    hops: 5,
+  },
+  {
+    address: "0xfebded1b0986a8ee107f5ab1a1c5a813491deceb",
+    symbol: "CRCLx",
+    name: "Circle xStock",
+    decimals: 18,
+    listed: true,
+    depthUsd: 10_000,
+    provedOnFork: false,
+    hops: 9,
+  },
+  {
+    address: "0x364f210f430ec2448fc68a49203040f6124096f0",
+    symbol: "COINx",
+    name: "Coinbase xStock",
+    decimals: 18,
+    listed: true,
+    depthUsd: 10_000,
+    provedOnFork: false,
+    hops: 6,
+  },
+  {
+    address: "0x96702be57cd9777f835117a809c7124fe4ec989a",
+    symbol: "METAx",
+    name: "Meta xStock",
+    decimals: 18,
+    listed: true,
+    depthUsd: 1_000,
+    provedOnFork: false,
+    hops: 4,
+  },
+  {
+    address: "0x5621737f42dae558b81269fcb9e9e70c19aa6b35",
+    symbol: "MSFTx",
+    name: "Microsoft xStock",
+    decimals: 18,
+    listed: true,
+    depthUsd: 10_000,
+    provedOnFork: false,
+    hops: 4,
+  },
+  {
+    address: "0xae2f842ef90c0d5213259ab82639d5bbf649b08e",
+    symbol: "MSTRx",
+    name: "MicroStrategy xStock",
+    decimals: 18,
+    listed: true,
+    depthUsd: 10_000,
+    provedOnFork: false,
+    hops: 6,
   },
   {
     address: "0xc845b2894dbddd03858fd2d643b4ef725fe0849d",
@@ -50,14 +173,24 @@ export const ASSETS: readonly Asset[] = [
     hops: 4,
   },
   {
-    address: "0xa753a7395cae905cd615da0b82a53e0560f250af",
-    symbol: "QQQx",
-    name: "Nasdaq 100 xStock",
+    address: "0xe1385fdd5ffb10081cd52c56584f25efa9084015",
+    symbol: "HOODx",
+    name: "Robinhood xStock",
     decimals: 18,
     listed: true,
     depthUsd: 10_000,
-    provedOnFork: true,
-    hops: 4,
+    provedOnFork: false,
+    hops: 5,
+  },
+  {
+    address: "0x8ad3c73f833d3f9a523ab01476625f269aeb7cf0",
+    symbol: "TSLAx",
+    name: "Tesla xStock",
+    decimals: 18,
+    listed: true,
+    depthUsd: 10_000,
+    provedOnFork: false,
+    hops: 5,
   },
 ] as const;
 
@@ -95,21 +228,26 @@ export const ISSUER_POWERS = [
 ] as const;
 
 /**
- * All three assets sit behind ONE implementation with ONE owner. Warrant cannot prevent
- * any of this, and says so rather than leaving it to be discovered.
+ * Every asset in ASSETS sits behind ONE implementation with ONE owner, behind identical
+ * proxy code. That was read for each of them on `checkedOn`, not assumed from the first
+ * three; an asset added later has to be read the same way before it joins the list.
+ * Warrant cannot prevent any of this, and says so rather than leaving it to be discovered.
  */
 export const ISSUER = {
   owner: "0x49754062E35f7591B93cc4F9915965be89643a65",
   implementation: "0x65c40d624af3b18c109fbf87b7deff34cdc5f19b",
-  checkedOn: "2026-09-19",
+  checkedOn: "2026-09-23",
   /** Probed for and not found. Absence of a selector is weaker evidence than presence. */
   noSignOf: ["pause", "blacklist", "freeze", "forceTransfer", "seize", "rebase"],
 } as const;
 
-/** One sentence naming who holds those powers, for a row that has space for it. */
+/**
+ * One sentence naming who holds those powers, for a row that has space for it. It names
+ * no count, so a longer list cannot make it wrong by arithmetic.
+ */
 export const ISSUER_OWNER_NOTE =
-  `All three sit behind one upgradeable contract with one owner, ${ISSUER.owner}, ` +
-  `which can ${ISSUER_POWERS[0]}. Read from X Layer on ${ISSUER.checkedOn}.`;
+  `Every stock Warrant pays in sits behind one upgradeable contract with one owner, ` +
+  `${ISSUER.owner}, which can ${ISSUER_POWERS[0]}. Read from X Layer on ${ISSUER.checkedOn}.`;
 
 export function assetByAddress(address: string): Asset | undefined {
   return ASSETS.find((a) => a.address.toLowerCase() === address.toLowerCase());

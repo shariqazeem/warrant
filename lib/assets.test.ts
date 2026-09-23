@@ -2,6 +2,7 @@
  * The asset registry is offered on the form, named in the docs and checked by preflight.
  * These are the invariants that make it safe to have one list rather than several.
  */
+import {readFileSync} from "node:fs";
 import {getAddress, isAddress} from "viem";
 import {describe, expect, it} from "vitest";
 import {
@@ -11,22 +12,42 @@ import {
   ISSUER_NOTE,
   ISSUER_OWNER_NOTE,
   ISSUER_POWERS,
+  MEASURED_AT,
   assetByAddress,
   defaultAsset,
 } from "./assets";
 import {STABLE} from "./chain";
 
+/** The broad funds, in the order the menu shows them, ahead of every single stock. */
+const FUNDS = ["SPYx", "QQQx", "IWMx"];
+
+/** Runs `fn` with NEXT_PUBLIC_DEFAULT_ASSET set to `value` (or unset), then puts it back. */
+function withDefaultAsset(value: string | undefined, fn: () => void) {
+  const before = process.env.NEXT_PUBLIC_DEFAULT_ASSET;
+  try {
+    if (value === undefined) delete process.env.NEXT_PUBLIC_DEFAULT_ASSET;
+    else process.env.NEXT_PUBLIC_DEFAULT_ASSET = value;
+    fn();
+  } finally {
+    if (before === undefined) delete process.env.NEXT_PUBLIC_DEFAULT_ASSET;
+    else process.env.NEXT_PUBLIC_DEFAULT_ASSET = before;
+  }
+}
+
 describe("the asset registry", () => {
-  it("holds only real, lowercase-safe addresses", () => {
+  it("holds only real addresses, stored lowercase, each of which checksums", () => {
     for (const a of ASSETS) {
-      expect(isAddress(a.address, {strict: false}), `${a.symbol} address`).toBe(true);
       expect(a.address, `${a.symbol} should be stored lowercase`).toBe(a.address.toLowerCase());
+      // getAddress throws on anything that is not an address.
+      const checksummed = getAddress(a.address);
+      expect(isAddress(checksummed, {strict: true}), `${a.symbol} checksum`).toBe(true);
+      expect(checksummed.toLowerCase()).toBe(a.address);
     }
   });
 
   it("never lists the same asset twice, by address or by symbol", () => {
     const addresses = ASSETS.map((a) => a.address.toLowerCase());
-    const symbols = ASSETS.map((a) => a.symbol);
+    const symbols = ASSETS.map((a) => a.symbol.toLowerCase());
     expect(new Set(addresses).size).toBe(ASSETS.length);
     expect(new Set(symbols).size).toBe(ASSETS.length);
   });
@@ -35,18 +56,59 @@ describe("the asset registry", () => {
     expect(assetByAddress(STABLE.address)).toBeUndefined();
   });
 
-  it("only offers assets that were proved end to end and that OKX lists", () => {
+  it("only offers assets that OKX lists", () => {
     for (const a of ASSETS) {
-      expect(a.provedOnFork, `${a.symbol} must be proved through Payroll first`).toBe(true);
       // An unlisted asset can route, but a judge checking it in OKX's tooling finds
       // nothing — or worse, finds its twin at a different price.
       expect(a.listed, `${a.symbol} must appear in the aggregator's all-tokens`).toBe(true);
     }
   });
 
+  it("keeps SPYx first and the default, and it is the one proved through Payroll", () => {
+    expect(ASSETS[0]!.symbol).toBe("SPYx");
+    withDefaultAsset(undefined, () => {
+      expect(defaultAsset().symbol).toBe("SPYx");
+      // The others were quoted and share its code and its last leg, but a quote is not a
+      // settlement. The asset a payment falls back to must be one that has settled.
+      expect(defaultAsset().provedOnFork).toBe(true);
+    });
+  });
+
+  it("orders the menu: SPYx, then the broad funds, then single stocks by name", () => {
+    expect(ASSETS.slice(0, FUNDS.length).map((a) => a.symbol)).toEqual(FUNDS);
+    const stocks = ASSETS.slice(FUNDS.length).map((a) => a.name);
+    const byName = [...stocks].sort((x, y) => (x.toLowerCase() < y.toLowerCase() ? -1 : 1));
+    expect(stocks).toEqual(byName);
+  });
+
   it("states every xStock as eighteen decimals, never the stablecoin's six", () => {
     for (const a of ASSETS) expect(a.decimals, a.symbol).toBe(18);
     expect(STABLE.decimals).toBe(6);
+  });
+
+  it("only offers assets that carried $1,000 within 1% impact when measured", () => {
+    expect(MEASURED_AT).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    for (const a of ASSETS) expect(a.depthUsd, a.symbol).toBeGreaterThanOrEqual(1_000);
+  });
+
+  it("has every asset in the liquidity record for the day it was measured", () => {
+    // Two lists: this registry and docs/liquidity.md. An asset added here without a
+    // measurement there, or MEASURED_AT moved without a record of it, fails here.
+    const MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+      "August", "September", "October", "November", "December"];
+    const [y, m, d] = MEASURED_AT.split("-").map(Number);
+    const day = `${d} ${MONTHS[m! - 1]} ${y}`;
+
+    const lines = readFileSync("docs/liquidity.md", "utf8").split("\n");
+    const start = lines.findIndex((l) => l.startsWith("## ") && l.includes(day));
+    expect(start, `docs/liquidity.md has no "## ${day}" section`).toBeGreaterThanOrEqual(0);
+    const rest = lines.slice(start + 1);
+    const end = rest.findIndex((l) => l.startsWith("## "));
+    const section = (end === -1 ? rest : rest.slice(0, end)).join("\n").toLowerCase();
+
+    for (const a of ASSETS) {
+      expect(section, `${a.symbol} is offered but not in the ${day} record`).toContain(a.address);
+    }
   });
 
   it("finds an asset however its address is cased", () => {
@@ -57,17 +119,12 @@ describe("the asset registry", () => {
   });
 
   it("falls back to a listed asset rather than an unknown one from the environment", () => {
-    const before = process.env.NEXT_PUBLIC_DEFAULT_ASSET;
-    try {
-      process.env.NEXT_PUBLIC_DEFAULT_ASSET = "0x000000000000000000000000000000000000dead";
+    withDefaultAsset("0x000000000000000000000000000000000000dead", () => {
       expect(ASSETS.map((a) => a.address)).toContain(defaultAsset().address);
-
-      process.env.NEXT_PUBLIC_DEFAULT_ASSET = ASSETS[1]!.address;
+    });
+    withDefaultAsset(ASSETS[1]!.address, () => {
       expect(defaultAsset().symbol).toBe(ASSETS[1]!.symbol);
-    } finally {
-      if (before === undefined) delete process.env.NEXT_PUBLIC_DEFAULT_ASSET;
-      else process.env.NEXT_PUBLIC_DEFAULT_ASSET = before;
-    }
+    });
   });
 
   it("discloses what the issuer can do, without claiming the holder owns shares", () => {
@@ -96,6 +153,20 @@ describe("the asset registry", () => {
     expect(ISSUER.checkedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(ISSUER_OWNER_NOTE).toContain(ISSUER.owner);
     expect(ISSUER_OWNER_NOTE).toContain(ISSUER.checkedOn);
+  });
+
+  it("read the issuer for every asset, so the one disclosure is true of each row", () => {
+    // ISSUER_OWNER_NOTE says every stock sits behind one contract with one owner. That is
+    // only known of an asset that was read, so the check cannot predate the list.
+    expect(
+      ISSUER.checkedOn >= MEASURED_AT,
+      `the list was measured ${MEASURED_AT} but the issuer last read ${ISSUER.checkedOn}: ` +
+        "run npm run check-issuer",
+    ).toBe(true);
+    // And it states no count, which a longer list would turn into a false sentence.
+    expect(ISSUER_OWNER_NOTE).not.toMatch(
+      /\ball (two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\d+)\b/i,
+    );
   });
 
   it("does not claim a power was ruled out, only that it was not found", () => {
