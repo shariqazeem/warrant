@@ -9,21 +9,7 @@
 import {describe, expect, it} from "vitest";
 import {ASSETS} from "./assets";
 import {STABLE} from "./chain";
-import {
-  MAX_PRICE_IMPACT_PERCENT,
-  MAX_USD,
-  checkAddress,
-  checkLine,
-  checkListedAsset,
-  checkPriceImpact,
-  checkRoute,
-  impactText,
-  readPriceImpact,
-  runTotal,
-  toBase,
-  worstPriceImpact,
-  type RouteAnswer,
-} from "./payment";
+import {MAX_PRICE_IMPACT_PERCENT, MAX_USD, checkAddress, checkLine, checkListedAsset, checkPriceImpact, checkRoute, impactText, readPriceImpact, runTotal, toBase, worstPriceImpact, type RouteAnswer, MIN_STOCK, resolveSplit} from "./payment";
 import {MAX_REASON_LENGTH} from "./reason";
 
 const OK_LINE = {
@@ -293,5 +279,42 @@ describe("the aggregator's answer", () => {
   it("refuses an answer that leaves out which tokens it trades", () => {
     const bare: RouteAnswer = {routerResult: {fromTokenAmount: "25000000"}, tx: {to: ROUTER}};
     expect(checkRoute(bare, ask).ok).toBe(false);
+  });
+});
+
+describe("resolveSplit: whose split a line follows", () => {
+  const SPYX = "0x90a2a4c76b5d8c0bc892a69ea28aa775a8f2dd48" as const;
+  const NVDAX = "0xc845b2894dbddd03858fd2d643b4ef725fe0849d" as const;
+  const usd = (n: number) => BigInt(Math.round(n * 1e6));
+  const allDollars = {cash: usd(25), asset: SPYX};
+
+  it("follows the person's choice, whatever the payer asked for", () => {
+    const r = resolveSplit(usd(25), {stockBps: 2500, asset: NVDAX}, {cash: 0n, asset: SPYX});
+    expect(r).toEqual({cash: usd(18.75), stock: usd(6.25), asset: NVDAX, decidedBy: "their-choice", tooSmall: false});
+  });
+
+  it("pays all in dollars when the person chose no stock", () => {
+    const r = resolveSplit(usd(25), {stockBps: 0, asset: null}, {cash: 0n, asset: SPYX});
+    expect(r).toEqual({cash: usd(25), stock: 0n, asset: null, decidedBy: "their-choice", tooSmall: false});
+  });
+
+  it("uses the payer's split only for someone who has not chosen", () => {
+    expect(resolveSplit(usd(25), null, allDollars)).toEqual({cash: usd(25), stock: 0n, asset: null, decidedBy: "payer", tooSmall: false});
+    const r = resolveSplit(usd(25), null, {cash: usd(5), asset: SPYX});
+    expect(r).toEqual({cash: usd(5), stock: usd(20), asset: SPYX, decidedBy: "payer", tooSmall: false});
+  });
+
+  it("pays a stock slice too small to buy in dollars, and says so", () => {
+    const r = resolveSplit(usd(1), {stockBps: 2500, asset: SPYX}, allDollars);
+    expect(r).toEqual({cash: usd(1), stock: 0n, asset: null, decidedBy: "their-choice", tooSmall: true});
+    expect(resolveSplit(MIN_STOCK, {stockBps: 10_000, asset: SPYX}, allDollars).stock).toBe(MIN_STOCK);
+  });
+
+  it("never creates or loses a unit, however the percentage divides", () => {
+    for (const [total, bps] of [[7_777_777n, 3333], [1_000_001n, 9999], [123_456_789n, 1]] as const) {
+      const r = resolveSplit(total, {stockBps: bps, asset: SPYX}, allDollars);
+      expect(r.cash + r.stock).toBe(total);
+      expect(r.stock).toBe(r.tooSmall ? 0n : (total * BigInt(bps)) / 10_000n);
+    }
   });
 });

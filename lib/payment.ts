@@ -247,3 +247,60 @@ export function checkRoute(answer: RouteAnswer, ask: RouteAsk): Outcome<void> {
   }
   return ok(undefined);
 }
+
+/**
+ * The smallest stock purchase worth routing. Below it a route costs more in price than it
+ * buys, and some pools refuse it outright, so that slice is paid in dollars instead — and
+ * the line says so. $0.50, in USDT's six decimals.
+ */
+export const MIN_STOCK = 500_000n;
+
+export type Resolved = {
+  /** Paid as USDT. */
+  cash: bigint;
+  /** Swapped into `asset`. */
+  stock: bigint;
+  /** The stock bought, or null when the line is paid all in dollars. */
+  asset: `0x${string}` | null;
+  /** Whose decision the split is: the person's signed choice, or the payer's for someone who has not chosen. */
+  decidedBy: "their-choice" | "payer";
+  /** The chosen stock slice was under MIN_STOCK, so it was paid in dollars. */
+  tooSmall: boolean;
+};
+
+/**
+ * WHOSE SPLIT A LINE FOLLOWS. The person's signed choice when there is one — the payer
+ * never overrides it; the payer's only for someone who has not chosen yet. The stock slice
+ * is floor(total × bps / 10000) and the rest is dollars, so rounding can never create or
+ * lose a unit. A slice too small to buy is paid in dollars, and says so.
+ */
+export function resolveSplit(
+  total: bigint,
+  choice: {stockBps: number; asset: `0x${string}` | null} | null,
+  fallback: {cash: bigint; asset: `0x${string}`},
+): Resolved {
+  let stock: bigint;
+  let asset: `0x${string}` | null;
+  let decidedBy: Resolved["decidedBy"];
+
+  if (choice) {
+    const bps = Math.max(0, Math.min(10_000, Math.trunc(choice.stockBps)));
+    stock = bps > 0 && choice.asset ? (total * BigInt(bps)) / 10_000n : 0n;
+    asset = stock > 0n ? choice.asset : null;
+    decidedBy = "their-choice";
+  } else {
+    const cash = fallback.cash > total ? total : fallback.cash;
+    stock = total - cash;
+    asset = stock > 0n ? fallback.asset : null;
+    decidedBy = "payer";
+  }
+
+  let tooSmall = false;
+  if (stock > 0n && stock < MIN_STOCK) {
+    stock = 0n;
+    asset = null;
+    tooSmall = true;
+  }
+
+  return {cash: total - stock, stock, asset, decidedBy, tooSmall};
+}
