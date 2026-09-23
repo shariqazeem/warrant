@@ -11,7 +11,8 @@
  * lib/indexer.ts in windows the endpoint accepts.
  */
 import {createPublicClient, http, parseAbiItem, type Log} from "viem";
-import {xLayer} from "./chain";
+import {STABLE, xLayer} from "./chain";
+import {confirmClaims, stableMovements} from "./confirm";
 import {attempt, held, ok, type Outcome} from "./outcome";
 
 export const PAID_EVENT = parseAbiItem(
@@ -156,6 +157,22 @@ export function paidInTransaction(hash: `0x${string}`): Promise<Outcome<Receipt[
       if (!r.ok) return r;
       out.push(r.value);
     }
+
+    // The event is only as honest as the call that emitted it (lib/confirm.ts): a stub is
+    // printed only for a listed stock and USDT that really left the payer.
+    const backed = confirmClaims(
+      out.map((r) => ({
+        payer: r.payer,
+        recipient: r.recipient,
+        asset: r.asset,
+        stable: r.stableAmount,
+        cash: r.cashAmount,
+      })),
+      stableMovements(receipt.logs, STABLE.address),
+      address.value,
+    );
+    if (!backed.ok) return backed;
+
     return ok(await withTimestamps(rpc, out));
   });
 }

@@ -22,7 +22,8 @@
  * shares the address, still gets its reads.
  */
 import {createPublicClient, http, parseAbiItem, type Address} from "viem";
-import {LOG_WINDOW, xLayer} from "./chain";
+import {LOG_WINDOW, STABLE, xLayer} from "./chain";
+import {confirmClaims, stableMovements, type Claim} from "./confirm";
 import {database, writeCursor, readCursor} from "./db";
 import {PAID_EVENT, payrollAddress} from "./receipts";
 import {escrowAddress} from "./grants";
@@ -201,12 +202,47 @@ async function timesFor(blocks: bigint[]): Promise<Map<bigint, number>> {
   return out;
 }
 
+/**
+ * KEEP ONLY WHAT ITS TRANSACTION BACKS (lib/confirm.ts): a listed stock, and USDT that
+ * really left the payer. One receipt read per transaction. A receipt that will not read
+ * throws, so the window is read again — an honest payment is never dropped for being slow.
+ * A claim its transaction does not back is dropped for good, and the log says so.
+ */
+async function backed<L extends {transactionHash: `0x${string}` | null}>(
+  logs: L[],
+  contract: Address,
+  claimOf: (l: L) => Claim,
+): Promise<L[]> {
+  const rpc = client();
+  const byTx = new Map<`0x${string}`, L[]>();
+  for (const l of logs) {
+    const h = l.transactionHash!;
+    byTx.set(h, [...(byTx.get(h) ?? []), l]);
+  }
+  const keep: L[] = [];
+  for (const [hash, group] of byTx) {
+    const receipt = await rpc.getTransactionReceipt({hash});
+    const verdict = confirmClaims(group.map(claimOf), stableMovements(receipt.logs, STABLE.address), contract);
+    if (verdict.ok) keep.push(...group);
+    else console.warn(`[indexer] ${hash} not recorded: ${verdict.why}`);
+  }
+  return keep;
+}
+
 function payrollWalker(address: Address): Walker {
   return {
     name: `payroll:${address.toLowerCase()}`,
     address,
     read: async (from, to) => {
-      const logs = await client().getLogs({address, event: PAID_EVENT, fromBlock: from, toBlock: to});
+      const found = await client().getLogs({address, event: PAID_EVENT, fromBlock: from, toBlock: to});
+      if (found.length === 0) return 0;
+      const logs = await backed(found, address, (l) => ({
+        payer: l.args.payer!,
+        recipient: l.args.recipient!,
+        asset: l.args.asset!,
+        stable: l.args.stableAmount!,
+        cash: l.args.cashAmount!,
+      }));
       if (logs.length === 0) return 0;
 
       const times = await timesFor(logs.map((l) => l.blockNumber!));
@@ -248,11 +284,18 @@ function escrowWalker(address: Address): Walker {
     address,
     read: async (from, to) => {
       const rpc = client();
-      const [opened, vested] = await Promise.all([
+      const [found, vested] = await Promise.all([
         rpc.getLogs({address, event: GRANT_OPENED_EVENT, fromBlock: from, toBlock: to}),
         rpc.getLogs({address, event: VESTED_EVENT, fromBlock: from, toBlock: to}),
       ]);
-      if (opened.length === 0 && vested.length === 0) return 0;
+      if (found.length === 0 && vested.length === 0) return 0;
+      const opened = await backed(found, address, (l) => ({
+        payer: l.args.payer!,
+        recipient: l.args.beneficiary!,
+        asset: l.args.asset!,
+        stable: l.args.stableCost!,
+        cash: 0n,
+      }));
 
       const times = await timesFor([...opened, ...vested].map((l) => l.blockNumber!));
       const db = database();
@@ -269,6 +312,11 @@ function escrowWalker(address: Address): Walker {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(tx_hash, log_index) DO NOTHING`,
       );
+
+      // A vest belongs on the record only if its grant does: one the check above refused
+      // never became a row, so neither do its vests.
+      const known = db.prepare(`SELECT 1 FROM grants WHERE id = ?`);
+      let rows = 0;
 
       const write = db.transaction(() => {
         for (const l of opened) {
@@ -290,9 +338,12 @@ function escrowWalker(address: Address): Walker {
             Number(a.tipBps!),
             a.reasonHash!,
           );
+          rows++;
         }
         for (const l of vested) {
           const a = l.args;
+          if (!known.get(Number(a.id!))) continue;
+          rows++;
           insertVest.run(
             l.transactionHash,
             l.logIndex,
@@ -308,7 +359,7 @@ function escrowWalker(address: Address): Walker {
         }
       });
       write();
-      return opened.length + vested.length;
+      return rows;
     },
   };
 }
