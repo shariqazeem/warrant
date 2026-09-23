@@ -9,7 +9,9 @@
 # new build is ready, so the site stays up throughout.
 #
 # The server's .env.local is never overwritten and never contains a private key: it is
-# excluded from the sync on purpose.
+# excluded from the sync on purpose. So is .lock-hash, the marker that lets a deploy skip
+# the install — rsync --delete would otherwise remove it every time, because it exists only
+# on the VM, and every deploy would reinstall the world.
 set -euo pipefail
 
 KEY="${WARRANT_VM_KEY:-$HOME/Downloads/ssh-key-2025-10-14.key}"
@@ -22,7 +24,7 @@ echo "→ syncing"
 rsync -az --delete -e "$SSH" \
   --exclude node_modules --exclude .next --exclude var --exclude .env.local --exclude .git \
   --exclude from-scrip --exclude contracts/out --exclude contracts/cache --exclude contracts/lib \
-  --exclude tsconfig.tsbuildinfo --exclude .DS_Store --exclude deploy.log \
+  --exclude tsconfig.tsbuildinfo --exclude .DS_Store --exclude deploy.log --exclude .lock-hash \
   ./ "$HOST:~/warrant/"
 
 echo "→ building on the VM (the live site keeps serving meanwhile)"
