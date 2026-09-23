@@ -89,8 +89,13 @@ export function isThrottle(err: unknown, depth = 0): boolean {
   if (typeof err !== "object" || err === null || depth > 5) return false;
   const e = err as RpcLike;
   if (e.status === 429 || e.code === 429 || e.code === -32016) return true;
-  const said = `${typeof e.details === "string" ? e.details : ""} ${typeof e.shortMessage === "string" ? e.shortMessage : ""}`;
-  if (/over rate limit|rate limited|too many requests/i.test(said)) return true;
+  const said =
+    `${typeof e.details === "string" ? e.details : ""} ` +
+    `${typeof e.shortMessage === "string" ? e.shortMessage : ""} ` +
+    `${err instanceof Error ? err.message : ""}`;
+  // Phrases, never a bare number: "HTTP 429" and "Status: 429" are what an endpoint says;
+  // a lone "429" can be part of any hex string in a request body.
+  if (/over rate limit|rate limited|too many requests|\bHTTP 429\b|Status: 429\b/i.test(said)) return true;
   return isThrottle(e.cause, depth + 1);
 }
 

@@ -348,7 +348,7 @@ type VestedRow = Located & {
   };
 };
 
-const openedClaim = (l: OpenedRow): Claim => ({
+export const openedClaim = (l: OpenedRow): Claim => ({
   payer: l.args.payer!,
   recipient: l.args.beneficiary!,
   asset: l.args.asset!,
