@@ -96,3 +96,12 @@
     width: 100%;
   }
 }
+
+/* "QR or app" beside OKX Wallet: says how it will connect before anyone clicks. */
+.wa-wallet-tag {
+  font-size: var(--fs-caption);
+  color: var(--ink-faint);
+  padding: 1px var(--s-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+}

@@ -6,15 +6,17 @@ import {createConfig, http} from "wagmi";
 // fails the build. `injected` is a core connector and needs none of it.
 import {injected} from "@wagmi/core";
 import {xLayer} from "@/lib/chain";
+import {okxConnect} from "./okx-connect";
 
 /**
- * One chain and one kind of connector. OKX Wallet, MetaMask and anything else that injects
- * itself all arrive through `injected`, which is the whole list on purpose: a wallet picker
- * with six logos is a thing to configure, not a thing anyone needed.
+ * One chain. Browser wallets announce themselves through EIP-6963 and are discovered on
+ * their own; `injected` catches one that does not. `okxConnect` adds OKX Wallet by QR code
+ * — the phone as the wallet — for anyone without the extension, which on a judge's laptop
+ * is most people.
  */
 export const wagmiConfig = createConfig({
   chains: [xLayer],
-  connectors: [injected()],
+  connectors: [okxConnect(), injected()],
   transports: {[xLayer.id]: http(xLayer.rpcUrls.default.http[0])},
   ssr: true,
 });

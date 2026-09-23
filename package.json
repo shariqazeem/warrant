@@ -26,6 +26,7 @@
     "verify-deploy": "tsx scripts/verify-deploy.ts"
   },
   "dependencies": {
+    "@okxconnect/ui": "^1.9.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@tanstack/react-query": "^5.89.0",
     "better-sqlite3": "^12.2.0",

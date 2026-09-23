@@ -4,6 +4,7 @@ import {AlertCircle, Check, Wallet} from "lucide-react";
 import {useMemo} from "react";
 import {formatEther} from "viem";
 import {useConnect, useDisconnect, useSwitchChain} from "wagmi";
+import {OKX_CLOSED, OKX_CONNECT_ID} from "./okx-connect";
 import {xLayer} from "@/lib/chain";
 import {short, usdt as fmtUsdt} from "@/lib/format";
 import {useWallet} from "./use-wallet";
@@ -19,10 +20,11 @@ import "./wallet.css";
  * button that does not say why is how a product feels broken.
  */
 function rank(id: string, name: string): number {
+  if (id === OKX_CONNECT_ID) return 0;
   const s = `${id} ${name}`.toLowerCase();
-  if (s.includes("okx") || s.includes("okex")) return 0;
-  if (s.includes("metamask")) return 1;
-  return 2;
+  if (s.includes("okx") || s.includes("okex")) return 1;
+  if (s.includes("metamask")) return 2;
+  return 3;
 }
 
 export function WalletPanel({need}: {need?: bigint}) {
@@ -53,9 +55,9 @@ export function WalletPanel({need}: {need?: bigint}) {
         </p>
         {wallets.length === 0 ? (
           <p className="wa-wallet-note">
-            No wallet found in this browser.{" "}
+            No wallet found. Install{" "}
             <a href="https://www.okx.com/web3" target="_blank" rel="noreferrer">
-              Install OKX Wallet
+              OKX Wallet
             </a>
             , then reload this page.
           </p>
@@ -72,7 +74,18 @@ export function WalletPanel({need}: {need?: bigint}) {
                   onClick={() => connect({connector: c, chainId: xLayer.id})}
                 >
                   {c.icon ? <img src={c.icon} alt="" width={20} height={20} /> : <Wallet size={16} strokeWidth={2} aria-hidden />}
-                  <span>{busy ? "Check your wallet…" : c.name === "Injected" ? "Browser wallet" : c.name}</span>
+                  <span>
+                    {busy
+                      ? c.id === OKX_CONNECT_ID
+                        ? "Scan the code with the OKX app…"
+                        : "Check your wallet…"
+                      : c.id === OKX_CONNECT_ID
+                        ? "OKX Wallet"
+                        : c.name === "Injected"
+                          ? "Browser wallet"
+                          : c.name}
+                  </span>
+                  {c.id === OKX_CONNECT_ID ? <span className="wa-wallet-tag">QR or app</span> : null}
                 </button>
               );
             })}
@@ -145,6 +158,7 @@ export function WalletPanel({need}: {need?: bigint}) {
 
 /** A wallet's own error, reduced to the sentence that matters. */
 function readable(message: string): string {
+  if (message.includes(OKX_CLOSED)) return `${OKX_CLOSED} Press OKX Wallet to show the code again.`;
   if (/rejected|denied/i.test(message)) return "The request was dismissed in your wallet.";
   if (/already pending/i.test(message)) return "Your wallet already has a request open. Check it.";
   return message.split("\n")[0] ?? message;
