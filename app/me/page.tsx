@@ -5,10 +5,10 @@ import {WalletProvider} from "@/components/wallet/provider";
 import "@/app/landing.css";
 
 export const metadata: Metadata = {
-  title: "How you get paid — Warrant",
+  title: "Get your link — Warrant",
   description:
-    "Choose how much of each payment becomes stock, and which stock. Sign it once, for free; " +
-    "every company that pays you through Warrant follows it.",
+    "Choose how much of every payment becomes stock, and which stock. Sign it once, for free, " +
+    "and share your link: whoever pays you through it, you get your split.",
 };
 
 /**
@@ -28,12 +28,12 @@ export default function MePage() {
       <div className="wa-tear" aria-hidden />
 
       <main className="wa-sec is-wide">
-        <p className="wa-kicker">How you get paid</p>
-        <h1 className="wa-h2">Choose how much of your pay becomes stock.</h1>
+        <p className="wa-kicker">Get paid in stocks</p>
+        <h1 className="wa-h2">Get your link.</h1>
         <p className="wa-lede">
-          When a company pays you through Warrant, you decide how much of each payment arrives
-          as a stock — like the S&amp;P 500 — and how much as USDT, a digital dollar. You sign it
-          once, for free, and every company that pays you follows it.
+          Choose how much of every payment becomes stock — like the S&amp;P 500 — and how much
+          arrives as USDT, a digital dollar. It takes a minute, costs nothing, and nothing leaves
+          your wallet. Then share your link: whoever pays you through it, you get your split.
         </p>
 
         <div style={{marginTop: "var(--s-7)"}}>

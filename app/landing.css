@@ -470,3 +470,14 @@
     gap: var(--s-5);
   }
 }
+
+/* The quiet line under the hero's one button: the second path, never a second button. */
+.wa-hero-note {
+  margin-top: var(--s-4);
+  font-size: var(--fs-small);
+  color: var(--ink-inverse-muted);
+  max-width: 60ch;
+}
+.wa-hero-note a {
+  color: var(--accent-inverse);
+}

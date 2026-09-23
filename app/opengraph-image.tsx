@@ -12,7 +12,7 @@ import {OG, OG_SIZE, OG_TYPE} from "@/lib/og-theme";
  */
 export const runtime = "nodejs";
 export const revalidate = 300;
-export const alt = "Warrant: pay your team, they choose the stock";
+export const alt = "Warrant: get paid in stocks";
 export const size = OG_SIZE;
 export const contentType = OG_TYPE;
 
@@ -72,7 +72,7 @@ export default async function Image() {
             lineHeight: 1,
           }}
         >
-          Pay your team. They choose the stock.
+          Get paid in stocks.
         </div>
 
         <div
@@ -85,8 +85,8 @@ export default async function Image() {
             maxWidth: 980,
           }}
         >
-          You pay in dollars. Each person decides how much becomes stock, and which one, and
-          gets exactly that in their own wallet, with a receipt.
+          Choose how much of every payment becomes stock, and which one. Whoever pays you, you get
+          your split in your own wallet, with a receipt.
         </div>
 
         <div style={{display: "flex", flex: 1}} />
@@ -101,7 +101,7 @@ export default async function Image() {
             fontSize: 24,
           }}
         >
-          <div style={{display: "flex", color: OG.ink}}>One signature, everyone&apos;s own choice</div>
+          <div style={{display: "flex", color: OG.ink}}>Your split, whoever pays you</div>
           <div style={{display: "flex", color: OG.muted}}>{proof}</div>
         </div>
       </div>

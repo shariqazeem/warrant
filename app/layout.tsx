@@ -22,11 +22,10 @@ const SITE_URL = siteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Warrant — pay your team, they choose the stock",
+  title: "Warrant — get paid in stocks",
   description:
-    "Payroll where each person chooses how much of their pay becomes stock. You pay in USDT " +
-    "with one signature; each person gets their choice — like the S&P 500 — in their own " +
-    "wallet, with a receipt for every payment. On X Layer.",
+    "Choose how much of every payment becomes stock — like the S&P 500 — and share your link. " +
+    "Whoever pays you, you get your split in your own wallet, with a receipt. On X Layer.",
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {

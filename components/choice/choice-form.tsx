@@ -24,6 +24,7 @@ import {held, type Outcome} from "@/lib/outcome";
 import {ChoiceWallet} from "./choice-wallet";
 import "@/components/pay/pay.css";
 import "./choice.css";
+import {CopyText} from "@/components/app/copy-text";
 
 /**
  * HOW YOU GET PAID — the person being paid chooses, once.
@@ -230,10 +231,12 @@ export function ChoiceForm() {
   if (status !== "connected" || !address) {
     return (
       <div className="wa-me">
+        <Steps at={1} />
         <ChoiceWallet />
         <p className="wa-me-lead-note">
-          Connect the wallet companies pay you to. You will choose how much of each payment
-          becomes stock, then sign it — which is free, and moves nothing.
+          Connect the wallet you want to be paid to. Next you choose how much of each payment
+          becomes stock and sign it — which is free, and moves nothing — and then you get your
+          link.
         </p>
       </div>
     );
@@ -242,6 +245,7 @@ export function ChoiceForm() {
   if (reading) {
     return (
       <div className="wa-me">
+        <Steps at={address ? 2 : 1} />
         <ChoiceWallet />
         <p className="wa-me-reading">Reading your current choice…</p>
       </div>
@@ -255,14 +259,10 @@ export function ChoiceForm() {
     const stock = current.stockBps > 0 ? assetByAddress(current.asset) : undefined;
     return (
       <div className="wa-me">
+        <Steps at={3} />
         <ChoiceWallet />
+        <YourLink address={address!} justSaved={justSaved} />
         <section className="wa-me-current" aria-live="polite">
-          {justSaved ? (
-            <p className="wa-me-saved">
-              Saved. Every company that pays you through Warrant follows this, starting with
-              your next payment. Change it any time.
-            </p>
-          ) : null}
           <p className="wa-kicker">Your choice</p>
           <p className="wa-me-now">
             <span className="wa-me-now-share">{parts.share}</span> {parts.rest}
@@ -274,12 +274,9 @@ export function ChoiceForm() {
             </div>
           ) : null}
           <div className="wa-actions">
-            <button type="button" className="wa-btn is-primary" onClick={startChange}>
-              Change it
+            <button type="button" className="wa-btn" onClick={startChange}>
+              Change your split
             </button>
-            <Link href={`/@${address}`} className="wa-btn">
-              See your public page
-            </Link>
           </div>
           <p className="wa-fine wa-me-fine">
             Your public page shows this choice with its signature, so anyone — a company
@@ -306,6 +303,7 @@ export function ChoiceForm() {
 
   return (
     <div className="wa-me">
+      <Steps at={2} />
       <ChoiceWallet />
       {loadWhy ? (
         <p className="wa-me-reading">
@@ -559,4 +557,60 @@ function readSignError(err: unknown): {kind: "rejected" | "chain" | "other"; tex
 function switchWords(message: string): string {
   if (/rejected|denied/i.test(message)) return "The switch was dismissed in your wallet.";
   return message.split("\n")[0] ?? message;
+}
+
+
+/** Three steps, and where you are: connect, choose, share. */
+function Steps({at}: {at: 1 | 2 | 3}) {
+  const steps = ["Connect your wallet", "Choose your split", "Share your link"];
+  return (
+    <ol className="wa-steps" aria-label="Getting your link">
+      {steps.map((s, i) => (
+        <li key={s} className={i + 1 === at ? "is-on" : i + 1 < at ? "is-done" : ""} aria-current={i + 1 === at ? "step" : undefined}>
+          <span className="n">{i + 1}</span> {s}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * YOUR LINK — WHAT THIS PAGE IS FOR. Whoever pays through it gets the split you signed:
+ * a client, an employer, a friend, from any wallet on X Layer.
+ */
+function YourLink({address, justSaved}: {address: string; justSaved: boolean}) {
+  const [origin, setOrigin] = useState("https://warrant.world");
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => {
+    setOrigin(window.location.origin);
+    setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
+  }, []);
+  const link = `${origin}/@${address}`;
+  const shown = `${origin.replace(/^https?:\/\//, "")}/@${short(address)}`;
+  return (
+    <section className="wa-me-link" aria-live="polite">
+      {justSaved ? <p className="wa-me-saved">Saved. Your link is ready.</p> : null}
+      <p className="wa-kicker">Your link</p>
+      <p className="wa-me-link-url wa-mono">{shown}</p>
+      <div className="wa-actions">
+        <CopyText text={link} label="Copy your link" />
+        {canShare ? (
+          <button
+            type="button"
+            className="wa-btn"
+            onClick={() => void navigator.share({title: "Pay me on Warrant", url: link}).catch(() => undefined)}
+          >
+            Share
+          </button>
+        ) : null}
+        <Link href={`/@${address}`} className="wa-btn">
+          Open your page
+        </Link>
+      </div>
+      <p className="wa-fine">
+        Send it to whoever pays you. They pay in dollars from any wallet on X Layer and never
+        pick your stock — you get your split, with a receipt for every payment.
+      </p>
+    </section>
+  );
 }

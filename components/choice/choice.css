@@ -292,3 +292,53 @@
     padding: var(--s-2) var(--s-3);
   }
 }
+
+/* Where you are: connect, choose, share. */
+.wa-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-5);
+  list-style: none;
+  margin: 0 0 var(--s-5);
+  padding: 0;
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+}
+.wa-steps .n {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5em;
+  height: 1.5em;
+  margin-right: var(--s-1);
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  font-size: var(--fs-caption);
+}
+.wa-steps .is-on {
+  color: var(--ink);
+  font-weight: 500;
+}
+.wa-steps .is-on .n {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--surface);
+}
+.wa-steps .is-done .n {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+/* Your link: what the page is for. */
+.wa-me-link {
+  margin-top: var(--s-5);
+  padding: var(--s-5);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.wa-me-link-url {
+  margin: var(--s-2) 0 var(--s-4);
+  font-size: var(--fs-units-sm);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}

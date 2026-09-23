@@ -34,22 +34,27 @@ export default async function Home() {
       <section className="wa-dark">
         <SiteNav />
         <div className="wa-open">
-          <p className="wa-kicker">Payroll on X Layer · priced by OKX DEX</p>
-          <h1 className="wa-display">Pay your team. They choose the stock.</h1>
+          <p className="wa-kicker">Live on X Layer mainnet · priced by OKX DEX</p>
+          <h1 className="wa-display">Get paid in stocks.</h1>
+          {/*
+            ONE WEDGE. The person being paid, and the split they choose. Paying a team is how a
+            company reaches many of them at once, so it is a quiet line below, not a second
+            button competing with the first.
+          */}
           <p className="wa-lede">
-            You pay in dollars, with one signature for everyone. Each person has chosen how
-            much of their pay becomes stock — a quarter into the S&amp;P 500, all of it into
-            NVIDIA, or none at all — and gets exactly that, in their own wallet, with a receipt
-            that says why they were paid.
+            Choose how much of every payment becomes stock — the S&amp;P 500, NVIDIA, Apple and
+            twelve more — and share your Warrant link. Whoever pays you through it, you get your
+            split in your own wallet, with a receipt anyone can open.
           </p>
           <div className="wa-actions">
-            <Link href="/run" className="wa-btn is-primary">
-              Run payroll
-            </Link>
-            <Link href="/me" className="wa-btn">
-              Choose how you&rsquo;re paid
+            <Link href="/me" className="wa-btn is-primary">
+              Get your link
             </Link>
           </div>
+          <p className="wa-hero-note">
+            Free to set up, in the wallet you already use. Paying a team?{" "}
+            <Link href="/run">Pay everyone their own way in one signature</Link>.
+          </p>
 
           {/*
             THE STUB IS THE ONE OBJECT, so the front door shows one — a real payment, read
@@ -140,27 +145,27 @@ export default async function Home() {
       <section className="wa-sec">
         <p className="wa-kicker">How it works</p>
         <div className="wa-rule-row">
-          <span className="k">1. Each person chooses</span>
+          <span className="k">1. Choose your split</span>
           <p className="v">
-            Once, in their own wallet, for free: how much of each payment becomes stock, and
-            which stock. The choice is signed, so anyone can check it, and it follows them to
-            every company that pays them through Warrant. <Link href="/me">Choose yours</Link>.
+            Once, in your own wallet, for free: how much of every payment becomes stock, and
+            which stock. It is a signature, not a payment, so it costs nothing and anyone can
+            check it. <Link href="/me">Choose yours</Link>.
           </p>
         </div>
         <div className="wa-rule-row">
-          <span className="k">2. You pay in dollars</span>
+          <span className="k">2. Share your link</span>
           <p className="v">
-            One person, or your whole team as a CSV: wallet address, amount, and a note for
-            each. You never pick anyone&rsquo;s stock. One signature pays everyone in a single
-            transaction, and OKX DEX finds the price for each person&rsquo;s choice.
+            Your page, warrant.world/@you, is where anyone pays you — a client, an employer, a
+            friend — in dollars, from any wallet on X Layer. They never pick your stock; your
+            choice does.
           </p>
         </div>
         <div className="wa-rule-row">
-          <span className="k">3. Everyone is paid their way</span>
+          <span className="k">3. Get paid your way</span>
           <p className="v">
-            The stock and the dollars land in each person&rsquo;s own wallet — Warrant never
-            holds either. Each payment gets a public receipt with your note on it and the choice
-            it followed.
+            The stock and the dollars land in your own wallet — Warrant never holds either — and
+            every payment has a public receipt with the note it was paid for. A company paying
+            twenty people pays them all in one signature, each their own way.
           </p>
         </div>
         <div className="wa-rule-row">

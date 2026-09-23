@@ -15,10 +15,10 @@ import "./site.css";
  * ever one list, and nothing is listed here that does not exist.
  */
 export const DOORS = [
+  {href: "/me", label: "Get paid"},
   {href: "/pay", label: "Pay someone"},
-  {href: "/run", label: "Payroll"},
-  {href: "/grants", label: "Vesting grants"},
-  {href: "/me", label: "How you get paid"},
+  {href: "/run", label: "Pay a team"},
+  {href: "/grants", label: "Grants"},
 ] as const;
 
 export function SiteNav() {
@@ -34,8 +34,8 @@ export function SiteNav() {
       ))}
       <span className="wa-nav-spacer" />
       <Jump />
-      <Link href="/run" className="wa-btn is-primary">
-        Run payroll
+      <Link href="/me" className="wa-btn is-primary">
+        Get your link
       </Link>
     </nav>
   );
