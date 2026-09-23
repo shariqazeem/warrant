@@ -45,6 +45,18 @@ describe("confirmClaims", () => {
     expect(confirmClaims([claim({stable: USD(1000)})], moves, PAYROLL).ok).toBe(false);
   });
 
+  it("accepts a payment made all in dollars, which names no stock", () => {
+    const zero = "0x0000000000000000000000000000000000000000";
+    const moves = [move(PAYER, PAYROLL, USD(25)), move(PAYROLL, OTHER, USD(25))];
+    expect(confirmClaims([claim({asset: zero, cash: USD(25)})], moves, PAYROLL).ok).toBe(true);
+  });
+
+  it("refuses a line that names no stock but did not pay all in dollars", () => {
+    const zero = "0x0000000000000000000000000000000000000000";
+    const moves = [move(PAYER, PAYROLL, USD(25))];
+    expect(confirmClaims([claim({asset: zero, cash: USD(5)})], moves, PAYROLL).ok).toBe(false);
+  });
+
   it("refuses a token Warrant does not list, whatever it reports", () => {
     const fake = "0x00000000000000000000000000000000000000f4";
     const moves = [move(PAYER, PAYROLL, USD(25))];

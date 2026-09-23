@@ -58,6 +58,7 @@ export function stableMovements(logs: readonly RawLog[], stable: string): Moveme
 }
 
 const LISTED = new Set(ASSETS.map((a) => a.address.toLowerCase()));
+const ZERO = "0x0000000000000000000000000000000000000000";
 
 /**
  * Whether every claim in one transaction is backed by what the transaction did. `contract`
@@ -67,6 +68,14 @@ export function confirmClaims(claims: readonly Claim[], moves: readonly Movement
   const self = contract.toLowerCase();
 
   for (const c of claims) {
+    // A person who chose to be paid all in dollars: the line names no stock, and must be
+    // all dollars to name none.
+    if (c.asset.toLowerCase() === ZERO) {
+      if (c.cash !== c.stable) {
+        return held("This transaction names no stock for a payment that bought one, so it is not shown as a payment.");
+      }
+      continue;
+    }
     if (!LISTED.has(c.asset.toLowerCase())) {
       return held(
         "This transaction names a token that is not one of the stocks Warrant lists, so it " +

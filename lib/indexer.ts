@@ -25,7 +25,7 @@ import {createPublicClient, http, parseAbiItem, parseEventLogs, type Address, ty
 import {LOG_WINDOW, STABLE, xLayer} from "./chain";
 import {confirmClaims, stableMovements, type Claim} from "./confirm";
 import {database, writeCursor, readCursor} from "./db";
-import {PAID_EVENT, payrollAddress} from "./receipts";
+import {PAID_EVENT, payrollDeployments} from "./receipts";
 import {escrowAddress} from "./grants";
 import {attempt, isThrottle, ok, type Outcome} from "./outcome";
 
@@ -102,6 +102,8 @@ export type IndexReport = {
 type Walker = {
   name: string;
   address: Address;
+  /** Where a never-indexed walker begins, when that is known; otherwise it is found. */
+  fromBlock?: bigint | null;
   /** Reads one window and writes whatever it found. Returns how many rows it wrote. */
   read: (from: bigint, to: bigint) => Promise<number>;
 };
@@ -119,7 +121,7 @@ async function walk(w: Walker, maxWindows = 400, paceMs = 0): Promise<Outcome<In
     const head = (await rpc.getBlockNumber()) - CONFIRMATIONS;
 
     const last = readCursor(w.name);
-    let from = last === null ? await findDeployBlock(w.address, head) : BigInt(last) + 1n;
+    let from = last === null ? (w.fromBlock ?? (await findDeployBlock(w.address, head))) : BigInt(last) + 1n;
     const cold = last === null;
     if (from > head) {
       return ok({
@@ -436,11 +438,11 @@ export async function recordTransaction(hash: `0x${string}`): Promise<number> {
   if (receipt.status !== "success") return 0;
   let rows = 0;
 
-  const payroll = payrollAddress();
-  if (payroll.ok) {
-    const mine = receipt.logs.filter((l) => l.address.toLowerCase() === payroll.value.toLowerCase());
+  for (const payroll of payrollDeployments()) {
+    const mine = receipt.logs.filter((l) => l.address.toLowerCase() === payroll.address.toLowerCase());
+    if (mine.length === 0) continue;
     const paid = parseEventLogs({abi: [PAID_EVENT], logs: mine});
-    rows += await writePaid(await backed(paid, payroll.value, paidClaim, receipt));
+    rows += await writePaid(await backed(paid, payroll.address, paidClaim, receipt));
   }
 
   const escrow = escrowAddress();
@@ -494,8 +496,8 @@ export async function catchUp(maxWindows = 2): Promise<IndexReport[]> {
 /** Whichever contracts are deployed, as walkers. */
 function walkers(): Walker[] {
   const out: Walker[] = [];
-  const payroll = payrollAddress();
-  if (payroll.ok) out.push(payrollWalker(payroll.value));
+  // Every Payroll whose payments are on the record, the current one first.
+  for (const d of payrollDeployments()) out.push({...payrollWalker(d.address), fromBlock: d.fromBlock});
   const escrow = escrowAddress();
   if (escrow.ok) out.push(escrowWalker(escrow.value));
   return out;

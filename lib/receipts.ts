@@ -10,7 +10,7 @@
  * public RPC's range cap. The history — the tape, a company's record — is walked by
  * lib/indexer.ts in windows the endpoint accepts.
  */
-import {createPublicClient, http, parseAbiItem, type Log} from "viem";
+import {createPublicClient, http, parseAbiItem, parseEventLogs, type Log} from "viem";
 import {STABLE, xLayer} from "./chain";
 import {confirmClaims, stableMovements} from "./confirm";
 import {database} from "./db";
@@ -42,6 +42,28 @@ export type Receipt = {
 
 export function client() {
   return createPublicClient({chain: xLayer, transport: http()});
+}
+
+/**
+ * EARLIER PAYROLL DEPLOYMENTS THAT PAID SOMEONE, oldest first. A redeploy doesn't unpay
+ * anybody: their receipts keep opening and the record keeps counting them. The `Paid` event
+ * has the same shape on every one. (The 22 Sep deployment on the older USDT, 0xbe70…b5cD,
+ * never paid anyone and is not listed.)
+ */
+export const EARLIER_PAYROLLS: ReadonlyArray<{address: `0x${string}`; fromBlock: bigint}> = [
+  // 23 Sep 2026, on USD₮0, before each line carried its own stock. Paid the first real payment.
+  {address: "0xBf9C067056DA555Dd99D14694B9BC771Fab7AE09", fromBlock: 71416682n},
+];
+
+/** Every Payroll whose payments are on the record: the current one first, then the earlier. */
+export function payrollDeployments(): Array<{address: `0x${string}`; fromBlock: bigint | null}> {
+  const current = payrollAddress();
+  const out: Array<{address: `0x${string}`; fromBlock: bigint | null}> = [];
+  if (current.ok) out.push({address: current.value, fromBlock: null});
+  for (const e of EARLIER_PAYROLLS) {
+    if (!out.some((d) => d.address.toLowerCase() === e.address.toLowerCase())) out.push(e);
+  }
+  return out;
 }
 
 /** The deployed rail, or a hold saying it is not deployed yet. */
@@ -143,14 +165,13 @@ export function paidInTransaction(hash: `0x${string}`): Promise<Outcome<Receipt[
       );
     }
 
-    const logs = await rpc.getLogs({
-      address: address.value,
-      event: PAID_EVENT,
-      fromBlock: receipt.blockNumber,
-      toBlock: receipt.blockNumber,
+    // The payments are in the transaction's own receipt: no second read. Any Payroll this
+    // site has ever paid through counts, so an older receipt still opens after a redeploy.
+    const known = new Set(payrollDeployments().map((d) => d.address.toLowerCase()));
+    const mine = parseEventLogs({
+      abi: [PAID_EVENT],
+      logs: receipt.logs.filter((l) => known.has(l.address.toLowerCase())),
     });
-
-    const mine = logs.filter((l) => l.transactionHash?.toLowerCase() === hash.toLowerCase());
     if (mine.length === 0) {
       return held(
         "That transaction exists, but it was not a Warrant payment, so there is no " +
@@ -166,19 +187,25 @@ export function paidInTransaction(hash: `0x${string}`): Promise<Outcome<Receipt[
     }
 
     // The event is only as honest as the call that emitted it (lib/confirm.ts): a stub is
-    // printed only for a listed stock and USDT that really left the payer.
-    const backed = confirmClaims(
-      out.map((r) => ({
-        payer: r.payer,
-        recipient: r.recipient,
-        asset: r.asset,
-        stable: r.stableAmount,
-        cash: r.cashAmount,
-      })),
-      stableMovements(receipt.logs, STABLE.address),
-      address.value,
-    );
-    if (!backed.ok) return backed;
+    // printed only for a listed stock and USDT that really left the payer — checked
+    // against the contract that emitted each payment.
+    const moves = stableMovements(receipt.logs, STABLE.address);
+    for (const emitter of new Set(mine.map((l) => l.address.toLowerCase()))) {
+      const backed = confirmClaims(
+        out
+          .filter((_, i) => mine[i]!.address.toLowerCase() === emitter)
+          .map((r) => ({
+            payer: r.payer,
+            recipient: r.recipient,
+            asset: r.asset,
+            stable: r.stableAmount,
+            cash: r.cashAmount,
+          })),
+        moves,
+        emitter,
+      );
+      if (!backed.ok) return backed;
+    }
 
     const stamped = await withTimestamps(rpc, out);
     store(stamped);
