@@ -6,7 +6,14 @@
  * payer meant. So this file is unusually paranoid about what the parser REFUSES.
  */
 import {describe, expect, it} from "vitest";
-import {COMMA_FOR_CENTS, RUN_TEMPLATE, parseMoney, parseRunFile, splitCsvLine} from "./csv";
+import {
+  COMMA_FOR_CENTS,
+  MAX_RUN_LINES,
+  RUN_TEMPLATE,
+  parseMoney,
+  parseRunFile,
+  splitCsvLine,
+} from "./csv";
 import {ASSETS} from "./assets";
 
 const ASSET = ASSETS[0]!.address;
@@ -172,5 +179,37 @@ describe("a file becoming lines", () => {
     const f = parseRunFile("", ASSET);
     expect(f.rows).toHaveLength(0);
     expect(f.total).toBe(0n);
+    expect(f.tooMany).toBeNull();
+  });
+});
+
+describe("the size of one run", () => {
+  const people = (n: number) => Array.from({length: n}, (_, i) => `${A},1,Line ${i + 1}`).join("\n");
+
+  it("is capped where the RPC still lets a wallet estimate the gas", () => {
+    // 413,063 gas a line, measured; rpc.xlayer.tech refuses eth_call above 50M gas.
+    expect(MAX_RUN_LINES).toBe(100);
+    expect(MAX_RUN_LINES * 413_063).toBeLessThan(50_000_000);
+    expect(Math.floor(50_000_000 / 413_063)).toBe(121);
+  });
+
+  it("takes a file of exactly the limit", () => {
+    const f = parseRunFile(people(MAX_RUN_LINES), ASSET);
+    expect(f.good).toHaveLength(MAX_RUN_LINES);
+    expect(f.tooMany).toBeNull();
+  });
+
+  it("refuses one person more, in words, and says how to split it", () => {
+    const f = parseRunFile(people(MAX_RUN_LINES + 1), ASSET);
+    expect(f.tooMany).toBe(
+      "One run can pay at most 100 people, and this file has 101. Split it into 2 files of 100 or fewer.",
+    );
+    expect(parseRunFile(people(250), ASSET).tooMany).toMatch(/has 250\. Split it into 3 files/);
+  });
+
+  it("counts only the people it would pay, not the lines that need fixing", () => {
+    const f = parseRunFile(`${people(MAX_RUN_LINES)}\n0xnope,1,Bad address`, ASSET);
+    expect(f.bad).toHaveLength(1);
+    expect(f.tooMany).toBeNull();
   });
 });

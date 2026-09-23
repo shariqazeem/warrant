@@ -24,6 +24,17 @@ export type ParsedRow = {
   verdict: Outcome<{total: bigint; cash: bigint; swapAmount: bigint}>;
 };
 
+/**
+ * THE MOST PEOPLE ONE RUN CAN PAY.
+ *
+ * Measured: a line costs 413,063 gas through payManyWithPermit (five lines on a fork of X
+ * Layer), and rpc.xlayer.tech refuses an eth_call above 50,000,000 gas. A wallet estimates
+ * a run's gas with exactly that call, so past about 121 lines the estimate is refused and
+ * the run cannot even be signed. A hundred leaves room for the permit and for routes with
+ * more hops than the one measured.
+ */
+export const MAX_RUN_LINES = 100;
+
 export type ParsedFile = {
   rows: ParsedRow[];
   /** Rows that are ready to pay. */
@@ -34,6 +45,8 @@ export type ParsedFile = {
   total: bigint;
   /** Header row dropped, if one was recognised. */
   headerDropped: boolean;
+  /** Why this file cannot be paid as one run — more than MAX_RUN_LINES people — or null. */
+  tooMany: string | null;
 };
 
 /** Splits one CSV line, honouring double quotes so a reason may contain a comma. */
@@ -167,7 +180,15 @@ export function parseRunFile(text: string, asset: string): ParsedFile {
     0n,
   );
 
-  return {rows, good, bad, total, headerDropped};
+  // The whole file is refused rather than paying the first hundred and leaving the rest
+  // for someone to notice: a split is the payer's decision, not the parser's.
+  const tooMany =
+    good.length > MAX_RUN_LINES
+      ? `One run can pay at most ${MAX_RUN_LINES} people, and this file has ${good.length}. ` +
+        `Split it into ${Math.ceil(good.length / MAX_RUN_LINES)} files of ${MAX_RUN_LINES} or fewer.`
+      : null;
+
+  return {rows, good, bad, total, headerDropped, tooMany};
 }
 
 /** The template a payer downloads, so the columns are never guessed at. */

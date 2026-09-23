@@ -39,6 +39,12 @@
   outline: none;
 }
 
+/* Locked while its prices load or it is being paid: still readable, visibly not editable. */
+.wa-drop-text:disabled {
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
 .wa-drop-text::placeholder {
   color: var(--ink-faint);
 }
