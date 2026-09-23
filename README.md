@@ -25,7 +25,7 @@ Primary track: X Layer, tokenized stocks and RWA.
 | `GrantEscrow` | [`0xB238D76499616377abD4908E46F29C7CE50908D1`](https://www.oklink.com/x-layer/address/0xB238D76499616377abD4908E46F29C7CE50908D1), deployed in block 71416683 ([tx](https://www.oklink.com/x-layer/tx/0xaefe42748f057cde7a7c7df2850b94ea6ebfef82f888bf5092c9c886e7284d21)) |
 | Stablecoin | USDT on X Layer, the USD₮0 token: `0x779Ded0c9e1022225f8E0630b35a9b54bE713736` (6 decimals, EIP-2612 permit, domain "USD₮0" v1) |
 | Route | The OKX DEX router `0x7c5bEE2a8091C3ef39072f64F18Fac913060AEaF`, approval spender `0x8b773D83bc66Be128c60e07E17C8901f7a64F000` |
-| Assets | SPYx, NVDAx, QQQx |
+| Stocks | 15 xStocks, each checked for the same issuer and real liquidity on 23 Sep: the S&P 500, Nasdaq 100 and Russell 2000, and Alphabet, Amazon, Apple, Broadcom, Circle, Coinbase, Meta, Microsoft, MicroStrategy, NVIDIA, Robinhood and Tesla (`lib/assets.ts`, `docs/liquidity.md`) |
 
 The deployed runtime bytecode matches this source (immutables masked). The first real
 payments will be listed here, each beside its transaction, as they happen.

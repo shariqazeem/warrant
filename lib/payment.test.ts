@@ -180,9 +180,7 @@ describe("the asset", () => {
     // wNVDAx routes and settles, but the record does not list it, so it would print nothing.
     const o = checkListedAsset("0xa8ddb5cd96b5222afe198316e9a57caa642850d5");
     expect(o.ok).toBe(false);
-    expect(o.ok === false && o.why).toBe(
-      "Warrant pays in SPYx, NVDAx or QQQx, and that asset is not one of them.",
-    );
+    expect(o.ok === false && o.why).toMatch(/not one of the \d+ stocks Warrant lists/);
   });
 });
 

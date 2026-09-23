@@ -127,10 +127,10 @@ export function runTotal(splits: readonly Split[]): bigint {
 export function checkListedAsset(address: string): Outcome<Asset> {
   const listed = assetByAddress(address);
   if (listed) return ok(listed);
-  const symbols = ASSETS.map((a) => a.symbol);
-  const named =
-    symbols.length > 1 ? `${symbols.slice(0, -1).join(", ")} or ${symbols.at(-1)}` : (symbols[0] ?? "");
-  return held(`Warrant pays in ${named}, and that asset is not one of them.`);
+  return held(
+    `That asset is not one of the ${ASSETS.length} stocks Warrant lists, so a payment in it would ` +
+      `never print a receipt.`,
+  );
 }
 
 /**

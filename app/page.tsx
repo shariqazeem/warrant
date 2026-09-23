@@ -2,11 +2,12 @@ import Link from "next/link";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {Stub} from "@/components/stub/stub";
 import {EXPLORER_TX, STABLE} from "@/lib/chain";
-import {ASSETS, ELIGIBILITY_NOTE, ISSUER, ISSUER_NOTE, ISSUER_POWERS, defaultAsset} from "@/lib/assets";
+import {ASSETS, ELIGIBILITY_NOTE, ISSUER, ISSUER_NOTE_SHORT, ISSUER_POWERS, defaultAsset} from "@/lib/assets";
 import {readRail} from "@/lib/company";
 import {catchUp} from "@/lib/indexer";
 import {short, since, stampUTC, unitsFromRaw, usdt} from "@/lib/format";
 import "./landing.css";
+import {AssetNote} from "@/components/pay/asset-note";
 
 /**
  * THE FRONT DOOR. Ink opening, the tape, what a stock could not do before, then the paper
@@ -195,19 +196,19 @@ export default async function Home() {
               {a.address === asset.address ? <em className="wa-default"> default</em> : null}
             </span>
             <p className="v">
-              {a.name}. {ISSUER_NOTE} {ELIGIBILITY_NOTE}
+              {a.name}. {ISSUER_NOTE_SHORT} <AssetNote symbol={a.symbol} name={a.name} />
             </p>
           </div>
         ))}
         {/*
           The powers, named. Read off the chain by `npm run check-issuer`, not taken from
-          anyone's marketing. All three assets sit behind one implementation with one owner.
+          anyone's marketing. Every stock here sits behind one implementation with one owner.
         */}
         <div className="wa-rule-row">
           <span className="k">What the issuer can do</span>
           <p className="v">
-            These are tokenized stocks, not shares, and carry no voting rights. All three sit
-            behind one upgradeable contract with one owner,{" "}
+            These are tokenized stocks, not shares, and carry no voting rights. Every one sits
+            behind the same upgradeable contract with one owner,{" "}
             <span className="wa-mono">{ISSUER.owner}</span>, which can{" "}
             {ISSUER_POWERS.map((p, i) => (
               <span key={p}>
@@ -215,7 +216,8 @@ export default async function Home() {
                 {p}
               </span>
             ))}
-            . Warrant cannot prevent any of it. Read from X Layer on {ISSUER.checkedOn};
+            . Warrant cannot prevent any of it. {ELIGIBILITY_NOTE} Read from X Layer on{" "}
+            {ISSUER.checkedOn};
             there was no sign of {ISSUER.noSignOf.join(", ")}, though a power can hide
             behind a proxy and absence is weaker evidence than presence.
           </p>

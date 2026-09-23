@@ -219,6 +219,14 @@ export const ELIGIBILITY_NOTE =
   "Not available to US persons, or in Canada, the UK or Australia — check that the " +
   "person you pay may hold it.";
 
+/**
+ * The same disclosure in one line, for a list with a row per stock: every row still says it
+ * (per row, never a banner), and the full note is one click away on the row itself.
+ */
+export const ISSUER_NOTE_SHORT =
+  "Issued by a third party: economic exposure, no shares and no votes, and its issuer can " +
+  "create or destroy units.";
+
 /** The specific powers, in the order they would matter to someone being paid in it. */
 export const ISSUER_POWERS = [
   "destroy units held by any address, including yours",
