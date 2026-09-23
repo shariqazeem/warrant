@@ -21,7 +21,7 @@
  * it; the walk waits and asks again, and the long walk paces itself so the site, which
  * shares the address, still gets its reads.
  */
-import {createPublicClient, http, parseAbiItem, type Address} from "viem";
+import {createPublicClient, http, parseAbiItem, parseEventLogs, type Address, type TransactionReceipt} from "viem";
 import {LOG_WINDOW, STABLE, xLayer} from "./chain";
 import {confirmClaims, stableMovements, type Claim} from "./confirm";
 import {database, writeCursor, readCursor} from "./db";
@@ -81,6 +81,9 @@ async function findDeployBlock(address: Address, head: bigint): Promise<bigint> 
 
 const client = () => createPublicClient({chain: xLayer, transport: http()});
 
+/** How far behind the tip the walk stays. X Layer makes a block about every second. */
+const CONFIRMATIONS = 3n;
+
 /** How long `npm run index` rests between windows. Page loads never pace; they read two. */
 const PACE_MS = Number(process.env.WARRANT_INDEX_PACE_MS ?? 400);
 const rest = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -111,7 +114,9 @@ type Walker = {
 async function walk(w: Walker, maxWindows = 400, paceMs = 0): Promise<Outcome<IndexReport>> {
   return attempt(`the ${w.name} log`, async () => {
     const rpc = client();
-    const head = await rpc.getBlockNumber();
+    // A few blocks short of the tip: an L2 rarely rewrites its newest blocks, but a cursor
+    // that moved past a block that then changed would never read it again.
+    const head = (await rpc.getBlockNumber()) - CONFIRMATIONS;
 
     const last = readCursor(w.name);
     let from = last === null ? await findDeployBlock(w.address, head) : BigInt(last) + 1n;
@@ -211,6 +216,7 @@ async function backed<L extends {transactionHash: `0x${string}` | null}>(
   logs: L[],
   contract: Address,
   claimOf: (l: L) => Claim,
+  inHand?: TransactionReceipt,
 ): Promise<L[]> {
   const rpc = client();
   const byTx = new Map<`0x${string}`, L[]>();
@@ -220,7 +226,10 @@ async function backed<L extends {transactionHash: `0x${string}` | null}>(
   }
   const keep: L[] = [];
   for (const [hash, group] of byTx) {
-    const receipt = await rpc.getTransactionReceipt({hash});
+    const receipt =
+      inHand && inHand.transactionHash.toLowerCase() === hash.toLowerCase()
+        ? inHand
+        : await rpc.getTransactionReceipt({hash});
     const verdict = confirmClaims(group.map(claimOf), stableMovements(receipt.logs, STABLE.address), contract);
     if (verdict.ok) keep.push(...group);
     else console.warn(`[indexer] ${hash} not recorded: ${verdict.why}`);
@@ -235,46 +244,64 @@ function payrollWalker(address: Address): Walker {
     read: async (from, to) => {
       const found = await client().getLogs({address, event: PAID_EVENT, fromBlock: from, toBlock: to});
       if (found.length === 0) return 0;
-      const logs = await backed(found, address, (l) => ({
-        payer: l.args.payer!,
-        recipient: l.args.recipient!,
-        asset: l.args.asset!,
-        stable: l.args.stableAmount!,
-        cash: l.args.cashAmount!,
-      }));
-      if (logs.length === 0) return 0;
-
-      const times = await timesFor(logs.map((l) => l.blockNumber!));
-      const insert = database().prepare(
-        `INSERT INTO receipts (tx_hash, log_index, block_number, block_time, payer, recipient,
-           run_id, asset, stable_amount, cash_amount, asset_amount, reason_hash)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT(tx_hash, log_index) DO NOTHING`,
-      );
-
-      const write = database().transaction((batch: typeof logs) => {
-        for (const l of batch) {
-          const a = l.args;
-          insert.run(
-            l.transactionHash!.toLowerCase(),
-            l.logIndex,
-            Number(l.blockNumber),
-            times.get(l.blockNumber!) ?? null,
-            a.payer!.toLowerCase(),
-            a.recipient!.toLowerCase(),
-            a.runId!,
-            a.asset!.toLowerCase(),
-            a.stableAmount!.toString(),
-            a.cashAmount!.toString(),
-            a.assetAmount!.toString(),
-            a.reasonHash!,
-          );
-        }
-      });
-      write(logs);
-      return logs.length;
+      const logs = await backed(found, address, paidClaim);
+      return writePaid(logs);
     },
   };
+}
+
+type Located = {transactionHash: `0x${string}` | null; logIndex: number | null; blockNumber: bigint | null};
+type PaidRow = Located & {
+  args: {
+    payer?: Address;
+    recipient?: Address;
+    runId?: `0x${string}`;
+    asset?: Address;
+    stableAmount?: bigint;
+    cashAmount?: bigint;
+    assetAmount?: bigint;
+    reasonHash?: `0x${string}`;
+  };
+};
+
+const paidClaim = (l: PaidRow): Claim => ({
+  payer: l.args.payer!,
+  recipient: l.args.recipient!,
+  asset: l.args.asset!,
+  stable: l.args.stableAmount!,
+  cash: l.args.cashAmount!,
+});
+
+/** Write confirmed payments. The same row arriving twice is ignored. */
+async function writePaid(logs: PaidRow[]): Promise<number> {
+  if (logs.length === 0) return 0;
+  const times = await timesFor(logs.map((l) => l.blockNumber!));
+  const insert = database().prepare(
+    `INSERT INTO receipts (tx_hash, log_index, block_number, block_time, payer, recipient,
+       run_id, asset, stable_amount, cash_amount, asset_amount, reason_hash)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(tx_hash, log_index) DO NOTHING`,
+  );
+  database().transaction(() => {
+    for (const l of logs) {
+      const a = l.args;
+      insert.run(
+        l.transactionHash!.toLowerCase(),
+        l.logIndex,
+        Number(l.blockNumber),
+        times.get(l.blockNumber!) ?? null,
+        a.payer!.toLowerCase(),
+        a.recipient!.toLowerCase(),
+        a.runId!,
+        a.asset!.toLowerCase(),
+        a.stableAmount!.toString(),
+        a.cashAmount!.toString(),
+        a.assetAmount!.toString(),
+        a.reasonHash!,
+      );
+    }
+  })();
+  return logs.length;
 }
 
 function escrowWalker(address: Address): Walker {
@@ -288,80 +315,147 @@ function escrowWalker(address: Address): Walker {
         rpc.getLogs({address, event: VESTED_EVENT, fromBlock: from, toBlock: to}),
       ]);
       if (found.length === 0 && vested.length === 0) return 0;
-      const opened = await backed(found, address, (l) => ({
-        payer: l.args.payer!,
-        recipient: l.args.beneficiary!,
-        asset: l.args.asset!,
-        stable: l.args.stableCost!,
-        cash: 0n,
-      }));
-
-      const times = await timesFor([...opened, ...vested].map((l) => l.blockNumber!));
-      const db = database();
-
-      const insertGrant = db.prepare(
-        `INSERT INTO grants (id, tx_hash, block_number, block_time, payer, beneficiary, asset,
-           units, shares, stable_cost, start_at, cliff_seconds, duration_secs, tip_bps, reason_hash)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT(id) DO NOTHING`,
-      );
-      const insertVest = db.prepare(
-        `INSERT INTO vests (tx_hash, log_index, block_number, block_time, grant_id, beneficiary,
-           caller, asset, units_to_beneficiary, units_to_caller)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT(tx_hash, log_index) DO NOTHING`,
-      );
-
-      // A vest belongs on the record only if its grant does: one the check above refused
-      // never became a row, so neither do its vests.
-      const known = db.prepare(`SELECT 1 FROM grants WHERE id = ?`);
-      let rows = 0;
-
-      const write = db.transaction(() => {
-        for (const l of opened) {
-          const a = l.args;
-          insertGrant.run(
-            Number(a.id!),
-            l.transactionHash,
-            Number(l.blockNumber),
-            times.get(l.blockNumber!) ?? null,
-            a.payer!.toLowerCase(),
-            a.beneficiary!.toLowerCase(),
-            a.asset!.toLowerCase(),
-            a.units!.toString(),
-            a.shares!.toString(),
-            a.stableCost!.toString(),
-            Number(a.start!),
-            Number(a.cliff!),
-            Number(a.duration!),
-            Number(a.tipBps!),
-            a.reasonHash!,
-          );
-          rows++;
-        }
-        for (const l of vested) {
-          const a = l.args;
-          if (!known.get(Number(a.id!))) continue;
-          rows++;
-          insertVest.run(
-            l.transactionHash,
-            l.logIndex,
-            Number(l.blockNumber),
-            times.get(l.blockNumber!) ?? null,
-            Number(a.id!),
-            a.beneficiary!.toLowerCase(),
-            a.caller!.toLowerCase(),
-            a.asset!.toLowerCase(),
-            a.unitsToBeneficiary!.toString(),
-            a.unitsToCaller!.toString(),
-          );
-        }
-      });
-      write();
-      return rows;
+      const opened = await backed(found, address, openedClaim);
+      return writeEscrow(opened, vested);
     },
   };
 }
+
+type OpenedRow = Located & {
+  args: {
+    id?: bigint;
+    payer?: Address;
+    beneficiary?: Address;
+    asset?: Address;
+    units?: bigint;
+    shares?: bigint;
+    stableCost?: bigint;
+    start?: bigint;
+    cliff?: bigint;
+    duration?: bigint;
+    tipBps?: number;
+    reasonHash?: `0x${string}`;
+  };
+};
+type VestedRow = Located & {
+  args: {
+    id?: bigint;
+    beneficiary?: Address;
+    caller?: Address;
+    asset?: Address;
+    unitsToBeneficiary?: bigint;
+    unitsToCaller?: bigint;
+  };
+};
+
+const openedClaim = (l: OpenedRow): Claim => ({
+  payer: l.args.payer!,
+  recipient: l.args.beneficiary!,
+  asset: l.args.asset!,
+  stable: l.args.stableCost!,
+  cash: 0n,
+});
+
+/** Write confirmed grants, and the vests of grants on the record. Repeats are ignored. */
+async function writeEscrow(opened: OpenedRow[], vested: VestedRow[]): Promise<number> {
+  if (opened.length === 0 && vested.length === 0) return 0;
+  const times = await timesFor([...opened, ...vested].map((l) => l.blockNumber!));
+  const db = database();
+
+  const insertGrant = db.prepare(
+    `INSERT INTO grants (id, tx_hash, block_number, block_time, payer, beneficiary, asset,
+       units, shares, stable_cost, start_at, cliff_seconds, duration_secs, tip_bps, reason_hash)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO NOTHING`,
+  );
+  const insertVest = db.prepare(
+    `INSERT INTO vests (tx_hash, log_index, block_number, block_time, grant_id, beneficiary,
+       caller, asset, units_to_beneficiary, units_to_caller)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(tx_hash, log_index) DO NOTHING`,
+  );
+
+  // A vest belongs on the record only if its grant does: one the check refused never
+  // became a row, so neither do its vests.
+  const known = db.prepare(`SELECT 1 FROM grants WHERE id = ?`);
+  let rows = 0;
+
+  db.transaction(() => {
+    for (const l of opened) {
+      const a = l.args;
+      insertGrant.run(
+        Number(a.id!),
+        l.transactionHash!.toLowerCase(),
+        Number(l.blockNumber),
+        times.get(l.blockNumber!) ?? null,
+        a.payer!.toLowerCase(),
+        a.beneficiary!.toLowerCase(),
+        a.asset!.toLowerCase(),
+        a.units!.toString(),
+        a.shares!.toString(),
+        a.stableCost!.toString(),
+        Number(a.start!),
+        Number(a.cliff!),
+        Number(a.duration!),
+        Number(a.tipBps!),
+        a.reasonHash!,
+      );
+      rows++;
+    }
+    for (const l of vested) {
+      const a = l.args;
+      if (!known.get(Number(a.id!))) continue;
+      rows++;
+      insertVest.run(
+        l.transactionHash!.toLowerCase(),
+        l.logIndex,
+        Number(l.blockNumber),
+        times.get(l.blockNumber!) ?? null,
+        Number(a.id!),
+        a.beneficiary!.toLowerCase(),
+        a.caller!.toLowerCase(),
+        a.asset!.toLowerCase(),
+        a.unitsToBeneficiary!.toString(),
+        a.unitsToCaller!.toString(),
+      );
+    }
+  })();
+  return rows;
+}
+
+/**
+ * RECORD ONE TRANSACTION, NOW: the one the payer just signed.
+ *
+ * The walk reaches it within a pass, but "within a pass" is the moment the payer is sent
+ * to the run page to see everyone paid. This reads that transaction's receipt, puts its
+ * payments and grant events through the same check and the same writers as the walk, and
+ * leaves every cursor where it was — it proves nothing about the blocks around it.
+ */
+export async function recordTransaction(hash: `0x${string}`): Promise<number> {
+  const receipt = await client().getTransactionReceipt({hash});
+  if (receipt.status !== "success") return 0;
+  let rows = 0;
+
+  const payroll = payrollAddress();
+  if (payroll.ok) {
+    const mine = receipt.logs.filter((l) => l.address.toLowerCase() === payroll.value.toLowerCase());
+    const paid = parseEventLogs({abi: [PAID_EVENT], logs: mine});
+    rows += await writePaid(await backed(paid, payroll.value, paidClaim, receipt));
+  }
+
+  const escrow = escrowAddress();
+  if (escrow.ok) {
+    const mine = receipt.logs.filter((l) => l.address.toLowerCase() === escrow.value.toLowerCase());
+    const opened = parseEventLogs({abi: [GRANT_OPENED_EVENT], logs: mine});
+    const vested = parseEventLogs({abi: [VESTED_EVENT], logs: mine});
+    rows += await writeEscrow(await backed(opened, escrow.value, openedClaim, receipt), vested);
+  }
+
+  return rows;
+}
+
+let lastCatchUp = 0;
+const CATCH_UP_EVERY_MS = 10_000;
 
 /**
  * CATCH UP TO THE HEAD, QUICKLY, FOR A PAGE THAT IS ABOUT TO RENDER.
@@ -376,6 +470,14 @@ function escrowWalker(address: Address): Walker {
  * contract that has never been indexed is left to `npm run index`, and the page says so.
  */
 export async function catchUp(maxWindows = 2): Promise<IndexReport[]> {
+  // Page loads share ONE allowance of chain reads, however many people are loading pages:
+  // a catch-up at most every ten seconds for the whole process. The indexer keeps the record
+  // current on its own; this only closes the last few seconds. Without the cap, anyone could
+  // spend the site's read budget by opening company pages for random addresses.
+  const now = Date.now();
+  if (now - lastCatchUp < CATCH_UP_EVERY_MS) return [];
+  lastCatchUp = now;
+
   const reports: IndexReport[] = [];
 
   for (const w of walkers()) {

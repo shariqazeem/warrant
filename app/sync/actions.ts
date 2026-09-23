@@ -10,16 +10,36 @@
  *
  * It never throws. Being behind is a state a page can render honestly; a 500 is not.
  */
-import {catchUp} from "@/lib/indexer";
+import {revalidatePath} from "next/cache";
+import {catchUp, recordTransaction} from "@/lib/indexer";
 
-export async function syncFromChain(): Promise<{rows: number; behind: boolean}> {
+/**
+ * `hash` is the transaction the payer just signed. It is recorded directly, whatever the
+ * walk has reached, so the run page and the company page are true the moment they open.
+ */
+export async function syncFromChain(hash?: string): Promise<{rows: number; behind: boolean}> {
+  let rows = 0;
+  let behind = true;
+  try {
+    if (hash && /^0x[0-9a-fA-F]{64}$/.test(hash)) {
+      rows += await recordTransaction(hash as `0x${string}`);
+      behind = false;
+    }
+  } catch {
+    // Not fatal: the walk will reach it. The receipt page reads the chain regardless.
+  }
   try {
     const reports = await catchUp(3);
-    return {
-      rows: reports.reduce((n, r) => n + r.rows, 0),
-      behind: reports.length === 0,
-    };
+    rows += reports.reduce((n, r) => n + r.rows, 0);
+    if (reports.length > 0) behind = false;
   } catch {
-    return {rows: 0, behind: true};
+    // Behind is a state a page can render; see above.
   }
+  // The front page and the grants page are cached for a few seconds; a payer who has just
+  // paid must not open them and find the old version.
+  revalidatePath("/");
+  revalidatePath("/grants");
+  revalidatePath("/[company]", "page");
+  revalidatePath("/run/[id]", "page");
+  return {rows, behind};
 }

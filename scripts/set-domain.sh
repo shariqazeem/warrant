@@ -41,8 +41,10 @@ ${DOMAIN}, www.${DOMAIN}, 141-148-215-239.sslip.io {
     }
     encode zstd gzip
 
-    @og path /receipt/*/opengraph-image /*/opengraph-image
-    header @og Cache-Control "public, max-age=300, s-maxage=300"
+    # ">" replaces the app's own Cache-Control instead of sending a second, conflicting one.
+    @og path /opengraph-image /receipt/*/opengraph-image /*/opengraph-image
+    header @og >Cache-Control "public, max-age=300, s-maxage=300"
+    header Strict-Transport-Security "max-age=31536000"
 
     reverse_proxy 127.0.0.1:3000 {
         transport http {

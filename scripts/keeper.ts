@@ -108,7 +108,14 @@ async function main() {
   loadEnv();
   const send = flag("send");
   const watch = flag("watch");
-  const every = Math.max(60, Number(arg("every", "600")));
+  // Seconds, as a plain number. "10m" used to become NaN, and Math.max(60, NaN) is NaN —
+  // a timer of NaN fires at once, so the keeper spun in a loop spending gas.
+  const raw = Number(arg("every", "600"));
+  if (!Number.isFinite(raw)) {
+    console.error(`--every takes seconds as a number, like --every=600 (got "${arg("every", "")}").`);
+    process.exit(2);
+  }
+  const every = Math.max(60, raw);
 
   console.log(
     `\nWarrant keeper. ${send ? "Releasing" : "Dry run"}${watch ? `, every ${every}s` : ", once"}.`,
