@@ -14,7 +14,7 @@ import {settledUnitPrice, unitsFromRaw, usdt} from "@/lib/format";
 import {singlePayRunId} from "@/lib/run-id";
 import {QUOTE_FRESH_MS, QUOTE_LOST, freshness, quoteAge} from "@/lib/quote-age";
 import {WalletPanel} from "@/components/wallet/wallet-panel";
-import {useWallet} from "@/components/wallet/use-wallet";
+import {NEEDS_OKB, useWallet} from "@/components/wallet/use-wallet";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {AssetNote} from "./asset-note";
 import {usePay} from "./use-pay";
@@ -182,21 +182,23 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
       ? "Connect a wallet to pay"
       : wallet.status === "wrong-chain"
         ? "Switch to X Layer to pay"
-        : missing
-          ? missing
-          : lineWhy
-            ? "Fix the problem above"
-            : quoteLost
-              ? "Could not get the price — try again"
-              : quoteWhy
-                ? "Fix the problem above"
-                : !quote
-                  ? "Getting the price…"
-                  : age === "stale"
-                    ? "Price is out of date — refresh it"
-                    : wallet.usdt !== undefined && wallet.usdt < total
-                      ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
-                      : null;
+        : wallet.noGas
+          ? NEEDS_OKB
+          : missing
+            ? missing
+            : lineWhy
+              ? "Fix the problem above"
+              : quoteLost
+                ? "Could not get the price — try again"
+                : quoteWhy
+                  ? "Fix the problem above"
+                  : !quote
+                    ? "Getting the price…"
+                    : age === "stale"
+                      ? "Price is out of date — refresh it"
+                      : wallet.usdt !== undefined && wallet.usdt < total
+                        ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
+                        : null;
 
   const label = paid
     ? "Paid — opening the receipt…"

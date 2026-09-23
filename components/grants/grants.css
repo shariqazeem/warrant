@@ -131,6 +131,13 @@
   margin-top: var(--s-4);
 }
 
+/* What is stopping the buttons beside it — no wallet, the wrong network, no OKB — said
+   once, in the same muted register as a blocked button. */
+.wa-grant-block {
+  font-size: var(--fs-caption);
+  color: var(--ink-muted);
+}
+
 /* ── chips: the only place --r-pill is used ────────────────────────── */
 
 .wa-chip {

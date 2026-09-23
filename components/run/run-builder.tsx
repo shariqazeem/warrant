@@ -12,7 +12,7 @@ import {newRunId} from "@/lib/run-id";
 import {held, type Outcome} from "@/lib/outcome";
 import {QUOTE_LOST, freshness, quoteAge} from "@/lib/quote-age";
 import {WalletPanel} from "@/components/wallet/wallet-panel";
-import {useWallet} from "@/components/wallet/use-wallet";
+import {NEEDS_OKB, useWallet} from "@/components/wallet/use-wallet";
 import {syncFromChain} from "@/app/sync/actions";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {usePay} from "@/components/pay/use-pay";
@@ -396,11 +396,13 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
                 ? "Connect a wallet to pay"
                 : wallet.status === "wrong-chain"
                   ? "Switch to X Layer to pay"
-                  : age === "stale"
-                    ? "Prices are out of date — refresh them"
-                    : wallet.usdt !== undefined && wallet.usdt < parsed.total
-                      ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
-                      : null;
+                  : wallet.noGas
+                    ? NEEDS_OKB
+                    : age === "stale"
+                      ? "Prices are out of date — refresh them"
+                      : wallet.usdt !== undefined && wallet.usdt < parsed.total
+                        ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
+                        : null;
 
             return (
               <button

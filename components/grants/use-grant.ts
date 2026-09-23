@@ -6,11 +6,15 @@
  * vest is permissionless and anyone may call it. seal and revoke are the payer's alone,
  * and seal is the one that cannot be undone. Each returns its transaction so the surface
  * can say what happened rather than merely that something did.
+ *
+ * Like a payment, nothing is sent from a wallet that is not connected or not on X Layer:
+ * the list's buttons say so first, and this refuses again in words if one is pressed.
  */
 import {useCallback, useState} from "react";
 import type {Address, Hex} from "viem";
-import {useConfig} from "wagmi";
+import {useAccount, useConfig} from "wagmi";
 import {waitForTransactionReceipt, writeContract} from "wagmi/actions";
+import {xLayer} from "@/lib/chain";
 import {grantEscrowAbi} from "@/lib/payroll-abi";
 
 export type GrantAction = "vest" | "seal" | "revoke" | "close";
@@ -18,15 +22,18 @@ export type ActionPhase = "idle" | "signing" | "confirming" | "done" | "failed";
 
 export function useGrantAction(escrow: Address | undefined) {
   const config = useConfig();
+  const {address, chainId} = useAccount();
   const [phase, setPhase] = useState<ActionPhase>("idle");
-  const [busyId, setBusyId] = useState<number | null>(null);
+  /** The grant the current phase is about. Kept after it finishes, so a failure shows on
+   *  the grant it belongs to — clearing it when the call ended hid every refusal. */
+  const [targetId, setTargetId] = useState<number | null>(null);
   const [action, setAction] = useState<GrantAction | null>(null);
   const [why, setWhy] = useState<string | null>(null);
   const [hash, setHash] = useState<Hex | null>(null);
 
   const reset = useCallback(() => {
     setPhase("idle");
-    setBusyId(null);
+    setTargetId(null);
     setAction(null);
     setWhy(null);
     setHash(null);
@@ -34,16 +41,21 @@ export function useGrantAction(escrow: Address | undefined) {
 
   const run = useCallback(
     async (id: number, which: GrantAction) => {
-      if (!escrow) {
-        setPhase("failed");
-        setWhy("GrantEscrow is not deployed, so there is nothing to act on.");
-        return null;
-      }
-
-      setBusyId(id);
+      setTargetId(id);
       setAction(which);
       setWhy(null);
       setHash(null);
+
+      const refuse = (reason: string) => {
+        setPhase("failed");
+        setWhy(reason);
+        return null;
+      };
+      if (!address) return refuse("No wallet is connected, so there is nothing to sign with.");
+      if (chainId !== xLayer.id) {
+        return refuse(`This wallet is on chain ${chainId}. Warrant runs on X Layer, chain ${xLayer.id}.`);
+      }
+      if (!escrow) return refuse("GrantEscrow is not deployed, so there is nothing to act on.");
 
       try {
         setPhase("signing");
@@ -57,26 +69,18 @@ export function useGrantAction(escrow: Address | undefined) {
 
         setPhase("confirming");
         const receipt = await waitForTransactionReceipt(config, {hash: tx});
-        if (receipt.status !== "success") {
-          setPhase("failed");
-          setWhy(`The ${which} reverted, so nothing changed.`);
-          return null;
-        }
+        if (receipt.status !== "success") return refuse(`The ${which} reverted, so nothing changed.`);
 
         setPhase("done");
         return tx;
       } catch (err) {
-        setPhase("failed");
-        setWhy(readable(which, err));
-        return null;
-      } finally {
-        setBusyId((current) => (current === id ? null : current));
+        return refuse(readable(which, err));
       }
     },
-    [config, escrow],
+    [address, chainId, config, escrow],
   );
 
-  return {run, phase, busyId, action, why, hash, reset};
+  return {run, phase, targetId, action, why, hash, reset};
 }
 
 /** The contract's own refusals, said in the words the buttons use. */
