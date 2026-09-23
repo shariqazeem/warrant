@@ -1,7 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import {ISSUER, ISSUER_POWERS} from "@/lib/assets";
+import {ELIGIBILITY_NOTE, ISSUER, ISSUER_POWERS} from "@/lib/assets";
 
 /**
  * WHAT THE ASSET IS, ON THE ROW WHERE SOMEONE CHOOSES IT.
@@ -23,7 +23,7 @@ export function AssetNote({symbol, name}: {symbol: string; name: string}) {
           it is issued by a third party — not by Warrant and not by OKX. It is not a share:
           it carries no voting rights. Its issuer can {ISSUER_POWERS[0]}, {ISSUER_POWERS[1]},
           and upgrade the contract; Warrant cannot prevent that. Checked on X Layer on{" "}
-          {ISSUER.checkedOn}.
+          {ISSUER.checkedOn}. {ELIGIBILITY_NOTE}
         </span>
       ) : null}
     </span>

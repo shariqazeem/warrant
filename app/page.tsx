@@ -2,7 +2,7 @@ import Link from "next/link";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {Stub} from "@/components/stub/stub";
 import {EXPLORER_TX, STABLE} from "@/lib/chain";
-import {ASSETS, ISSUER, ISSUER_NOTE, ISSUER_POWERS, defaultAsset} from "@/lib/assets";
+import {ASSETS, ELIGIBILITY_NOTE, ISSUER, ISSUER_NOTE, ISSUER_POWERS, defaultAsset} from "@/lib/assets";
 import {readRail} from "@/lib/company";
 import {catchUp} from "@/lib/indexer";
 import {short, since, stampUTC, unitsFromRaw, usdt} from "@/lib/format";
@@ -190,7 +190,7 @@ export default async function Home() {
               {a.address === asset.address ? <em className="wa-default"> default</em> : null}
             </span>
             <p className="v">
-              {a.name}. {ISSUER_NOTE}
+              {a.name}. {ISSUER_NOTE} {ELIGIBILITY_NOTE}
             </p>
           </div>
         ))}

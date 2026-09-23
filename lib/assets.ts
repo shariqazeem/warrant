@@ -76,6 +76,16 @@ export const ISSUER_NOTE =
   "economic exposure to the underlying price. It does not make the holder a shareholder " +
   "and carries no voting rights.";
 
+/**
+ * WHO MAY HOLD ONE. Not a power of the contract — the token moves to any address — but a
+ * limit in the terms it is offered under, and the payer is the one choosing who receives
+ * it. Source: xStocks' published FAQ (support.kraken.com/articles/xstocks-faq), read
+ * 2026-09-23: "not accessible in the US (or to US persons), Canada, UK, or Australia."
+ */
+export const ELIGIBILITY_NOTE =
+  "Not available to US persons, or in Canada, the UK or Australia — check that the " +
+  "person you pay may hold it.";
+
 /** The specific powers, in the order they would matter to someone being paid in it. */
 export const ISSUER_POWERS = [
   "destroy units held by any address, including yours",

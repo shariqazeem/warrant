@@ -4,7 +4,16 @@
  */
 import {getAddress, isAddress} from "viem";
 import {describe, expect, it} from "vitest";
-import {ASSETS, ISSUER, ISSUER_NOTE, ISSUER_OWNER_NOTE, ISSUER_POWERS, assetByAddress, defaultAsset} from "./assets";
+import {
+  ASSETS,
+  ELIGIBILITY_NOTE,
+  ISSUER,
+  ISSUER_NOTE,
+  ISSUER_OWNER_NOTE,
+  ISSUER_POWERS,
+  assetByAddress,
+  defaultAsset,
+} from "./assets";
 import {STABLE} from "./chain";
 
 describe("the asset registry", () => {
@@ -67,6 +76,11 @@ describe("the asset registry", () => {
     // CLAUDE.md section 3.7: never "shareholder" or "equity ownership" as a claim.
     expect(ISSUER_NOTE).not.toMatch(/\bequity ownership\b/);
     expect(ISSUER_NOTE).toMatch(/does not make the holder a shareholder/);
+  });
+
+  it("says who may not hold one, since the payer chooses who receives it", () => {
+    expect(ELIGIBILITY_NOTE).toMatch(/US persons/);
+    expect(ELIGIBILITY_NOTE).toMatch(/Canada, the UK or Australia/);
   });
 
   it("names the powers that were actually found, strongest first", () => {
