@@ -6,7 +6,7 @@
  * payer meant. So this file is unusually paranoid about what the parser REFUSES.
  */
 import {describe, expect, it} from "vitest";
-import {RUN_TEMPLATE, parseMoney, parseRunFile, splitCsvLine} from "./csv";
+import {COMMA_FOR_CENTS, RUN_TEMPLATE, parseMoney, parseRunFile, splitCsvLine} from "./csv";
 import {ASSETS} from "./assets";
 
 const ASSET = ASSETS[0]!.address;
@@ -53,9 +53,35 @@ describe("money as a person types it", () => {
   });
 
   it("REFUSES rather than coercing, because Number('') is zero", () => {
-    for (const text of ["", "   ", "abc", "1.2.3", "-5", "1e3", "$", "two"]) {
+    for (const text of ["", "   ", "abc", "1.2.3", "-5", "1e3", "$", "two", "."]) {
       expect(parseMoney(text).ok, `${JSON.stringify(text)} must be refused`).toBe(false);
     }
+  });
+
+  it("takes a comma only between thousands", () => {
+    for (const [text, value] of [
+      ["1,250", 1250],
+      ["1,250.50", 1250.5],
+      ["12,345,678.90", 12_345_678.9],
+      ["$1,000 USDT", 1000],
+    ] as const) {
+      const o = parseMoney(text);
+      expect(o.ok && o.value, text).toBe(value);
+    }
+  });
+
+  it("REFUSES a comma used for cents rather than reading 2,50 as 250", () => {
+    for (const text of ["2,50", "0,5", "1,25", "12,5", "1.250,50", "1,2500", ",250", "1,,250", "250,", "1,25,000"]) {
+      const o = parseMoney(text);
+      expect(o.ok, `${text} must be refused`).toBe(false);
+      expect(o.ok === false && o.why).toBe(COMMA_FOR_CENTS);
+    }
+    expect(COMMA_FOR_CENTS).toBe("Use a dot for cents, like 2.50");
+  });
+
+  it("takes an amount still being typed into a form", () => {
+    expect(parseMoney("2.")).toEqual({ok: true, value: 2});
+    expect(parseMoney(".5")).toEqual({ok: true, value: 0.5});
   });
 });
 
@@ -95,6 +121,14 @@ describe("a file becoming lines", () => {
     expect(byLine(2).verdict.ok === false && byLine(2).verdict).toMatchObject({ok: false});
     expect((byLine(3).verdict as {why: string}).why).toMatch(/not an amount/);
     expect((byLine(4).verdict as {why: string}).why).toMatch(/carries a reason/);
+  });
+
+  it("holds a row with a comma for cents in place, rather than paying a hundred times it", () => {
+    const f = parseRunFile(`${A},"2,50",Design review\n${B},"1,250.50",Shipped it`, ASSET);
+    expect(f.bad.map((r) => r.lineNumber)).toEqual([1]);
+    expect((f.bad[0]!.verdict as {why: string}).why).toBe(COMMA_FOR_CENTS);
+    expect(f.good.map((r) => r.lineNumber)).toEqual([2]);
+    expect(f.total).toBe(1_250_500_000n); // $1,250.50, and not a cent of the refused row
   });
 
   it("numbers rows the way a spreadsheet does, counting the header", () => {

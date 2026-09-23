@@ -7,6 +7,7 @@ import {buildPayment, type BuiltPayment} from "@/app/pay/actions";
 import {syncFromChain} from "@/app/sync/actions";
 import {ASSETS, defaultAsset} from "@/lib/assets";
 import {STABLE} from "@/lib/chain";
+import {parseMoney} from "@/lib/csv";
 import {settledUnitPrice, unitsFromRaw, usdt} from "@/lib/format";
 import {singlePayRunId} from "@/lib/run-id";
 import {QUOTE_FRESH_MS, freshness, quoteAge} from "@/lib/quote-age";
@@ -49,18 +50,26 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
   const {pay, phase, why, reset} = usePay(payroll);
 
   const chosen = ASSETS.find((a) => a.address === asset) ?? defaultAsset();
-  const usd = Number(amount);
-  const cashUsd = splitOpen ? Number(cash || 0) : 0;
+  // Read the way a file's amounts are read: a comma only between thousands, so "2,50" is
+  // refused rather than becoming $250.
+  const amountRead = amount.trim() === "" ? null : parseMoney(amount);
+  const usd = amountRead?.ok ? amountRead.value : 0;
+  const cashRead = splitOpen && cash.trim() !== "" ? parseMoney(cash) : null;
+  const cashUsd = cashRead?.ok ? cashRead.value : 0;
 
   // What is missing, in the order a person fills the form in.
   const missing: string | null =
     recipient.trim().length === 0
       ? "Add their wallet address"
-      : !(usd > 0)
-        ? "Enter an amount"
-        : reason.trim().length === 0
-          ? "Add a note for their receipt"
-          : null;
+      : amountRead !== null && !amountRead.ok
+        ? amountRead.why
+        : !(usd > 0)
+          ? "Enter an amount"
+          : reason.trim().length === 0
+            ? "Add a note for their receipt"
+            : cashRead !== null && !cashRead.ok
+              ? cashRead.why
+              : null;
 
   // A QUOTE BELONGS TO THE INPUTS THAT PRODUCED IT, NOT TO THE CLOCK. An edit makes it
   // stale instantly; a timed refresh does not — the old price stays on screen, and the
@@ -197,7 +206,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
             <input
               className="wa-input is-amount"
               value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
+              onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ""))}
               placeholder="0"
               inputMode="decimal"
             />
@@ -251,7 +260,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
                 <input
                   className="wa-input is-amount"
                   value={cash}
-                  onChange={(e) => setCash(e.target.value.replace(/[^\d.]/g, ""))}
+                  onChange={(e) => setCash(e.target.value.replace(/[^\d.,]/g, ""))}
                   placeholder="0"
                   inputMode="decimal"
                 />

@@ -68,18 +68,36 @@ export function splitCsvLine(line: string): string[] {
   return out.map((f) => f.trim());
 }
 
+/** What a payer is told when a comma is doing a dot's job. */
+export const COMMA_FOR_CENTS = "Use a dot for cents, like 2.50";
+
+/** "25", "25.50", "2." while it is still being typed, ".5". */
+const PLAIN_AMOUNT = /^(\d+(\.\d*)?|\.\d+)$/;
+/** "1,250", "1,250.50", "12,345,678.9" — a comma before every three digits, and nowhere else. */
+const GROUPED_AMOUNT = /^\d{1,3}(,\d{3})+(\.\d*)?$/;
+
 /**
  * Money as typed by a person: "$25", "25.00", "1,250", "25 USDT".
  *
  * Deliberately strict about what it will NOT accept. "1.2.3" and "" are refused rather
  * than coerced, because `Number("")` is 0 and a row that silently becomes a zero-dollar
  * payment is the worst possible outcome of a parse.
+ *
+ * A COMMA ONLY EVER SEPARATES THOUSANDS. Stripping every comma read "2,50" — two dollars
+ * fifty, written the way half the world writes it — as 250: a hundred times the payment
+ * that was meant. So "1,250.50" is accepted and "2,50" is refused with COMMA_FOR_CENTS.
+ * The pay and grant forms read their amounts with this too, so a file and a form cannot
+ * disagree about what a figure means.
  */
 export function parseMoney(text: string): Outcome<number> {
-  const cleaned = text.trim().replace(/^\$/, "").replace(/,/g, "").replace(/\s*(usdt|usd)$/i, "");
+  const cleaned = text.trim().replace(/^\$/, "").replace(/\s*(usdt|usd)$/i, "").trim();
   if (cleaned === "") return held("no amount");
-  if (!/^\d+(\.\d+)?$/.test(cleaned)) return held(`"${text.trim()}" is not an amount`);
-  const n = Number(cleaned);
+  if (cleaned.includes(",")) {
+    if (!GROUPED_AMOUNT.test(cleaned)) return held(COMMA_FOR_CENTS);
+  } else if (!PLAIN_AMOUNT.test(cleaned)) {
+    return held(`"${text.trim()}" is not an amount`);
+  }
+  const n = Number(cleaned.replace(/,/g, ""));
   if (!Number.isFinite(n)) return held(`"${text.trim()}" is not an amount`);
   return ok(n);
 }

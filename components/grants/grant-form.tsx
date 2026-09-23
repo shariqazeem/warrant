@@ -8,6 +8,7 @@ import {MAX_TIP_BPS} from "@/lib/grant-terms";
 import {ASSETS, defaultAsset} from "@/lib/assets";
 import {AssetNote} from "@/components/pay/asset-note";
 import {STABLE} from "@/lib/chain";
+import {parseMoney} from "@/lib/csv";
 import {settledUnitPrice, unitsFromRaw, usdt} from "@/lib/format";
 import {humanDuration} from "@/lib/schedule";
 import {WalletPanel} from "@/components/wallet/wallet-panel";
@@ -61,7 +62,9 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
   const {open, phase, why, reset} = useOpenGrant(escrow);
 
   const chosen = ASSETS.find((a) => a.address === asset) ?? defaultAsset();
-  const usd = Number(amount);
+  // Read as /pay and a run file read it: "2,50" is refused, not taken as $250.
+  const amountRead = amount.trim() === "" ? null : parseMoney(amount);
+  const usd = amountRead?.ok ? amountRead.value : 0;
   const ready = beneficiary.length > 0 && usd > 0 && reason.trim().length > 0;
 
   // A quote belongs to the terms that produced it. See the note in pay-form.tsx.
@@ -159,7 +162,7 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
             <input
               className="wa-input is-amount"
               value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
+              onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ""))}
               placeholder="0"
               inputMode="decimal"
             />
@@ -271,17 +274,19 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
                   ? "Switch to X Layer to continue"
                   : beneficiary.length === 0
                     ? "Add their wallet address"
-                    : !(usd > 0)
-                      ? "Enter the grant value"
-                      : reason.trim().length === 0
-                        ? "Add a note"
-                        : quoteWhy
-                          ? "Fix the problem above"
-                          : !quote
-                            ? "Getting the price…"
-                            : wallet.usdt !== undefined && wallet.usdt < BigInt(quote.terms.stableAmount)
-                              ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
-                              : null;
+                    : amountRead !== null && !amountRead.ok
+                      ? amountRead.why
+                      : !(usd > 0)
+                        ? "Enter the grant value"
+                        : reason.trim().length === 0
+                          ? "Add a note"
+                          : quoteWhy
+                            ? "Fix the problem above"
+                            : !quote
+                              ? "Getting the price…"
+                              : wallet.usdt !== undefined && wallet.usdt < BigInt(quote.terms.stableAmount)
+                                ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
+                                : null;
             return (
               <button
                 type="submit"
