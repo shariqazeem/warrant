@@ -21,6 +21,8 @@
  *                                                     all-tokens still says `decimals`
  */
 import {createHmac} from "node:crypto";
+import {createPublicClient, http} from "viem";
+import {xLayer} from "./chain";
 import {held, ok, type Outcome} from "./outcome";
 
 const BASE = process.env.OKX_API_BASE ?? "https://web3.okx.com";
@@ -37,23 +39,77 @@ const CHAIN_INDEX = "196";
 const MIN_GAP_MS = Number(process.env.OKX_MIN_GAP_MS ?? 1100);
 const THROTTLE_RETRIES = Number(process.env.OKX_THROTTLE_RETRIES ?? 4);
 
+/**
+ * A CALL THAT NEVER ANSWERS MUST NOT HOLD THE LINE. The queue is one process-wide line, so
+ * a single request left hanging would stall every visitor's price behind it, with nothing
+ * on screen but "Getting the price…". Each request has a deadline, and missing it is an
+ * answer — a hold with a sentence, never a throw.
+ */
+const REQUEST_TIMEOUT_MS = Number(process.env.OKX_TIMEOUT_MS ?? 15_000);
+
+/**
+ * AND THE LINE HAS A LENGTH. At a call a second, the twentieth caller in line already waits
+ * twenty seconds for a price. Past that a visitor is told at once, rather than left
+ * watching a price that is not coming.
+ */
+const MAX_WAITING = Number(process.env.OKX_MAX_WAITING ?? 20);
+
+export const BUSY = "Prices are busy right now — try again in a moment.";
+export const TIMED_OUT =
+  "OKX DEX took too long to answer, so there is no price yet. Try again in a moment.";
+
 /** The aggregator's code for "too many requests". Transient, never an answer. */
 const THROTTLED = "50011";
-let gate: Promise<void> = Promise.resolve();
-let lastCall = 0;
 
-function pace<T>(fn: () => Promise<T>): Promise<T> {
-  const run = gate.then(async () => {
-    const wait = lastCall + MIN_GAP_MS - Date.now();
-    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-    lastCall = Date.now();
-    return fn();
-  });
-  gate = run.then(
-    () => undefined,
-    () => undefined,
-  );
-  return run;
+/**
+ * One call at a time, at least `gapMs` apart, with at most `maxWaiting` calls in line
+ * behind the one running. A call that would join a longer line holds with BUSY at once.
+ * Exported so the queue's rules are tested rather than trusted.
+ */
+export function pacer(gapMs: number, maxWaiting: number) {
+  let gate: Promise<void> = Promise.resolve();
+  let lastCall = 0;
+  /** Admitted and not yet finished: the one running plus everyone waiting behind it. */
+  let pending = 0;
+
+  return function pace<T>(fn: () => Promise<Outcome<T>>): Promise<Outcome<T>> {
+    if (pending > maxWaiting) return Promise.resolve(held<T>(BUSY));
+    pending++;
+    const run = gate.then(async () => {
+      const wait = lastCall + gapMs - Date.now();
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      lastCall = Date.now();
+      return fn();
+    });
+    const release = () => {
+      pending--;
+    };
+    gate = run.then(release, release);
+    return run;
+  };
+}
+
+const pace = pacer(MIN_GAP_MS, MAX_WAITING);
+
+/**
+ * One request with a deadline, body included: a server can send its headers and then
+ * stall. Missing the deadline, or failing to connect at all, holds with a sentence.
+ */
+export async function fetchText(
+  url: string,
+  init: RequestInit,
+  ms = REQUEST_TIMEOUT_MS,
+): Promise<Outcome<{status: number; text: string}>> {
+  const signal = AbortSignal.timeout(ms);
+  try {
+    const res = await fetch(url, {...init, signal});
+    const text = await res.text();
+    return ok({status: res.status, text});
+  } catch (err) {
+    if (signal.aborted) return held(TIMED_OUT);
+    const why = err instanceof Error ? err.message : String(err);
+    return held(`Could not reach the OKX aggregator (${why}).`);
+  }
 }
 
 export type Credentials = {key: string; secret: string; passphrase: string};
@@ -119,24 +175,20 @@ async function getOnce<T>(path: string, query: Record<string, string>): Promise<
   const qs = new URLSearchParams(query).toString();
   const full = qs ? `${path}?${qs}` : path;
 
-  return pace(async () => {
-    let res: Response;
-    try {
-      res = await fetch(`${BASE}${full}`, {
-        method: "GET",
-        headers: headers(creds.value, "GET", full),
-      });
-    } catch (err) {
-      const why = err instanceof Error ? err.message : String(err);
-      return held<T>(`Could not reach the OKX aggregator (${why}).`);
-    }
+  return pace<T>(async () => {
+    // Signed here, at the moment of sending, not when the call joined the line: OKX
+    // refuses a timestamp that has gone stale while it waited.
+    const res = await fetchText(`${BASE}${full}`, {
+      method: "GET",
+      headers: headers(creds.value, "GET", full),
+    });
+    if (!res.ok) return held<T>(res.why);
 
-    const text = await res.text();
     let body: Envelope<T>;
     try {
-      body = JSON.parse(text) as Envelope<T>;
+      body = JSON.parse(res.value.text) as Envelope<T>;
     } catch {
-      return held<T>(`The aggregator answered ${res.status} with something that is not JSON.`);
+      return held<T>(`The aggregator answered ${res.value.status} with something that is not JSON.`);
     }
 
     if (body.code === THROTTLED) return {ok: false, why: THROTTLED} as const;
@@ -319,6 +371,47 @@ export function swap(args: {
     userWalletAddress: args.userWalletAddress,
     swapReceiverAddress: args.receiver,
   });
+}
+
+const ROUTER_ABI = [
+  {
+    type: "function",
+    name: "router",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{name: "", type: "address"}],
+  },
+] as const;
+
+/** Read once per process: a contract's router is immutable, so it can never go stale. */
+const routers = new Map<string, `0x${string}`>();
+
+/**
+ * THE ROUTER A CONTRACT WILL ACTUALLY CALL.
+ *
+ * Payroll and GrantEscrow send a route's calldata to one router, fixed at deploy. Calldata
+ * the aggregator built for any other address cannot work through them, so a swap's `tx.to`
+ * is checked against the contract's own `router()`. When the chain cannot be read,
+ * OKX_ROUTER — the address they were deployed with — stands in; with neither, nothing is
+ * priced, because an unchecked route is not one a payer should sign.
+ */
+export async function routerOf(contract: `0x${string}`): Promise<Outcome<`0x${string}`>> {
+  const known = routers.get(contract.toLowerCase());
+  if (known) return ok(known);
+
+  try {
+    const rpc = createPublicClient({chain: xLayer, transport: http()});
+    const router = await rpc.readContract({address: contract, abi: ROUTER_ABI, functionName: "router"});
+    routers.set(contract.toLowerCase(), router);
+    return ok(router);
+  } catch {
+    const configured = process.env.OKX_ROUTER?.trim();
+    if (configured && /^0x[0-9a-fA-F]{40}$/.test(configured)) return ok(configured as `0x${string}`);
+    return held(
+      "Could not confirm which exchange contract payments go through, so no price is shown. " +
+        "Try again in a moment.",
+    );
+  }
 }
 
 /**

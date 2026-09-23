@@ -6,7 +6,14 @@
  * payer meant. So this file is unusually paranoid about what the parser REFUSES.
  */
 import {describe, expect, it} from "vitest";
-import {RUN_TEMPLATE, parseMoney, parseRunFile, splitCsvLine} from "./csv";
+import {
+  COMMA_FOR_CENTS,
+  MAX_RUN_LINES,
+  RUN_TEMPLATE,
+  parseMoney,
+  parseRunFile,
+  splitCsvLine,
+} from "./csv";
 import {ASSETS} from "./assets";
 
 const ASSET = ASSETS[0]!.address;
@@ -53,9 +60,35 @@ describe("money as a person types it", () => {
   });
 
   it("REFUSES rather than coercing, because Number('') is zero", () => {
-    for (const text of ["", "   ", "abc", "1.2.3", "-5", "1e3", "$", "two"]) {
+    for (const text of ["", "   ", "abc", "1.2.3", "-5", "1e3", "$", "two", "."]) {
       expect(parseMoney(text).ok, `${JSON.stringify(text)} must be refused`).toBe(false);
     }
+  });
+
+  it("takes a comma only between thousands", () => {
+    for (const [text, value] of [
+      ["1,250", 1250],
+      ["1,250.50", 1250.5],
+      ["12,345,678.90", 12_345_678.9],
+      ["$1,000 USDT", 1000],
+    ] as const) {
+      const o = parseMoney(text);
+      expect(o.ok && o.value, text).toBe(value);
+    }
+  });
+
+  it("REFUSES a comma used for cents rather than reading 2,50 as 250", () => {
+    for (const text of ["2,50", "0,5", "1,25", "12,5", "1.250,50", "1,2500", ",250", "1,,250", "250,", "1,25,000"]) {
+      const o = parseMoney(text);
+      expect(o.ok, `${text} must be refused`).toBe(false);
+      expect(o.ok === false && o.why).toBe(COMMA_FOR_CENTS);
+    }
+    expect(COMMA_FOR_CENTS).toBe("Use a dot for cents, like 2.50");
+  });
+
+  it("takes an amount still being typed into a form", () => {
+    expect(parseMoney("2.")).toEqual({ok: true, value: 2});
+    expect(parseMoney(".5")).toEqual({ok: true, value: 0.5});
   });
 });
 
@@ -95,6 +128,14 @@ describe("a file becoming lines", () => {
     expect(byLine(2).verdict.ok === false && byLine(2).verdict).toMatchObject({ok: false});
     expect((byLine(3).verdict as {why: string}).why).toMatch(/not an amount/);
     expect((byLine(4).verdict as {why: string}).why).toMatch(/carries a reason/);
+  });
+
+  it("holds a row with a comma for cents in place, rather than paying a hundred times it", () => {
+    const f = parseRunFile(`${A},"2,50",Design review\n${B},"1,250.50",Shipped it`, ASSET);
+    expect(f.bad.map((r) => r.lineNumber)).toEqual([1]);
+    expect((f.bad[0]!.verdict as {why: string}).why).toBe(COMMA_FOR_CENTS);
+    expect(f.good.map((r) => r.lineNumber)).toEqual([2]);
+    expect(f.total).toBe(1_250_500_000n); // $1,250.50, and not a cent of the refused row
   });
 
   it("numbers rows the way a spreadsheet does, counting the header", () => {
@@ -138,5 +179,37 @@ describe("a file becoming lines", () => {
     const f = parseRunFile("", ASSET);
     expect(f.rows).toHaveLength(0);
     expect(f.total).toBe(0n);
+    expect(f.tooMany).toBeNull();
+  });
+});
+
+describe("the size of one run", () => {
+  const people = (n: number) => Array.from({length: n}, (_, i) => `${A},1,Line ${i + 1}`).join("\n");
+
+  it("is capped where the RPC still lets a wallet estimate the gas", () => {
+    // 413,063 gas a line, measured; rpc.xlayer.tech refuses eth_call above 50M gas.
+    expect(MAX_RUN_LINES).toBe(100);
+    expect(MAX_RUN_LINES * 413_063).toBeLessThan(50_000_000);
+    expect(Math.floor(50_000_000 / 413_063)).toBe(121);
+  });
+
+  it("takes a file of exactly the limit", () => {
+    const f = parseRunFile(people(MAX_RUN_LINES), ASSET);
+    expect(f.good).toHaveLength(MAX_RUN_LINES);
+    expect(f.tooMany).toBeNull();
+  });
+
+  it("refuses one person more, in words, and says how to split it", () => {
+    const f = parseRunFile(people(MAX_RUN_LINES + 1), ASSET);
+    expect(f.tooMany).toBe(
+      "One run can pay at most 100 people, and this file has 101. Split it into 2 files of 100 or fewer.",
+    );
+    expect(parseRunFile(people(250), ASSET).tooMany).toMatch(/has 250\. Split it into 3 files/);
+  });
+
+  it("counts only the people it would pay, not the lines that need fixing", () => {
+    const f = parseRunFile(`${people(MAX_RUN_LINES)}\n0xnope,1,Bad address`, ASSET);
+    expect(f.bad).toHaveLength(1);
+    expect(f.tooMany).toBeNull();
   });
 });

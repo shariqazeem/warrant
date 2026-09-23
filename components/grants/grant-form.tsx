@@ -8,10 +8,14 @@ import {MAX_TIP_BPS} from "@/lib/grant-terms";
 import {ASSETS, defaultAsset} from "@/lib/assets";
 import {AssetNote} from "@/components/pay/asset-note";
 import {STABLE} from "@/lib/chain";
+import {parseMoney} from "@/lib/csv";
+import {held, type Outcome} from "@/lib/outcome";
+import {checkAddress, impactText} from "@/lib/payment";
+import {QUOTE_FRESH_MS, QUOTE_LOST, freshness, quoteAge} from "@/lib/quote-age";
 import {settledUnitPrice, unitsFromRaw, usdt} from "@/lib/format";
 import {humanDuration} from "@/lib/schedule";
 import {WalletPanel} from "@/components/wallet/wallet-panel";
-import {useWallet} from "@/components/wallet/use-wallet";
+import {NEEDS_OKB, useWallet} from "@/components/wallet/use-wallet";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {useOpenGrant} from "./use-open-grant";
 import "@/components/pay/pay.css";
@@ -54,15 +58,25 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
   const [reason, setReason] = useState("");
   const [keeperOpen, setKeeperOpen] = useState(false);
 
-  const [quoted, setQuoted] = useState<{sig: string; value: BuiltGrant} | null>(null);
+  const [quoted, setQuoted] = useState<{sig: string; value: BuiltGrant; at: number} | null>(null);
   const [quoteWhy, setQuoteWhy] = useState<string | null>(null);
+  /** The price request itself failed — it never came back — rather than being refused. */
+  const [quoteLost, setQuoteLost] = useState(false);
   const [quoting, setQuoting] = useState(false);
+  const [refreshAt, setRefreshAt] = useState(0);
+  const [, setTick] = useState(0);
 
-  const {open, phase, why, reset} = useOpenGrant(escrow);
+  const {open, phase, why, note, reset} = useOpenGrant(escrow);
 
   const chosen = ASSETS.find((a) => a.address === asset) ?? defaultAsset();
-  const usd = Number(amount);
-  const ready = beneficiary.length > 0 && usd > 0 && reason.trim().length > 0;
+  // Read as /pay and a run file read it: "2,50" is refused, not taken as $250.
+  const amountRead = amount.trim() === "" ? null : parseMoney(amount);
+  const usd = amountRead?.ok ? amountRead.value : 0;
+  // A mistyped address is named here, by the same check the server runs, and never sent
+  // for a price.
+  const checkedAddress = beneficiary.length > 0 ? checkAddress(beneficiary, "someone to grant to") : null;
+  const addressWhy = checkedAddress && !checkedAddress.ok ? checkedAddress.why : null;
+  const ready = beneficiary.length > 0 && !addressWhy && usd > 0 && reason.trim().length > 0;
 
   // A quote belongs to the terms that produced it. See the note in pay-form.tsx.
   const signature = JSON.stringify([
@@ -76,32 +90,56 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
   ]);
   const quote = quoted?.sig === signature ? quoted.value : null;
   const restating = quoted !== null && quoted.sig !== signature;
+  // A price is a moment here too: the same thresholds as /pay, from lib/quote-age.ts.
+  const age = quoted && quote ? freshness(quoted.at) : null;
 
   useTxToast(phase === "idle" ? "idle" : phase, "Open the grant", {detail: why ?? undefined});
+
+  const busy = phase === "building" || phase === "signing" || phase === "confirming";
+
+  // Keep the age on screen true.
+  useEffect(() => {
+    if (!quote) return;
+    const t = setInterval(() => setTick((n) => n + 1), 15_000);
+    return () => clearInterval(t);
+  }, [quote]);
 
   const seq = useRef(0);
   useEffect(() => {
     if (!ready) {
+      // Anything still in flight was asked for terms that no longer stand; drop it.
+      seq.current++;
       setQuoted(null);
       setQuoteWhy(null);
+      setQuoteLost(false);
+      setQuoting(false);
       return;
     }
     const mine = ++seq.current;
     setQuoting(true);
     const t = setTimeout(async () => {
-      const out = await buildGrant({
-        beneficiary,
-        asset,
-        usd,
-        cliffSeconds,
-        durationSeconds,
-        tipBps,
-        reason,
-      });
+      let out: Outcome<BuiltGrant>;
+      let lost = false;
+      try {
+        out = await buildGrant({
+          beneficiary,
+          asset,
+          usd,
+          cliffSeconds,
+          durationSeconds,
+          tipBps,
+          reason,
+        });
+      } catch {
+        // Never came back. Say so, rather than "Getting the price…" for ever.
+        out = held(QUOTE_LOST);
+        lost = true;
+      }
       if (mine !== seq.current) return;
       setQuoting(false);
+      setQuoteLost(lost);
       if (out.ok) {
-        setQuoted({sig: signature, value: out.value});
+        setQuoted({sig: signature, value: out.value, at: Date.now()});
         setQuoteWhy(null);
       } else {
         setQuoted(null);
@@ -109,7 +147,16 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
       }
     }, 450);
     return () => clearTimeout(t);
-  }, [ready, beneficiary, usd, asset, cliffSeconds, durationSeconds, tipBps, reason, signature]);
+  }, [ready, beneficiary, usd, asset, cliffSeconds, durationSeconds, tipBps, reason, signature, refreshAt]);
+
+  // Refreshed before it goes stale while the payer reads, as on /pay — but not while the
+  // wallet is open on it.
+  useEffect(() => {
+    if (!quoted || quoting || busy) return;
+    const due = quoted.at + QUOTE_FRESH_MS - Date.now();
+    const t = setTimeout(() => setRefreshAt(Date.now()), Math.max(1_000, due));
+    return () => clearTimeout(t);
+  }, [quoted, quoting, busy]);
 
   const send = useCallback(async () => {
     if (!quote) return;
@@ -123,7 +170,36 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
     }
   }, [open, quote, router]);
 
-  const busy = phase === "building" || phase === "signing" || phase === "confirming";
+  // THE BUTTON ALWAYS SAYS WHAT IT WILL DO, OR WHAT IS STOPPING IT.
+  const blocker =
+    wallet.status === "disconnected" || wallet.status === "connecting"
+      ? "Connect a wallet to create a grant"
+      : wallet.status === "wrong-chain"
+        ? "Switch to X Layer to continue"
+        : wallet.noGas
+          ? NEEDS_OKB
+          : beneficiary.length === 0
+            ? "Add their wallet address"
+            : addressWhy
+              ? "Fix the problem above"
+              : amountRead !== null && !amountRead.ok
+                ? amountRead.why
+                : !(usd > 0)
+                  ? "Enter the grant value"
+                  : reason.trim().length === 0
+                    ? "Add a note"
+                    : quoteLost
+                      ? "Could not get the price — try again"
+                      : quoteWhy
+                        ? "Fix the problem above"
+                        : !quote
+                          ? "Getting the price…"
+                          : age === "stale"
+                            ? "Price is out of date — refresh it"
+                            : wallet.usdt !== undefined && wallet.usdt < BigInt(quote.terms.stableAmount)
+                              ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
+                              : null;
+
   const price =
     quote && quote.expectedUnits !== "0"
       ? settledUnitPrice(BigInt(quote.terms.stableAmount), BigInt(quote.expectedUnits), chosen.decimals)
@@ -135,7 +211,7 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
         className="wa-pay-form"
         onSubmit={(e) => {
           e.preventDefault();
-          void send();
+          if (!blocker && !busy) void send();
         }}
       >
         <WalletPanel need={quote ? BigInt(quote.terms.stableAmount) : undefined} />
@@ -159,7 +235,7 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
             <input
               className="wa-input is-amount"
               value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
+              onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ""))}
               placeholder="0"
               inputMode="decimal"
             />
@@ -263,41 +339,22 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
         </div>
 
         <div className="wa-pay-act">
-          {(() => {
-            const blocker =
-              wallet.status === "disconnected" || wallet.status === "connecting"
-                ? "Connect a wallet to create a grant"
-                : wallet.status === "wrong-chain"
-                  ? "Switch to X Layer to continue"
-                  : beneficiary.length === 0
-                    ? "Add their wallet address"
-                    : !(usd > 0)
-                      ? "Enter the grant value"
-                      : reason.trim().length === 0
-                        ? "Add a note"
-                        : quoteWhy
-                          ? "Fix the problem above"
-                          : !quote
-                            ? "Getting the price…"
-                            : wallet.usdt !== undefined && wallet.usdt < BigInt(quote.terms.stableAmount)
-                              ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
-                              : null;
-            return (
-              <button
-                type="submit"
-                className={`wa-btn is-primary is-wide${blocker ? " is-blocked" : ""}`}
-                disabled={Boolean(blocker) || busy}
-              >
-                {busy ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
-                {phase === "signing"
-                  ? "Confirm in your wallet…"
-                  : phase === "confirming"
-                    ? "Creating the grant…"
-                    : (blocker ??
-                      `Create a ${humanDuration(durationSeconds)} grant · ${usdt(BigInt(quote!.terms.stableAmount))}`)}
-              </button>
-            );
-          })()}
+          <button
+            type="submit"
+            className={`wa-btn is-primary is-wide${blocker && !busy ? " is-blocked" : ""}`}
+            disabled={Boolean(blocker) || busy}
+          >
+            {busy ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
+            {phase === "signing"
+              ? "Confirm in your wallet…"
+              : phase === "confirming"
+                ? "Creating the grant…"
+                : phase === "building"
+                  ? "Preparing…"
+                  : (blocker ??
+                    `Create a ${humanDuration(durationSeconds)} grant · ${usdt(BigInt(quote!.terms.stableAmount))}`)}
+          </button>
+          {note && busy ? <p className="wa-fine">{note}</p> : null}
           {phase === "failed" && why ? (
             <p className="wa-refusal">
               {why}{" "}
@@ -310,8 +367,22 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
       </form>
 
       <aside className="wa-quote" aria-live="polite">
-        {quoteWhy ? (
-          <p className="wa-refusal">{quoteWhy}</p>
+        {addressWhy ? (
+          <p className="wa-refusal">{addressWhy}</p>
+        ) : quoteWhy ? (
+          // The price service's refusals can pass — a busy minute, a thin market that
+          // refills — so the same terms can always be asked again.
+          <p className="wa-refusal">
+            {quoteWhy}{" "}
+            <button
+              type="button"
+              className="wa-linkish"
+              disabled={quoting || busy}
+              onClick={() => setRefreshAt(Date.now())}
+            >
+              {quoting ? "Trying again…" : "Try again"}
+            </button>
+          </p>
         ) : quote ? (
           <>
             <p className="wa-quote-lead">Held for them in escrow</p>
@@ -329,13 +400,21 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
                     : `1 ${chosen.symbol} = $${price.toFixed(2)}`}
                 </dd>
               </div>
+              {/* Only the aggregator's own figure; no row at all when it gives none. */}
+              {quote.priceImpactPercent !== null ? (
+                <div>
+                  <dt>Price impact</dt>
+                  <dd>{impactText(quote.priceImpactPercent)}</dd>
+                </div>
+              ) : null}
               <div>
-                <dt>Guaranteed at least</dt>
+                <dt>At least</dt>
                 <dd>
-                  {unitsFromRaw(BigInt(quote.minUnits), chosen.decimals)} {chosen.symbol}
+                  {unitsFromRaw(BigInt(quote.minUnits), chosen.decimals)} {chosen.symbol} — the
+                  contract refuses less
                   <span className="wa-quote-aside">
-                    If the price moves and the escrow would get less, nothing happens and you
-                    are not charged.
+                    If the price moves and the escrow would get less, the grant is not opened
+                    and no USDT leaves your wallet.
                   </span>
                 </dd>
               </div>
@@ -358,6 +437,19 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
               ) : null}
             </dl>
 
+            {quoted ? (
+              <p className={`wa-quote-age${age === "stale" ? " is-stale" : ""}`}>
+                Price from {quoteAge(quoted.at)}.{" "}
+                <button
+                  type="button"
+                  className="wa-linkish"
+                  onClick={() => setRefreshAt(Date.now())}
+                  disabled={quoting || busy}
+                >
+                  {quoting ? "Refreshing…" : "Refresh"}
+                </button>
+              </p>
+            ) : null}
           </>
         ) : quoting || restating ? (
           <p className="wa-quote-waiting">

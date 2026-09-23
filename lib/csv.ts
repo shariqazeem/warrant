@@ -24,6 +24,17 @@ export type ParsedRow = {
   verdict: Outcome<{total: bigint; cash: bigint; swapAmount: bigint}>;
 };
 
+/**
+ * THE MOST PEOPLE ONE RUN CAN PAY.
+ *
+ * Measured: a line costs 413,063 gas through payManyWithPermit (five lines on a fork of X
+ * Layer), and rpc.xlayer.tech refuses an eth_call above 50,000,000 gas. A wallet estimates
+ * a run's gas with exactly that call, so past about 121 lines the estimate is refused and
+ * the run cannot even be signed. A hundred leaves room for the permit and for routes with
+ * more hops than the one measured.
+ */
+export const MAX_RUN_LINES = 100;
+
 export type ParsedFile = {
   rows: ParsedRow[];
   /** Rows that are ready to pay. */
@@ -34,6 +45,8 @@ export type ParsedFile = {
   total: bigint;
   /** Header row dropped, if one was recognised. */
   headerDropped: boolean;
+  /** Why this file cannot be paid as one run — more than MAX_RUN_LINES people — or null. */
+  tooMany: string | null;
 };
 
 /** Splits one CSV line, honouring double quotes so a reason may contain a comma. */
@@ -68,18 +81,36 @@ export function splitCsvLine(line: string): string[] {
   return out.map((f) => f.trim());
 }
 
+/** What a payer is told when a comma is doing a dot's job. */
+export const COMMA_FOR_CENTS = "Use a dot for cents, like 2.50";
+
+/** "25", "25.50", "2." while it is still being typed, ".5". */
+const PLAIN_AMOUNT = /^(\d+(\.\d*)?|\.\d+)$/;
+/** "1,250", "1,250.50", "12,345,678.9" — a comma before every three digits, and nowhere else. */
+const GROUPED_AMOUNT = /^\d{1,3}(,\d{3})+(\.\d*)?$/;
+
 /**
  * Money as typed by a person: "$25", "25.00", "1,250", "25 USDT".
  *
  * Deliberately strict about what it will NOT accept. "1.2.3" and "" are refused rather
  * than coerced, because `Number("")` is 0 and a row that silently becomes a zero-dollar
  * payment is the worst possible outcome of a parse.
+ *
+ * A COMMA ONLY EVER SEPARATES THOUSANDS. Stripping every comma read "2,50" — two dollars
+ * fifty, written the way half the world writes it — as 250: a hundred times the payment
+ * that was meant. So "1,250.50" is accepted and "2,50" is refused with COMMA_FOR_CENTS.
+ * The pay and grant forms read their amounts with this too, so a file and a form cannot
+ * disagree about what a figure means.
  */
 export function parseMoney(text: string): Outcome<number> {
-  const cleaned = text.trim().replace(/^\$/, "").replace(/,/g, "").replace(/\s*(usdt|usd)$/i, "");
+  const cleaned = text.trim().replace(/^\$/, "").replace(/\s*(usdt|usd)$/i, "").trim();
   if (cleaned === "") return held("no amount");
-  if (!/^\d+(\.\d+)?$/.test(cleaned)) return held(`"${text.trim()}" is not an amount`);
-  const n = Number(cleaned);
+  if (cleaned.includes(",")) {
+    if (!GROUPED_AMOUNT.test(cleaned)) return held(COMMA_FOR_CENTS);
+  } else if (!PLAIN_AMOUNT.test(cleaned)) {
+    return held(`"${text.trim()}" is not an amount`);
+  }
+  const n = Number(cleaned.replace(/,/g, ""));
   if (!Number.isFinite(n)) return held(`"${text.trim()}" is not an amount`);
   return ok(n);
 }
@@ -149,7 +180,15 @@ export function parseRunFile(text: string, asset: string): ParsedFile {
     0n,
   );
 
-  return {rows, good, bad, total, headerDropped};
+  // The whole file is refused rather than paying the first hundred and leaving the rest
+  // for someone to notice: a split is the payer's decision, not the parser's.
+  const tooMany =
+    good.length > MAX_RUN_LINES
+      ? `One run can pay at most ${MAX_RUN_LINES} people, and this file has ${good.length}. ` +
+        `Split it into ${Math.ceil(good.length / MAX_RUN_LINES)} files of ${MAX_RUN_LINES} or fewer.`
+      : null;
+
+  return {rows, good, bad, total, headerDropped, tooMany};
 }
 
 /** The template a payer downloads, so the columns are never guessed at. */

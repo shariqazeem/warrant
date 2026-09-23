@@ -127,7 +127,7 @@ export function WalletPanel({need}: {need?: bigint}) {
   const empty = w.usdt === 0n;
 
   return (
-    <div className={`wa-wallet${shortOf || empty ? " is-warn" : ""}`}>
+    <div className={`wa-wallet${shortOf || empty || w.noGas ? " is-warn" : ""}`}>
       <div className="wa-wallet-row">
         <span className="wa-wallet-title">
           <Check size={16} strokeWidth={2} aria-hidden className="wa-wallet-ok" />
@@ -150,6 +150,13 @@ export function WalletPanel({need}: {need?: bigint}) {
       ) : shortOf ? (
         <p className="wa-wallet-note">
           This payment needs {fmtUsdt(need!)} USDT and the wallet holds {fmtUsdt(w.usdt!)}.
+        </p>
+      ) : null}
+      {w.noGas ? (
+        <p className="wa-wallet-note">
+          This wallet has no OKB on X Layer, and every transaction pays its network fee in
+          OKB. A little is enough — send OKB on the X Layer network to{" "}
+          <span className="wa-mono">{short(w.address!)}</span>.
         </p>
       ) : null}
     </div>

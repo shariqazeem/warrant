@@ -17,6 +17,12 @@ export const QUOTE_FRESH_MS = 60_000;
 /** Beyond this the payer is told, and asked to reprice rather than sign blind. */
 export const QUOTE_STALE_MS = 180_000;
 
+/**
+ * What a surface says when a price request never came back — the connection dropped, or
+ * the server failed. It is not a refusal, so it names nothing to fix, only what to do.
+ */
+export const QUOTE_LOST = "Could not get a price — the request did not come back. Nothing was sent.";
+
 export type Freshness = "fresh" | "ageing" | "stale";
 
 export function freshness(quotedAt: number, now = Date.now()): Freshness {

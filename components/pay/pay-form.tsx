@@ -7,11 +7,14 @@ import {buildPayment, type BuiltPayment} from "@/app/pay/actions";
 import {syncFromChain} from "@/app/sync/actions";
 import {ASSETS, defaultAsset} from "@/lib/assets";
 import {STABLE} from "@/lib/chain";
+import {parseMoney} from "@/lib/csv";
+import {held, type Outcome} from "@/lib/outcome";
+import {checkLine, impactText} from "@/lib/payment";
 import {settledUnitPrice, unitsFromRaw, usdt} from "@/lib/format";
 import {singlePayRunId} from "@/lib/run-id";
-import {QUOTE_FRESH_MS, freshness, quoteAge} from "@/lib/quote-age";
+import {QUOTE_FRESH_MS, QUOTE_LOST, freshness, quoteAge} from "@/lib/quote-age";
 import {WalletPanel} from "@/components/wallet/wallet-panel";
-import {useWallet} from "@/components/wallet/use-wallet";
+import {NEEDS_OKB, useWallet} from "@/components/wallet/use-wallet";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {AssetNote} from "./asset-note";
 import {usePay} from "./use-pay";
@@ -25,9 +28,10 @@ import "./pay.css";
  * earlier version disabled the button without saying why, and a greyed button with no
  * reason is how a product feels broken even when it is working.
  *
- * Nothing on this page is a number Warrant made up. The amount they receive, the price
- * and the guaranteed minimum all come from the aggregator's own answer, and the minimum is
- * enforced by the contract: below it the payment is cancelled and nobody is charged.
+ * Nothing on this page is a number Warrant made up. The amount they receive, the price,
+ * the price impact and the minimum all come from the aggregator's own answer, and the
+ * minimum is enforced by the contract: below it the payment is cancelled and no USDT
+ * leaves the payer's wallet.
  */
 export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
   const router = useRouter();
@@ -42,25 +46,47 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
 
   const [quoted, setQuoted] = useState<{sig: string; value: BuiltPayment; at: number} | null>(null);
   const [quoteWhy, setQuoteWhy] = useState<string | null>(null);
+  /** The price request itself failed — it never came back — rather than being refused. */
+  const [quoteLost, setQuoteLost] = useState(false);
   const [quoting, setQuoting] = useState(false);
   const [refreshAt, setRefreshAt] = useState(0);
   const [, setTick] = useState(0);
 
-  const {pay, phase, why, reset} = usePay(payroll);
+  const {pay, phase, why, note, reset} = usePay(payroll);
 
   const chosen = ASSETS.find((a) => a.address === asset) ?? defaultAsset();
-  const usd = Number(amount);
-  const cashUsd = splitOpen ? Number(cash || 0) : 0;
+  // Read the way a file's amounts are read: a comma only between thousands, so "2,50" is
+  // refused rather than becoming $250.
+  const amountRead = amount.trim() === "" ? null : parseMoney(amount);
+  const usd = amountRead?.ok ? amountRead.value : 0;
+  const cashRead = splitOpen && cash.trim() !== "" ? parseMoney(cash) : null;
+  const cashUsd = cashRead?.ok ? cashRead.value : 0;
+  /** An amount that was typed but cannot be read — said as a refusal, not a hint. */
+  const typedWrong =
+    amountRead !== null && !amountRead.ok
+      ? amountRead.why
+      : cashRead !== null && !cashRead.ok
+        ? cashRead.why
+        : null;
 
   // What is missing, in the order a person fills the form in.
   const missing: string | null =
     recipient.trim().length === 0
       ? "Add their wallet address"
-      : !(usd > 0)
-        ? "Enter an amount"
-        : reason.trim().length === 0
-          ? "Add a note for their receipt"
-          : null;
+      : amountRead !== null && !amountRead.ok
+        ? amountRead.why
+        : !(usd > 0)
+          ? "Enter an amount"
+          : reason.trim().length === 0
+            ? "Add a note for their receipt"
+            : cashRead !== null && !cashRead.ok
+              ? cashRead.why
+              : null;
+
+  // What can be decided without asking anyone is decided here, by the same function the
+  // server runs, so a mistyped address is named at once and never sent for a price.
+  const checked = missing ? null : checkLine({recipient, usd, cashUsd, asset, reason});
+  const lineWhy = checked && !checked.ok ? checked.why : null;
 
   // A QUOTE BELONGS TO THE INPUTS THAT PRODUCED IT, NOT TO THE CLOCK. An edit makes it
   // stale instantly; a timed refresh does not — the old price stays on screen, and the
@@ -81,21 +107,41 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
     return () => clearInterval(t);
   }, [quote]);
 
+  const busy = phase === "building" || phase === "signing" || phase === "confirming";
+  // Once paid, this quote is spent. The button stays down while the receipt opens and never
+  // falls back to "Pay $X" on the same price.
+  const paid = phase === "done";
+  // While a payment is in flight or done, the form shows exactly what is being paid.
+  const locked = busy || paid;
+
   // Ask for a price once the line is complete, not on every keystroke.
   const seq = useRef(0);
   useEffect(() => {
-    if (missing) {
+    if (missing || lineWhy) {
+      // Anything still in flight was asked for inputs that no longer stand; drop it.
+      seq.current++;
       setQuoted(null);
       setQuoteWhy(null);
+      setQuoteLost(false);
       setQuoting(false);
       return;
     }
     const mine = ++seq.current;
     setQuoting(true);
     const t = setTimeout(async () => {
-      const out = await buildPayment({recipient, usd, cashUsd, asset, reason});
+      let out: Outcome<BuiltPayment>;
+      let lost = false;
+      try {
+        out = await buildPayment({recipient, usd, cashUsd, asset, reason});
+      } catch {
+        // The request never came back: the connection dropped or the server failed. That
+        // is not a refusal, and it must not leave "Getting the price…" on screen for ever.
+        out = held(QUOTE_LOST);
+        lost = true;
+      }
       if (mine !== seq.current) return;
       setQuoting(false);
+      setQuoteLost(lost);
       if (out.ok) {
         setQuoted({sig: signature, value: out.value, at: Date.now()});
         setQuoteWhy(null);
@@ -105,15 +151,16 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
       }
     }, 450);
     return () => clearTimeout(t);
-  }, [missing, recipient, usd, cashUsd, asset, reason, signature, refreshAt]);
+  }, [missing, lineWhy, recipient, usd, cashUsd, asset, reason, signature, refreshAt]);
 
-  // A price is a moment. Refresh it before it goes stale while the payer is reading.
+  // A price is a moment. Refresh it before it goes stale while the payer is reading — but
+  // not once it has been paid; that price is finished.
   useEffect(() => {
-    if (!quoted || quoting) return;
+    if (!quoted || quoting || paid) return;
     const due = quoted.at + QUOTE_FRESH_MS - Date.now();
     const t = setTimeout(() => setRefreshAt(Date.now()), Math.max(1_000, due));
     return () => clearTimeout(t);
-  }, [quoted, quoting]);
+  }, [quoted, quoting, paid]);
 
   const total = quote ? BigInt(quote.totalStable) : BigInt(Math.round((usd > 0 ? usd : 0) * 1e6));
 
@@ -121,13 +168,13 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
     if (!quote) return;
     const result = await pay([quote.line], quote.asset, singlePayRunId(), BigInt(quote.totalStable));
     if (result) {
-      // The public record must already be true when the payer lands on it.
-      await syncFromChain();
+      // The receipt reads its own transaction, so it is true the moment it opens: go there
+      // first. Bringing the company page and the tape up to date follows without holding
+      // the payer here, and a sync that fails costs nothing — the indexer catches up.
       router.push(`/receipt/${result.hash}`);
+      void syncFromChain().catch(() => undefined);
     }
   }, [pay, quote, router]);
-
-  const busy = phase === "building" || phase === "signing" || phase === "confirming";
 
   // THE BUTTON ALWAYS SAYS WHAT IT WILL DO, OR WHAT IS STOPPING IT.
   const blocker: string | null =
@@ -135,20 +182,27 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
       ? "Connect a wallet to pay"
       : wallet.status === "wrong-chain"
         ? "Switch to X Layer to pay"
-        : missing
-          ? missing
-          : quoteWhy
-            ? "Fix the problem above"
-            : !quote
-              ? "Getting the price…"
-              : age === "stale"
-                ? "Price is out of date — refresh it"
-                : wallet.usdt !== undefined && wallet.usdt < total
-                  ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
-                  : null;
+        : wallet.noGas
+          ? NEEDS_OKB
+          : missing
+            ? missing
+            : lineWhy
+              ? "Fix the problem above"
+              : quoteLost
+                ? "Could not get the price — try again"
+                : quoteWhy
+                  ? "Fix the problem above"
+                  : !quote
+                    ? "Getting the price…"
+                    : age === "stale"
+                      ? "Price is out of date — refresh it"
+                      : wallet.usdt !== undefined && wallet.usdt < total
+                        ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
+                        : null;
 
-  const label =
-    phase === "signing"
+  const label = paid
+    ? "Paid — opening the receipt…"
+    : phase === "signing"
       ? "Confirm in your wallet…"
       : phase === "confirming"
         ? "Sending…"
@@ -171,7 +225,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
         className="wa-pay-form"
         onSubmit={(e) => {
           e.preventDefault();
-          if (!blocker) void send();
+          if (!blocker && !locked) void send();
         }}
       >
         <WalletPanel need={quote ? total : undefined} />
@@ -182,6 +236,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
             <input
               className="wa-input wa-mono"
               value={recipient}
+              disabled={locked}
               onChange={(e) => setRecipient(e.target.value.trim())}
               placeholder="0x… their X Layer address"
               spellCheck={false}
@@ -197,7 +252,8 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
             <input
               className="wa-input is-amount"
               value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
+              disabled={locked}
+              onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ""))}
               placeholder="0"
               inputMode="decimal"
             />
@@ -208,7 +264,12 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
         <label className="wa-field">
           <span className="k">They receive</span>
           <span className="wa-field-v">
-            <select className="wa-input" value={asset} onChange={(e) => setAsset(e.target.value as typeof asset)}>
+            <select
+              className="wa-input"
+              value={asset}
+              disabled={locked}
+              onChange={(e) => setAsset(e.target.value as typeof asset)}
+            >
               {ASSETS.map((a) => (
                 <option key={a.address} value={a.address}>
                   {a.name} ({a.symbol})
@@ -225,6 +286,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
             <input
               className="wa-input"
               value={reason}
+              disabled={locked}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. Design review, week 38"
               maxLength={200}
@@ -238,6 +300,7 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
             type="button"
             className="wa-fold-toggle"
             aria-expanded={splitOpen}
+            disabled={locked}
             onClick={() => setSplitOpen((v) => !v)}
           >
             <ChevronDown size={14} strokeWidth={2} aria-hidden className={splitOpen ? "is-open" : ""} />
@@ -251,7 +314,8 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
                 <input
                   className="wa-input is-amount"
                   value={cash}
-                  onChange={(e) => setCash(e.target.value.replace(/[^\d.]/g, ""))}
+                  disabled={locked}
+                  onChange={(e) => setCash(e.target.value.replace(/[^\d.,]/g, ""))}
                   placeholder="0"
                   inputMode="decimal"
                 />
@@ -264,12 +328,13 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
         <div className="wa-pay-act">
           <button
             type="submit"
-            className={`wa-btn is-primary is-wide${blocker ? " is-blocked" : ""}`}
-            disabled={Boolean(blocker) || busy}
+            className={`wa-btn is-primary is-wide${blocker && !locked ? " is-blocked" : ""}`}
+            disabled={Boolean(blocker) || locked}
           >
-            {busy ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
+            {locked ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
             {label}
           </button>
+          {note && busy ? <p className="wa-fine">{note}</p> : null}
           {phase === "failed" && why ? (
             <p className="wa-refusal">
               {why}{" "}
@@ -314,21 +379,44 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
           </div>
         </dl>
 
-        {quoteWhy ? (
-          <p className="wa-refusal">{quoteWhy}</p>
+        {lineWhy ? (
+          <p className="wa-refusal">{lineWhy}</p>
+        ) : quoteWhy ? (
+          // A refusal from the price service can pass — a busy minute, a thin market that
+          // refills — so it can always be asked again with the same inputs.
+          <p className="wa-refusal">
+            {quoteWhy}{" "}
+            <button
+              type="button"
+              className="wa-linkish"
+              disabled={quoting || locked}
+              onClick={() => setRefreshAt(Date.now())}
+            >
+              {quoting ? "Trying again…" : "Try again"}
+            </button>
+          </p>
         ) : quote && quote.expectedOut !== "0" ? (
           <dl className="wa-quote-rows">
             <div>
               <dt>Price</dt>
               <dd>{price === null ? "not available" : `1 ${chosen.symbol} = $${price.toFixed(2)}`}</dd>
             </div>
+            {/* The aggregator's own figure. When it gives none, the row is left out rather
+                than showing a zero it never said. */}
+            {quote.priceImpactPercent !== null ? (
+              <div>
+                <dt>Price impact</dt>
+                <dd>{impactText(quote.priceImpactPercent)}</dd>
+              </div>
+            ) : null}
             <div>
-              <dt>Guaranteed at least</dt>
+              <dt>At least</dt>
               <dd>
-                {unitsFromRaw(BigInt(quote.minOut), chosen.decimals)} {chosen.symbol}
+                {unitsFromRaw(BigInt(quote.minOut), chosen.decimals)} {chosen.symbol} — the
+                contract refuses less
                 <span className="wa-quote-aside">
-                  If the price moves and they would get less, the payment is cancelled and
-                  you are not charged.
+                  If the price moves and they would get less, the payment is cancelled and no
+                  USDT leaves your wallet.
                 </span>
               </dd>
             </div>
@@ -345,7 +433,9 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
         ) : (
           <p className="wa-quote-waiting">
             {missing
-              ? `${missing} to see what they will receive.`
+              ? missing === typedWrong
+                ? `${missing}.`
+                : `${missing} to see what they will receive.`
               : quoting
                 ? "Getting the live price from OKX DEX…"
                 : ""}
@@ -355,7 +445,12 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
         {quoted && quote ? (
           <p className={`wa-quote-age${age === "stale" ? " is-stale" : ""}`}>
             Price from {quoteAge(quoted.at)}.{" "}
-            <button type="button" className="wa-linkish" onClick={() => setRefreshAt(Date.now())} disabled={quoting}>
+            <button
+              type="button"
+              className="wa-linkish"
+              onClick={() => setRefreshAt(Date.now())}
+              disabled={quoting || locked}
+            >
               {quoting ? "Refreshing…" : "Refresh"}
             </button>
           </p>

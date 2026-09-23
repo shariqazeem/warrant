@@ -8,17 +8,22 @@
  *
  * THE SIGNATURE COUNT IS THE PRODUCT. With a separate approval a run is two transactions
  * and two waits. USDT on X Layer implements EIP-2612, so the payer signs a permit off
- * chain, for no gas, and the run is a single transaction. If the token's domain cannot be
- * reproduced — meaning a permit signed here would be rejected on chain — this falls back
- * to a plain approval rather than producing a signature that cannot work.
+ * chain, for no gas, and the run is a single transaction.
+ *
+ * AND WHEN A PERMIT CANNOT WORK, THE APPROVAL DOES. A token whose domain cannot be
+ * reproduced, a wallet that cannot sign typed data, a smart-contract wallet whose signature
+ * the token cannot check (components/wallet/permit.ts), or a permit the contract refuses
+ * anyway: each falls back to approve-then-pay, once, in the same press, and the wallet is
+ * remembered so its next payment goes straight there.
  */
-import {useCallback, useState} from "react";
+import {useCallback, useRef, useState} from "react";
 import {erc20Abi, type Address, type Hex} from "viem";
 import {useAccount, useConfig} from "wagmi";
 import {readContract, waitForTransactionReceipt, writeContract, signTypedData} from "wagmi/actions";
 import {STABLE, xLayer} from "@/lib/chain";
-import {PERMIT_TYPES, deadlineIn, permitAbi, resolveDomain} from "@/lib/permit";
+import {deadlineIn, permitAbi, resolveDomain} from "@/lib/permit";
 import {payrollAbi} from "@/lib/payroll-abi";
+import {approveFirst, isPermitRefusal, signPermit, type Permit} from "@/components/wallet/permit";
 import type {BuiltLine} from "@/app/pay/actions";
 
 export type PayPhase = "idle" | "building" | "signing" | "confirming" | "done" | "failed";
@@ -34,17 +39,24 @@ export function usePay(payroll: Address | undefined) {
   const [phase, setPhase] = useState<PayPhase>("idle");
   const [why, setWhy] = useState<string | null>(null);
   const [hash, setHash] = useState<Hex | null>(null);
+  /** Said while it is true: this payment is taking two wallet requests instead of one. */
+  const [note, setNote] = useState<string | null>(null);
+  /** Wallets, lower-cased, whose permit could not work here. Their next payment approves
+   *  straight away instead of asking for a signature that cannot be used. */
+  const noPermit = useRef(new Set<string>());
 
   const reset = useCallback(() => {
     setPhase("idle");
     setWhy(null);
     setHash(null);
+    setNote(null);
   }, []);
 
   const pay = useCallback(
     async (lines: BuiltLine[], asset: Address, runId: Hex, total: bigint) => {
       setWhy(null);
       setHash(null);
+      setNote(null);
 
       if (!address) {
         setPhase("failed");
@@ -101,53 +113,59 @@ export function usePay(payroll: Address | undefined) {
                 : [lines.map(asLine), asset, runId],
           });
         } else {
-          const resolved = await resolveDomain();
+          const wallet = address.toLowerCase();
+          let permit: Permit | null = null;
 
-          if (resolved.ok) {
-            const nonce = await readContract(config, {
-              address: STABLE.address,
-              abi: permitAbi,
-              functionName: "nonces",
-              args: [address],
+          if (!noPermit.current.has(wallet)) {
+            const attempt = await signPermit({
+              owner: address,
+              spender: payroll,
+              value: total,
+              domain: () => resolveDomain(),
+              nonce: () =>
+                readContract(config, {
+                  address: STABLE.address,
+                  abi: permitAbi,
+                  functionName: "nonces",
+                  args: [address],
+                }),
+              deadline: () => deadlineIn(PERMIT_MINUTES),
+              sign: (typed) => signTypedData(config, typed),
+              onAsk: () => setPhase("signing"),
             });
-            // From the chain's clock: a browser running slow would otherwise sign a permit
-            // that is already expired, and fail with an opaque revert.
-            const deadline = await deadlineIn(PERMIT_MINUTES);
+            if (attempt.kind === "dismissed") {
+              setPhase("failed");
+              setWhy("You dismissed the request in your wallet, so nothing was sent.");
+              return null;
+            }
+            if (attempt.kind === "signed") permit = attempt.permit;
+            else noPermit.current.add(wallet);
+          }
 
-            setPhase("signing");
-            const signature = await signTypedData(config, {
-              domain: resolved.value.domain,
-              types: PERMIT_TYPES,
-              primaryType: "Permit",
-              message: {
-                owner: address,
-                spender: payroll,
-                value: total,
-                nonce,
-                deadline,
-              },
-            });
+          let sent: Hex | null = null;
+          if (permit) {
+            try {
+              sent = await writeContract(config, {
+                address: payroll,
+                abi: payrollAbi,
+                functionName: lines.length === 1 ? "payOneWithPermit" : "payManyWithPermit",
+                args:
+                  lines.length === 1
+                    ? [asLine(lines[0]!), asset, runId, permit]
+                    : [lines.map(asLine), asset, runId, permit],
+              });
+            } catch (err) {
+              // The contract refused the permit after all. Fall back to the approval — once,
+              // now — and remember the wallet. Anything else is a real failure.
+              if (!isPermitRefusal(err)) throw err;
+              noPermit.current.add(wallet);
+            }
+          }
 
-            const r = `0x${signature.slice(2, 66)}` as Hex;
-            const s = `0x${signature.slice(66, 130)}` as Hex;
-            let v = parseInt(signature.slice(130, 132), 16);
-            // Some wallets still return 0/1 where the token expects 27/28.
-            if (v < 27) v += 27;
-
-            const permit = {value: total, deadline, v, r, s};
-
-            txHash = await writeContract(config, {
-              address: payroll,
-              abi: payrollAbi,
-              functionName: lines.length === 1 ? "payOneWithPermit" : "payManyWithPermit",
-              args:
-                lines.length === 1
-                  ? [asLine(lines[0]!), asset, runId, permit]
-                  : [lines.map(asLine), asset, runId, permit],
-            });
-          } else {
-            // Permit cannot be used here. Approve, then pay: two transactions, and the
-            // reason is shown rather than hidden.
+          if (sent === null) {
+            // Approve, then pay: two transactions, and the payer is told why before the
+            // wallet asks twice.
+            setNote(approveFirst("pay"));
             setPhase("signing");
             const approveHash = await writeContract(config, {
               address: STABLE.address,
@@ -164,7 +182,7 @@ export function usePay(payroll: Address | undefined) {
             }
 
             setPhase("signing");
-            txHash = await writeContract(config, {
+            sent = await writeContract(config, {
               address: payroll,
               abi: payrollAbi,
               functionName: lines.length === 1 ? "payOne" : "payMany",
@@ -174,6 +192,7 @@ export function usePay(payroll: Address | undefined) {
                   : [lines.map(asLine), asset, runId],
             });
           }
+          txHash = sent;
         }
 
         setPhase("confirming");
@@ -192,6 +211,9 @@ export function usePay(payroll: Address | undefined) {
         setPhase("done");
         return {hash: txHash} satisfies PayResult;
       } catch (err) {
+        // A permit refusal that got this far still sends the next press to the approval,
+        // which is what the message below tells the payer.
+        if (isPermitRefusal(err)) noPermit.current.add(address.toLowerCase());
         setPhase("failed");
         setWhy(readableFailure(err));
         return null;
@@ -200,7 +222,7 @@ export function usePay(payroll: Address | undefined) {
     [address, chainId, config, payroll],
   );
 
-  return {pay, phase, why, hash, reset};
+  return {pay, phase, why, hash, note, reset};
 }
 
 /**
@@ -219,8 +241,9 @@ function readableFailure(err: unknown): string {
   if (/BelowMinimum/i.test(raw)) {
     return "The route moved while you were signing and would have delivered less than the floor. Nothing was paid. Ask for a fresh quote.";
   }
-  if (/PermitFailed/i.test(raw)) {
-    return "The approval signature was not accepted. Try again; it will fall back to an approval transaction.";
+  if (isPermitRefusal(err)) {
+    // True because the wallet is remembered on the way here: the next press approves first.
+    return "Your wallet's approval signature was not accepted, so nothing was paid. Try again — it will ask you to approve the USDT with a transaction first.";
   }
   if (/TransferFromFailed|allowance/i.test(raw)) {
     return "The payment could not draw the stablecoin from this wallet. Check the balance and the approval.";

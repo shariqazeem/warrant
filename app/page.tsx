@@ -242,8 +242,8 @@ export default async function Home() {
         <div className="wa-close">
           <h2 className="wa-h2">Works for AI agents too.</h2>
           <p className="wa-lede">
-            An agent that earns through x402 is just one more line on the same payroll — paid
-            in stock, with a receipt, like everyone else.
+            An agent&rsquo;s wallet is one more line on the same file — paid in stock, with a
+            receipt, like everyone else.
           </p>
         </div>
         <SiteFoot />

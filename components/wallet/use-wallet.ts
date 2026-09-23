@@ -18,6 +18,13 @@ import {STABLE, xLayer} from "@/lib/chain";
 
 export type WalletStatus = "disconnected" | "connecting" | "wrong-chain" | "ready";
 
+/**
+ * What every money button says when the wallet holds no OKB on X Layer. Every transaction
+ * — a payment, a grant, a release — pays its network fee in OKB, so without any the
+ * wallet can sign and the chain will still refuse it.
+ */
+export const NEEDS_OKB = "You need a little OKB on X Layer for the network fee";
+
 export function useWallet() {
   const {address, isConnected, isConnecting, isReconnecting, chainId, connector} = useAccount();
 
@@ -52,6 +59,8 @@ export function useWallet() {
     /** Undefined until read. Never shown as zero while it is still loading. */
     usdt: usdt.data as bigint | undefined,
     okb: okb.data?.value,
+    /** True only once the OKB balance has been READ as zero — never while it is loading. */
+    noGas: okb.data?.value === 0n,
     refetch: () => {
       void usdt.refetch();
       void okb.refetch();

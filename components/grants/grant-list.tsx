@@ -2,12 +2,12 @@
 
 import {Loader2, Lock} from "lucide-react";
 import {useRouter} from "next/navigation";
-import {useAccount} from "wagmi";
 import {ScheduleBar} from "./schedule-bar";
 import {useGrantAction} from "./use-grant";
 import type {Grant} from "@/lib/grants";
 import {humanDuration} from "@/lib/schedule";
 import {dateUTC, short, unitsFromRaw, usdt} from "@/lib/format";
+import {NEEDS_OKB, useWallet} from "@/components/wallet/use-wallet";
 import "./grants.css";
 
 /**
@@ -28,10 +28,26 @@ export function GrantList({
   now: number;
 }) {
   const router = useRouter();
-  const {address} = useAccount();
-  const {run, phase, busyId, action, why, reset} = useGrantAction(escrow);
+  const wallet = useWallet();
+  const address = wallet.address;
+  const {run, phase, targetId, action, why, reset} = useGrantAction(escrow);
+
+  // WHAT STOPS EVERY BUTTON BELOW, in the words the pay form uses. Each of the four actions
+  // is a transaction from this wallet, on X Layer, paying its fee in OKB.
+  const blocker =
+    wallet.status === "disconnected" || wallet.status === "connecting"
+      ? "Connect a wallet to continue"
+      : wallet.status === "wrong-chain"
+        ? "Switch to X Layer to continue"
+        : wallet.noGas
+          ? NEEDS_OKB
+          : null;
+  // One action at a time, across every grant: a second signature request while the first
+  // is open is how a wallet ends up approving the wrong one.
+  const anyBusy = phase === "signing" || phase === "confirming";
 
   const act = async (id: number, which: "vest" | "seal" | "revoke" | "close") => {
+    if (blocker || anyBusy) return;
     const tx = await run(id, which);
     if (tx) router.refresh();
   };
@@ -51,8 +67,11 @@ export function GrantList({
       {grants.map((g) => {
         const isPayer = address?.toLowerCase() === g.payer.toLowerCase();
         const isBeneficiary = address?.toLowerCase() === g.beneficiary.toLowerCase();
-        const busy = busyId === g.id && (phase === "signing" || phase === "confirming");
+        const busy = targetId === g.id && anyBusy;
         const finished = g.sharesReleased >= g.shares;
+        // Whether any button on this grant would do something, so the blocker is only said
+        // where it is stopping something.
+        const canAct = g.releasableUnits > 0n || (isPayer && !g.isSealed && !g.revoked) || finished;
 
         return (
           <article className="wa-grant" key={g.id}>
@@ -128,7 +147,7 @@ export function GrantList({
                 <button
                   type="button"
                   className="wa-btn is-primary"
-                  disabled={busy || g.releasableUnits === 0n}
+                  disabled={anyBusy || Boolean(blocker) || g.releasableUnits === 0n}
                   onClick={() => void act(g.id, "vest")}
                 >
                   {busy && action === "vest" ? (
@@ -150,17 +169,23 @@ export function GrantList({
                     <button
                       type="button"
                       className="wa-btn"
-                      disabled={busy}
+                      disabled={anyBusy || Boolean(blocker)}
                       onClick={() => void act(g.id, "seal")}
                     >
+                      {busy && action === "seal" ? (
+                        <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" />
+                      ) : null}
                       Make irrevocable
                     </button>
                     <button
                       type="button"
                       className="wa-btn"
-                      disabled={busy}
+                      disabled={anyBusy || Boolean(blocker)}
                       onClick={() => void act(g.id, "revoke")}
                     >
+                      {busy && action === "revoke" ? (
+                        <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" />
+                      ) : null}
                       Cancel the unvested part
                     </button>
                   </>
@@ -170,12 +195,17 @@ export function GrantList({
                   <button
                     type="button"
                     className="wa-btn"
-                    disabled={busy}
+                    disabled={anyBusy || Boolean(blocker)}
                     onClick={() => void act(g.id, "close")}
                   >
+                    {busy && action === "close" ? (
+                      <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" />
+                    ) : null}
                     Archive
                   </button>
                 ) : null}
+
+                {blocker && canAct ? <span className="wa-grant-block">{blocker}</span> : null}
 
                 {!g.isSealed && !g.revoked && isPayer ? (
                   <span className="wa-grant-rows" style={{marginTop: 0}}>
@@ -188,7 +218,7 @@ export function GrantList({
               </div>
             ) : null}
 
-            {busyId === g.id && phase === "failed" && why ? (
+            {targetId === g.id && phase === "failed" && why ? (
               <p className="wa-refusal" style={{marginTop: "var(--s-3)"}}>
                 {why}{" "}
                 <button type="button" className="wa-linkish" onClick={reset}>

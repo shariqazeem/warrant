@@ -8,6 +8,8 @@
  *
  * A failure stays until it is dismissed, because the reason is the whole value.
  */
+import {xLayer} from "@/lib/chain";
+
 export type Phase = "building" | "signing" | "confirming" | "settled" | "failed";
 
 export type Toast = {
@@ -69,7 +71,8 @@ export function dismiss(id: string): void {
 export const PHASE_WORDS: Record<Phase, string> = {
   building: "Building the transaction",
   signing: "Waiting for your wallet",
-  confirming: "Confirming on Solana",
+  // Named from the chain itself, so it cannot say another chain's name again.
+  confirming: `Confirming on ${xLayer.name}`,
   settled: "Settled",
   failed: "Not sent",
 };

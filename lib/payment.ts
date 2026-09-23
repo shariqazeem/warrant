@@ -3,12 +3,13 @@
  *
  * `app/pay/actions.ts` does the part that talks to the aggregator. Everything that decides
  * what a payment IS lives here, pure, so it can be tested: the dollars-to-base-units
- * conversion and the split.
+ * conversion, the split, and the checks on what the aggregator answered.
  *
  * USDT IS SIX DECIMALS. Every figure below is in base units, and the only place dollars
  * become base units is `toBase`.
  */
 import {getAddress, isAddress} from "viem";
+import {ASSETS, assetByAddress, type Asset} from "./assets";
 import {STABLE} from "./chain";
 import {MAX_REASON_LENGTH} from "./reason";
 import {held, ok, type Outcome} from "./outcome";
@@ -115,4 +116,134 @@ export function checkLine(req: LineRequest): Outcome<Split> {
 /** The sum a payer must approve to Payroll before a run can be signed. */
 export function runTotal(splits: readonly Split[]): bigint {
   return splits.reduce((sum, s) => sum + s.total, 0n);
+}
+
+/**
+ * ONLY A STOCK WARRANT LISTS. The public record shows nothing else as a payment
+ * (lib/confirm.ts reads the same list), so a payment in any other token would take the
+ * payer's money and never print a receipt. The forms only offer the list; this is for
+ * the server actions, which anyone can call.
+ */
+export function checkListedAsset(address: string): Outcome<Asset> {
+  const listed = assetByAddress(address);
+  if (listed) return ok(listed);
+  const symbols = ASSETS.map((a) => a.symbol);
+  const named =
+    symbols.length > 1 ? `${symbols.slice(0, -1).join(", ")} or ${symbols.at(-1)}` : (symbols[0] ?? "");
+  return held(`Warrant pays in ${named}, and that asset is not one of them.`);
+}
+
+/**
+ * HOW FAR ONE PAYMENT MAY MOVE THE PRICE. Beyond this, the market for that stock on X Layer
+ * is too thin for the amount: the person being paid would get noticeably less than the
+ * stock trades for, and the payer would be the one who moved it.
+ */
+export const MAX_PRICE_IMPACT_PERCENT = 3;
+
+/**
+ * The aggregator's `priceImpactPercent`, as a size. Negative means the price moved against
+ * the payer; how far is what matters here, so it is read with Math.abs.
+ *
+ * NULL WHEN THE AGGREGATOR DID NOT SAY. Never zero standing in for unknown: a surface with
+ * no figure says nothing, and a surface with a zero says the payment moves nothing.
+ */
+export function readPriceImpact(raw: string | null | undefined): number | null {
+  if (raw === undefined || raw === null) return null;
+  const text = raw.trim();
+  if (!/^-?\d+(\.\d+)?$/.test(text)) return null;
+  return Math.abs(Number(text));
+}
+
+/** "0.08%", "4.2%", "under 0.01%". Only ever given a figure the aggregator reported. */
+export function impactText(percent: number): string {
+  if (percent === 0) return "0%";
+  if (percent < 0.01) return "under 0.01%";
+  return `${Number(percent.toFixed(2))}%`;
+}
+
+/**
+ * Refuses a line that would move the price too far. A line with no reported figure passes,
+ * unlabelled: the contract's minimum still holds it, and a guess would be worse.
+ */
+export function checkPriceImpact(percent: number | null, symbol: string): Outcome<number | null> {
+  if (percent === null) return ok(null);
+  // Compared as it is shown, so a refusal never names a figure at or under the limit.
+  if (Number(percent.toFixed(2)) > MAX_PRICE_IMPACT_PERCENT) {
+    return held(
+      `The market for ${symbol} on X Layer is too thin for this amount right now — ` +
+        `the price would move ${impactText(percent)}. Try a smaller amount.`,
+    );
+  }
+  return ok(percent);
+}
+
+/**
+ * The worst line of a run, for its summary. Null when there are no lines, or when any line
+ * did not report a figure — the worst of the lines that did would understate the run.
+ */
+export function worstPriceImpact(impacts: readonly (number | null)[]): number | null {
+  if (impacts.length === 0) return null;
+  let worst = 0;
+  for (const impact of impacts) {
+    if (impact === null) return null;
+    if (impact > worst) worst = impact;
+  }
+  return worst;
+}
+
+/** What the aggregator's answer says it will do, narrowed to the parts that are checked. */
+export type RouteAnswer = {
+  routerResult: {
+    fromTokenAmount: string;
+    fromToken?: {tokenContractAddress: string};
+    toToken?: {tokenContractAddress: string};
+  };
+  tx: {to: string; value?: string};
+};
+
+/** What was asked for: this much of `from`, into `to`, through the contract's router. */
+export type RouteAsk = {router: string; from: string; to: string; amount: bigint};
+
+/** A whole number of base units, decimal or hex. Null for anything else, never a guess. */
+function wholeUnits(text: string | undefined): bigint | null {
+  if (text === undefined) return null;
+  const t = text.trim();
+  if (/^\d+$/.test(t) || /^0x[0-9a-fA-F]+$/.test(t)) return BigInt(t);
+  return null;
+}
+
+const sameAddress = (a: string | undefined, b: string) =>
+  a !== undefined && a.toLowerCase() === b.toLowerCase();
+
+/**
+ * THE AGGREGATOR'S ANSWER, CHECKED AGAINST THE QUESTION, before it goes into anything a
+ * payer signs.
+ *
+ * The contract already refuses to deliver less than the floor, so a wrong answer cannot
+ * cost the payer the payment — but it can revert in front of them for a reason nobody can
+ * read, or be built for a router the contract never calls. So the answer must target the
+ * router the contract was deployed against, spend exactly this line's USDT and nothing
+ * else, buy the stock that was chosen, and carry no OKB, because the contract sends none.
+ */
+export function checkRoute(answer: RouteAnswer, ask: RouteAsk): Outcome<void> {
+  const refused = (what: string) =>
+    held<void>(`OKX DEX answered with a route ${what}, so it was not used. Nothing was sent.`);
+
+  if (!sameAddress(answer.tx.to, ask.router)) {
+    return refused("through a contract Warrant does not pay through");
+  }
+  const value = answer.tx.value?.trim();
+  if (wholeUnits(value === undefined || value === "" ? "0" : value) !== 0n) {
+    return refused("that needs OKB sent along with it, which a USDT payment never does");
+  }
+  if (!sameAddress(answer.routerResult.fromToken?.tokenContractAddress, ask.from)) {
+    return refused("that spends something other than USDT");
+  }
+  if (!sameAddress(answer.routerResult.toToken?.tokenContractAddress, ask.to)) {
+    return refused("for a different stock than the one chosen");
+  }
+  if (wholeUnits(answer.routerResult.fromTokenAmount) !== ask.amount) {
+    return refused("for a different amount than this payment");
+  }
+  return ok(undefined);
 }
