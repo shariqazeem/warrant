@@ -17,13 +17,13 @@ import {erc20Abi, formatUnits, parseEventLogs, type Address, type Hex} from "vie
 import {privateKeyToAccount} from "viem/accounts";
 import {loadEnv} from "../lib/env";
 import {STABLE, DEFAULT_ASSET} from "../lib/chain";
-import {checkClock, forkClient, fundToken} from "../lib/fork";
+import {checkClock, forkClient, fundToken, FORK_PAYER_KEY} from "../lib/fork";
 import {approveTransaction, supportedChain, swap} from "../lib/okx";
 import {payrollAbi} from "../lib/payroll-abi";
 import {isOk} from "../lib/outcome";
 
-/** Anvil's first default account. A well-known test key; it holds nothing anywhere real. */
-const PAYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+/** A key only these proofs use (lib/fork.ts says why it is not Anvil's account #0). */
+const PAYER_KEY = FORK_PAYER_KEY;
 const RECIPIENT = "0x00000000000000000000000000000000000ca511" as Address;
 
 /** bytes32, left-aligned ASCII, the way a run id is written everywhere else. */

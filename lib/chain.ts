@@ -15,11 +15,25 @@ export const xLayer = defineChain({
   blockExplorers: {default: {name: "OKLink", url: "https://www.oklink.com/x-layer"}},
 });
 
-/** USDT on X Layer. SIX decimals, not eighteen. One dollar is 1_000_000n. */
+/**
+ * USDT on X Layer: the USD₮0 token. SIX decimals, not eighteen. One dollar is 1_000_000n.
+ *
+ * X Layer has two USDTs, and both call themselves USDT in a wallet. USD₮0 (Tether's current
+ * token, 106.6M on X Layer on 23 Sep 2026) is the one OKX Wallet's swap hands out; the older
+ * bridged USDT (3.3M) is what the first deployment used, and a payer holding USD₮0 saw "$0".
+ * The contracts were redeployed on USD₮0 the same day. Shown to people as "USDT".
+ */
 export const STABLE = {
   address: (process.env.NEXT_PUBLIC_STABLE ??
-    "0x1E4a5963aBFD975d8c9021ce480b42188849D41d") as `0x${string}`,
+    "0x779Ded0c9e1022225f8E0630b35a9b54bE713736") as `0x${string}`,
   symbol: "USDT",
+  decimals: 6,
+} as const;
+
+/** The other USDT on X Layer. Warrant does not pay with it; a wallet holding it is told so. */
+export const OTHER_STABLE = {
+  address: "0x1E4a5963aBFD975d8c9021ce480b42188849D41d" as `0x${string}`,
+  label: "the older USDT",
   decimals: 6,
 } as const;
 

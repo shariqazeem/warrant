@@ -10,7 +10,7 @@
  * Nothing here is used by the app. It exists so the mainnet attempt is the second time
  * this code path has run, not the first.
  */
-import {createTestClient, http, publicActions, walletActions, type Address} from "viem";
+import {createTestClient, http, publicActions, walletActions, type Address, keccak256, stringToHex} from "viem";
 import {xLayer} from "./chain";
 import {held, ok, type Outcome} from "./outcome";
 
@@ -127,3 +127,13 @@ export async function fundToken(
   await client.setStorageAt({address: token, index: key, value: toHex(amount, {size: 32})});
   return ok(slot.value);
 }
+
+/**
+ * THE FORK PROOFS' PAYER. Not Anvil's account #0: that key is public, and on X Layer mainnet
+ * someone has attached EIP-7702 code to its address (0xef0100…). A token that checks
+ * signatures with SignatureChecker — USD₮0 does — then treats the payer as a contract and
+ * rejects a plain permit with "EIP2612: invalid signature", which looks exactly like a broken
+ * permit and is not one. A key nobody else knows has no code anywhere; each proof funds its
+ * address with OKB on the fork before it pays.
+ */
+export const FORK_PAYER_KEY = keccak256(stringToHex("warrant fork proof payer"));

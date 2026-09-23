@@ -19,7 +19,7 @@ import {privateKeyToAccount} from "viem/accounts";
 import {loadEnv} from "../lib/env";
 import {STABLE} from "../lib/chain";
 import {defaultAsset} from "../lib/assets";
-import {checkClock, forkClient, fundToken} from "../lib/fork";
+import {checkClock, forkClient, fundToken, FORK_PAYER_KEY} from "../lib/fork";
 import {approveTransaction, supportedChain, swap} from "../lib/okx";
 import {PERMIT_TYPES, deadlineIn, permitAbi, resolveDomain} from "../lib/permit";
 import {payrollAbi} from "../lib/payroll-abi";
@@ -27,7 +27,7 @@ import {reasonHash} from "../lib/reason";
 import {runIdFromName} from "../lib/run-id";
 import {isOk} from "../lib/outcome";
 
-const PAYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+const PAYER_KEY = FORK_PAYER_KEY;
 const FORK = "http://127.0.0.1:8545";
 
 /** Eight lines, the shape of the demo. Addresses are arbitrary and hold nothing. */

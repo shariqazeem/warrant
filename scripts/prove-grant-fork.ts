@@ -15,13 +15,13 @@ import {privateKeyToAccount} from "viem/accounts";
 import {loadEnv} from "../lib/env";
 import {STABLE} from "../lib/chain";
 import {defaultAsset} from "../lib/assets";
-import {checkClock, forkClient, fundToken} from "../lib/fork";
+import {checkClock, forkClient, fundToken, FORK_PAYER_KEY} from "../lib/fork";
 import {approveTransaction, supportedChain, swap} from "../lib/okx";
 import {grantEscrowAbi} from "../lib/payroll-abi";
 import {reasonHash} from "../lib/reason";
 import {isOk} from "../lib/outcome";
 
-const PAYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+const PAYER_KEY = FORK_PAYER_KEY;
 const KEEPER_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 const ALICE = "0x00000000000000000000000000000000000ca511" as Address;
 const FORK = "http://127.0.0.1:8545";

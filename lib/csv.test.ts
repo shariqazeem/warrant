@@ -15,6 +15,7 @@ import {
   splitCsvLine,
 } from "./csv";
 import {ASSETS} from "./assets";
+import {STABLE} from "./chain";
 
 const ASSET = ASSETS[0]!.address;
 const A = "0x1e4a5963abfd975d8c9021ce480b42188849d41d";
@@ -170,7 +171,7 @@ describe("a file becoming lines", () => {
   });
 
   it("refuses a row paying the stablecoin with itself", () => {
-    const f = parseRunFile(`${A},25,Design review`, "0x1E4a5963aBFD975d8c9021ce480b42188849D41d");
+    const f = parseRunFile(`${A},25,Design review`, STABLE.address);
     expect(f.bad).toHaveLength(1);
     expect((f.bad[0]!.verdict as {why: string}).why).toMatch(/cannot also be what it buys/);
   });

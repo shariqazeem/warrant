@@ -5,7 +5,7 @@ import {useMemo} from "react";
 import {formatEther} from "viem";
 import {useConnect, useDisconnect, useSwitchChain} from "wagmi";
 import {OKX_CLOSED, OKX_CONNECT_ID} from "./okx-connect";
-import {xLayer} from "@/lib/chain";
+import {OTHER_STABLE, STABLE, xLayer} from "@/lib/chain";
 import {short, usdt as fmtUsdt} from "@/lib/format";
 import {useWallet} from "./use-wallet";
 import "./wallet.css";
@@ -142,10 +142,17 @@ export function WalletPanel({need}: {need?: bigint}) {
           Disconnect
         </button>
       </div>
-      {empty ? (
+      {empty && w.otherUsdt !== undefined && w.otherUsdt > 0n ? (
         <p className="wa-wallet-note">
-          This wallet has no USDT on X Layer, so there is nothing to pay with yet. Send
-          USDT on the X Layer network to <span className="wa-mono">{short(w.address!)}</span>.
+          This wallet holds {fmtUsdt(w.otherUsdt)} of {OTHER_STABLE.label} on X Layer (
+          <span className="wa-mono">{short(OTHER_STABLE.address)}</span>). Warrant pays with
+          USD₮0 (<span className="wa-mono">{short(STABLE.address)}</span>), the USDT most
+          wallets now hold. Swap it to USD₮0 in your wallet first; it costs a fraction of a cent.
+        </p>
+      ) : empty ? (
+        <p className="wa-wallet-note">
+          This wallet has no USDT on X Layer, so there is nothing to pay with yet. Send USDT
+          (USD₮0) on the X Layer network to <span className="wa-mono">{short(w.address!)}</span>.
         </p>
       ) : shortOf ? (
         <p className="wa-wallet-note">

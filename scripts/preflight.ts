@@ -66,7 +66,10 @@ async function main() {
         rpc.readContract({address: t.address, abi: erc20Abi, functionName: "symbol"}),
         rpc.readContract({address: t.address, abi: erc20Abi, functionName: "decimals"}),
       ]);
-      const agrees = symbol === t.symbol && decimals === t.decimals;
+      // The stablecoin is shown as "USDT" but names itself "USD₮0" on chain (Tether's current
+      // token on X Layer); either of Tether's names is the right token, anything else is not.
+      const names: readonly string[] = t === STABLE ? ["USDT", "USD₮0"] : [t.symbol];
+      const agrees = names.includes(symbol) && decimals === t.decimals;
       say(
         agrees,
         true,

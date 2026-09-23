@@ -16,7 +16,8 @@ async function main() {
   const rpc = createPublicClient({chain: xLayer, transport: http()});
 
   const expected = {
-    stable: STABLE.address.toLowerCase(),
+    // Read now, after loadEnv: STABLE was built when this module loaded, before .env.local was.
+    stable: (process.env.NEXT_PUBLIC_STABLE ?? STABLE.address).toLowerCase(),
     router: (process.env.OKX_ROUTER ?? "").toLowerCase(),
     spender: (process.env.OKX_ROUTER_SPENDER ?? "").toLowerCase(),
   };
