@@ -28,9 +28,10 @@ import "./pay.css";
  * earlier version disabled the button without saying why, and a greyed button with no
  * reason is how a product feels broken even when it is working.
  *
- * Nothing on this page is a number Warrant made up. The amount they receive, the price
- * and the guaranteed minimum all come from the aggregator's own answer, and the minimum is
- * enforced by the contract: below it the payment is cancelled and nobody is charged.
+ * Nothing on this page is a number Warrant made up. The amount they receive, the price,
+ * the price impact and the minimum all come from the aggregator's own answer, and the
+ * minimum is enforced by the contract: below it the payment is cancelled and no USDT
+ * leaves the payer's wallet.
  */
 export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
   const router = useRouter();
@@ -406,12 +407,13 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
               </div>
             ) : null}
             <div>
-              <dt>Guaranteed at least</dt>
+              <dt>At least</dt>
               <dd>
-                {unitsFromRaw(BigInt(quote.minOut), chosen.decimals)} {chosen.symbol}
+                {unitsFromRaw(BigInt(quote.minOut), chosen.decimals)} {chosen.symbol} — the
+                contract refuses less
                 <span className="wa-quote-aside">
-                  If the price moves and they would get less, the payment is cancelled and
-                  you are not charged.
+                  If the price moves and they would get less, the payment is cancelled and no
+                  USDT leaves your wallet.
                 </span>
               </dd>
             </div>

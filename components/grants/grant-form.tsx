@@ -383,12 +383,13 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
                 </div>
               ) : null}
               <div>
-                <dt>Guaranteed at least</dt>
+                <dt>At least</dt>
                 <dd>
-                  {unitsFromRaw(BigInt(quote.minUnits), chosen.decimals)} {chosen.symbol}
+                  {unitsFromRaw(BigInt(quote.minUnits), chosen.decimals)} {chosen.symbol} — the
+                  contract refuses less
                   <span className="wa-quote-aside">
-                    If the price moves and the escrow would get less, nothing happens and you
-                    are not charged.
+                    If the price moves and the escrow would get less, the grant is not opened
+                    and no USDT leaves your wallet.
                   </span>
                 </dd>
               </div>
