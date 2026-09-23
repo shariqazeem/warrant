@@ -324,8 +324,8 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
           </a>
           <span className="wa-drop-hint">
             Paste your team or drop a CSV here — one person per line: wallet address,
-            amount in USD, and a note for their receipt. An optional fourth column pays
-            part of it as USDT instead.
+            amount in USD, and a note for their receipt. How much of it becomes stock is
+            each person&rsquo;s own choice.
           </span>
         </div>
       </section>
