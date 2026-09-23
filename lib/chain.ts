@@ -34,8 +34,12 @@ export const EXPLORER_TX = (hash: string) => `https://www.oklink.com/x-layer/tx/
 export const EXPLORER_ADDRESS = (a: string) => `https://www.oklink.com/x-layer/address/${a}`;
 
 /**
- * THE PUBLIC RPC REFUSES WIDE LOG RANGES with HTTP 400. The indexer pages in windows of
- * this size. Raising it is the fastest way to break the indexer on a machine that is not
- * yours; if you have a paid endpoint, raise it there through the environment.
+ * THE PUBLIC RPC CAPS eth_getLogs AT 100 BLOCKS. Measured on 23 September 2026 against
+ * rpc.xlayer.tech: a 2,000-block range is refused with "block range greater than 100 max".
+ * It used to accept more, and the indexer was built against a fork that has no limit at
+ * all, which is how the wider window survived until the live check found it.
+ *
+ * The indexer pages in windows of exactly this size. A paid endpoint with a higher cap can
+ * raise it through XLAYER_LOG_WINDOW; the default must be what the public endpoint allows.
  */
-export const LOG_WINDOW = BigInt(process.env.XLAYER_LOG_WINDOW ?? 2000);
+export const LOG_WINDOW = BigInt(process.env.XLAYER_LOG_WINDOW ?? 100);

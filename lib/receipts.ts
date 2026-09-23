@@ -6,12 +6,12 @@
  * that need speed; a single receipt never needs it, because the transaction itself carries
  * the log.
  *
- * THE PUBLIC RPC REFUSES WIDE `eth_getLogs` RANGES with HTTP 400. Every read here is
- * windowed by `LOG_WINDOW`, and a refusal HOLDS with the endpoint's own sentence rather
- * than throwing, so a surface can render an honest waiting state instead of dying.
+ * A receipt reads the single block its transaction landed in, so it never meets the
+ * public RPC's range cap. The history — the tape, a company's record — is walked by
+ * lib/indexer.ts in windows the endpoint accepts.
  */
 import {createPublicClient, http, parseAbiItem, type Log} from "viem";
-import {LOG_WINDOW, xLayer} from "./chain";
+import {xLayer} from "./chain";
 import {attempt, held, ok, type Outcome} from "./outcome";
 
 export const PAID_EVENT = parseAbiItem(
@@ -112,49 +112,6 @@ function toReceipt(log: PaidLog): Outcome<Receipt> {
     cashAmount: a.cashAmount,
     assetAmount: a.assetAmount,
     reasonHash: a.reasonHash,
-  });
-}
-
-/**
- * The most recent payments, newest first. Walks backwards from the head in `LOG_WINDOW`
- * blocks and stops as soon as it has enough, so the usual case is one request.
- *
- * `maxWindows` bounds the walk: a chain with no payments on it must not turn a page load
- * into thousands of requests. Running out of windows is not an error — it means "nothing
- * yet in the range looked at", and the surface says exactly that.
- */
-export function recentPaid(limit = 12, maxWindows = 6): Promise<Outcome<Receipt[]>> {
-  return attempt("recent payments", async () => {
-    const address = payrollAddress();
-    if (!address.ok) return address;
-
-    const rpc = client();
-    const head = await rpc.getBlockNumber();
-    const found: Receipt[] = [];
-
-    let to = head;
-    for (let w = 0; w < maxWindows && found.length < limit && to > 0n; w++) {
-      const from = to > LOG_WINDOW ? to - LOG_WINDOW + 1n : 0n;
-
-      const logs = await rpc.getLogs({
-        address: address.value,
-        event: PAID_EVENT,
-        fromBlock: from,
-        toBlock: to,
-      });
-
-      // Newest first within the window.
-      for (const log of [...logs].reverse()) {
-        const r = toReceipt(log);
-        if (r.ok) found.push(r.value);
-        if (found.length >= limit) break;
-      }
-
-      if (from === 0n) break;
-      to = from - 1n;
-    }
-
-    return ok(await withTimestamps(rpc, found));
   });
 }
 
