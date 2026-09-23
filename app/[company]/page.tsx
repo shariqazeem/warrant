@@ -3,10 +3,13 @@ import Link from "next/link";
 import {notFound} from "next/navigation";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {ScheduleBar} from "@/components/grants/schedule-bar";
+import {PaidToWallet} from "@/components/choice/paid-to";
+import {TheirChoice} from "@/components/choice/their-choice";
 import {AssetNote} from "@/components/pay/asset-note";
 import {assetByAddress} from "@/lib/assets";
 import {EXPLORER_ADDRESS} from "@/lib/chain";
 import {readCompany} from "@/lib/company";
+import {choiceFor, readPaidTo} from "@/lib/person";
 import {readGrant, type Grant} from "@/lib/grants";
 import {catchUp} from "@/lib/indexer";
 import {dateUTC, short, since as sinceWords, unitsFromRaw, usdt} from "@/lib/format";
@@ -59,6 +62,13 @@ export default async function CompanyPage({params}: Params) {
   const c = record.value;
   const now = Math.floor(Date.now() / 1000);
 
+  // The same address as a person being paid: the choice it signed, and what it was paid.
+  // A wallet can be either or both, so the page reads both sides and shows what is there.
+  const choice = choiceFor(address);
+  const paidTo = readPaidTo(address);
+  const beenPaid = paidTo.ok && paidTo.value.paymentCount > 0;
+  const hasPaid = c.paymentCount > 0 || c.grants.length > 0;
+
   // A grant's terms are on the record from the day it opened; what has happened since —
   // released, cancelled, made irrevocable, closed — is only on the contract. Read it, so a
   // cancelled grant never shows as still vesting. Bounded: the first twenty.
@@ -75,7 +85,9 @@ export default async function CompanyPage({params}: Params) {
       <div className="wa-tear" aria-hidden />
 
       <main className="wa-sec is-wide">
-        <p className="wa-kicker">Company payroll record</p>
+        <p className="wa-kicker">
+          {hasPaid || (!beenPaid && choice === null) ? "Company payroll record" : "Payroll record"}
+        </p>
         <h1 className="wa-co-name wa-mono">{address}</h1>
         <p className="wa-lede">
           {c.since === null ? (
@@ -89,11 +101,14 @@ export default async function CompanyPage({params}: Params) {
         </p>
 
         {c.paymentCount === 0 && c.grants.length === 0 ? (
-          <div className="wa-nothing" style={{marginTop: "var(--s-7)"}}>
-            <strong>Nothing to show yet.</strong>
-            When this company pays someone, the payment appears here with its note and a
-            receipt anyone can open. Only real payments are ever shown.
-          </div>
+          // "Nothing to show" is only true when the person's side below is empty too.
+          beenPaid || choice !== null ? null : (
+            <div className="wa-nothing" style={{marginTop: "var(--s-7)"}}>
+              <strong>Nothing to show yet.</strong>
+              When this company pays someone, the payment appears here with its note and a
+              receipt anyone can open. Only real payments are ever shown.
+            </div>
+          )
         ) : (
           <>
             <section className="wa-co-figures">
@@ -235,6 +250,9 @@ export default async function CompanyPage({params}: Params) {
             ) : null}
           </>
         )}
+
+        {choice ? <TheirChoice choice={choice} /> : null}
+        <PaidToWallet paid={paidTo} hasChoice={choice !== null} />
       </main>
 
       <div className="wa-dark">
