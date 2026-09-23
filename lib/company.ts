@@ -88,7 +88,11 @@ function toReceipt(r: Record<string, unknown>): CompanyReceipt {
   };
 }
 
+/** How the indexer stores "no stock": a line paid all in dollars names the zero address. */
+const ZERO_ASSET = "0x0000000000000000000000000000000000000000";
+
 function assetFacts(address: string) {
+  if (address === ZERO_ASSET) return {symbol: "USDT", decimals: 6};
   const known = assetByAddress(address);
   return known
     ? {symbol: known.symbol, decimals: known.decimals}
@@ -148,6 +152,8 @@ export function readCompany(address: string, limit = 200): Outcome<Company> {
 
   const byAsset = new Map<string, bigint>();
   for (const row of deliveredRows) {
+    // A payment taken all in dollars bought no stock; it counts in the totals, not here.
+    if (row.asset === ZERO_ASSET) continue;
     byAsset.set(row.asset, (byAsset.get(row.asset) ?? 0n) + BigInt(row.asset_amount));
   }
   const deliveredByAsset: DeliveredAsset[] = [...byAsset.entries()].map(([asset, units]) => {
@@ -259,6 +265,7 @@ export function readRail(limit = 8): Outcome<Rail> {
   const byAsset = new Map<string, bigint>();
   for (const a of amounts) {
     totalStable += BigInt(a.stable_amount);
+    if (a.asset === ZERO_ASSET) continue;
     byAsset.set(a.asset, (byAsset.get(a.asset) ?? 0n) + BigInt(a.asset_amount));
   }
 

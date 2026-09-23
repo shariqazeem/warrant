@@ -89,9 +89,11 @@ export default async function Image({params}: {params: {tx: string}}) {
   const many = found.value.length;
 
   // Only a listed stock reaches a stub (lib/confirm.ts), so the list names it without a read.
+  // A payment taken all in dollars names no stock; its card shows the dollars.
+  const dollarsOnly = r.asset.toLowerCase() === "0x0000000000000000000000000000000000000000";
   const known = assetByAddress(r.asset);
-  const symbol = known?.symbol ?? "units";
-  const decimals = known?.decimals ?? 18;
+  const symbol = dollarsOnly ? "USDT" : (known?.symbol ?? "units");
+  const decimals = dollarsOnly ? 6 : (known?.decimals ?? 18);
 
   const stored = reasonFor(r.reasonHash);
   const reason = stored.found && stored.verified ? stored.text : null;
@@ -135,13 +137,13 @@ export default async function Image({params}: {params: {tx: string}}) {
           </div>
 
           <div style={{display: "flex", fontSize: 30, color: MUTED, marginTop: 32}}>
-            {`${usdt(r.stableAmount)} paid, which became`}
+            {dollarsOnly ? `${usdt(r.stableAmount)} paid, all in dollars` : `${usdt(r.stableAmount)} paid, which became`}
           </div>
 
           {/* The units are the largest thing on any surface they appear on. */}
           <div style={{display: "flex", alignItems: "baseline"}}>
             <div style={{display: "flex", fontSize: 104, color: INK, letterSpacing: -4}}>
-              {unitsFromRaw(r.assetAmount, decimals)}
+              {dollarsOnly ? (Number(r.cashAmount) / 1e6).toFixed(2) : unitsFromRaw(r.assetAmount, decimals)}
             </div>
             <div style={{display: "flex", fontSize: 34, color: MUTED, marginLeft: 18}}>
               {symbol}
@@ -152,7 +154,7 @@ export default async function Image({params}: {params: {tx: string}}) {
               badly, and the blocks then draw on top of one another. */}
           <div style={{display: "flex", fontSize: 24, color: MUTED, marginTop: 16}}>
             {`in ${short(r.recipient)}\u2019s own wallet` +
-              (price === null ? "" : `, at $${price.toFixed(2)} a unit`)}
+              (dollarsOnly || price === null ? "" : `, at $${price.toFixed(2)} a unit`)}
           </div>
 
           {reasonText ? (

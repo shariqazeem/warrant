@@ -52,7 +52,67 @@ async function assetFacts(address: `0x${string}`) {
   return known ? {symbol: known.symbol, decimals: known.decimals} : {symbol: "units", decimals: 18};
 }
 
+const NO_STOCK = "0x0000000000000000000000000000000000000000";
+
+/**
+ * A PAYMENT TAKEN ALL IN DOLLARS. The person chose no stock, so the line named none and
+ * bought none: the receipt says what arrived, in dollars, and shows no stock, no price and
+ * no wallet button — a stub never names a stock that was not bought.
+ */
+function DollarsOnly({r}: {r: Receipt}) {
+  return (
+    <article className="wa-r-one">
+      <Stub
+        landed={<><strong>{usdt(r.stableAmount)}</strong> paid</>}
+        became="all of it in dollars"
+        units={(Number(r.stableAmount) / 1e6).toFixed(2)}
+        symbol={STABLE.symbol}
+        when={r.timestamp === null ? "settled on X Layer" : stampUTC(r.timestamp)}
+        where="in their own wallet"
+        whereName={short(r.recipient)}
+        printing
+      />
+
+      <Sheet title="What was paid">
+        <Line k="Paid">{usdt(r.stableAmount)} in {STABLE.symbol}</Line>
+        <Line k="Received">
+          {usdt(r.cashAmount)} in {STABLE.symbol}
+          <span className="wa-r-aside">no stock: this payment was taken all in dollars</span>
+        </Line>
+        <Line k="Paid to">
+          <Address value={r.recipient} />
+        </Line>
+        <Line k="Paid by">
+          <Address value={r.payer} />
+        </Line>
+      </Sheet>
+
+      <Note hash={r.reasonHash} />
+
+      <Sheet title="Proof on X Layer">
+        <Line k="Transaction">
+          <a href={EXPLORER_TX(r.txHash)} className="wa-mono">
+            {r.txHash}
+          </a>
+        </Line>
+        <Line k="Block">{r.blockNumber.toString()}</Line>
+        <Line k="Chain">X Layer, 196</Line>
+        <Line k="Payroll batch">
+          <Link href={`/run/${r.runId}`} className="wa-mono">
+            {runLabel(r.runId)}
+          </Link>
+        </Line>
+      </Sheet>
+
+      <div className="wa-r-print">
+        <PrintButton />
+      </div>
+    </article>
+  );
+}
+
 function One({r, symbol, decimals}: {r: Receipt; symbol: string; decimals: number}) {
+  if (r.asset.toLowerCase() === NO_STOCK) return <DollarsOnly r={r} />;
   const price = settledUnitPrice(r.stableAmount - r.cashAmount, r.assetAmount, decimals);
   const swapped = r.stableAmount - r.cashAmount;
 

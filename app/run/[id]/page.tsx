@@ -40,6 +40,8 @@ export default async function RunPage({params}: Params) {
   // Summed per stock, never across them: units of two different stocks do not add up.
   const delivered = new Map<string, {units: bigint; symbol: string; decimals: number}>();
   for (const r of rows) {
+    // Someone paid all in dollars bought no stock: nothing to add up here.
+    if (r.assetAmount === 0n) continue;
     const d = delivered.get(r.asset) ?? {units: 0n, symbol: r.assetSymbol, decimals: r.assetDecimals};
     d.units += r.assetAmount;
     delivered.set(r.asset, d);
@@ -112,7 +114,10 @@ export default async function RunPage({params}: Params) {
                     </span>
                     <span className="wa-co-paid wa-mono">{usdt(r.stableAmount)}</span>
                     <span className="wa-co-got wa-mono">
-                      {unitsFromRaw(r.assetAmount, r.assetDecimals)} {r.assetSymbol}
+                      {r.assetAmount > 0n
+                        ? `${unitsFromRaw(r.assetAmount, r.assetDecimals)} ${r.assetSymbol}` +
+                          (r.cashAmount > 0n ? ` + ${usdt(r.cashAmount)}` : "")
+                        : `all in USDT`}
                     </span>
                     <span className="wa-co-run" />
                   </li>
