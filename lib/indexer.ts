@@ -27,7 +27,7 @@ import {confirmClaims, stableMovements, type Claim} from "./confirm";
 import {database, writeCursor, readCursor} from "./db";
 import {PAID_EVENT, payrollAddress} from "./receipts";
 import {escrowAddress} from "./grants";
-import {attempt, ok, type Outcome} from "./outcome";
+import {attempt, isThrottle, ok, type Outcome} from "./outcome";
 
 export const GRANT_OPENED_EVENT = parseAbiItem(
   "event GrantOpened(uint256 indexed id, address indexed payer, address indexed beneficiary, address asset, uint256 units, uint256 shares, uint256 stableCost, uint64 start, uint64 cliff, uint64 duration, uint16 tipBps, bytes32 reasonHash)",
@@ -81,7 +81,6 @@ async function findDeployBlock(address: Address, head: bigint): Promise<bigint> 
 
 const client = () => createPublicClient({chain: xLayer, transport: http()});
 
-const THROTTLED = /429|rate limit|too many/i;
 /** How long `npm run index` rests between windows. Page loads never pace; they read two. */
 const PACE_MS = Number(process.env.WARRANT_INDEX_PACE_MS ?? 400);
 const rest = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -142,8 +141,8 @@ async function walk(w: Walker, maxWindows = 400, paceMs = 0): Promise<Outcome<In
       try {
         rows += await w.read(from, to);
       } catch (err) {
-        const why = err instanceof Error ? err.message : String(err);
-        if (THROTTLED.test(why)) {
+        const why = err instanceof Error ? err.message.split("\n")[0] : String(err);
+        if (isThrottle(err)) {
           // A page load does not wait on a throttle: behind is fine, the indexer catches up.
           if (paceMs === 0) break;
           // The indexer asks for the same window a little later: 1s, 2s, 4s… a minute in all.
@@ -257,7 +256,7 @@ function payrollWalker(address: Address): Walker {
         for (const l of batch) {
           const a = l.args;
           insert.run(
-            l.transactionHash,
+            l.transactionHash!.toLowerCase(),
             l.logIndex,
             Number(l.blockNumber),
             times.get(l.blockNumber!) ?? null,

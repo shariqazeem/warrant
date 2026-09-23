@@ -49,7 +49,7 @@ export function resolve(raw: string): Destination[] {
     ];
   }
 
-  // A run people say out loud: "run-260919-1432".
+  // A run people say out loud: "run-260919-143205-k3f9".
   if (/^[\x20-\x7e]{1,32}$/.test(q) && /[a-zA-Z0-9]/.test(q)) {
     const matches = PAGES.filter(
       (p) => p.label.toLowerCase().includes(q.toLowerCase()) || p.href.includes(q.toLowerCase()),

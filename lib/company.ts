@@ -228,6 +228,9 @@ export type Rail = {
  * door renders as a sentence about what will fill it rather than as a figure — a zero on
  * a page about payments reads as a claim.
  */
+/** The smallest payment the front page features: one dollar, in USDT's six decimals. */
+export const FEATURE_FLOOR = 1_000_000;
+
 export function readRail(limit = 8): Outcome<Rail> {
   const db = database();
 
@@ -264,15 +267,21 @@ export function readRail(limit = 8): Outcome<Rail> {
     return {asset: asset as `0x${string}`, symbol: facts.symbol, decimals: facts.decimals, units};
   });
 
+  // What the front page FEATURES has a floor: a dollar or more, and stock actually
+  // delivered. A real payment of a millionth of a dollar in cash is still a payment — it
+  // counts in every total above and shows on its company's page — but it costs a stranger
+  // almost nothing to send, and the front page's hero stub is not a noticeboard.
   const rows = db
     .prepare(
       `SELECT r.*, n.text AS reason_text
          FROM receipts r
          LEFT JOIN reasons n ON n.hash = r.reason_hash
+        WHERE r.asset_amount != '0'
+          AND CAST(r.stable_amount AS INTEGER) >= ?
         ORDER BY r.block_number DESC, r.log_index DESC
         LIMIT ?`,
     )
-    .all(limit) as Array<Record<string, unknown>>;
+    .all(FEATURE_FLOOR, limit) as Array<Record<string, unknown>>;
 
   return ok({
     since: totals.first_at,
@@ -292,15 +301,20 @@ export function readRun(runId: string): Outcome<CompanyReceipt[]> {
   if (!/^0x[0-9a-fA-F]{64}$/.test(runId)) {
     return held("That is not a run id. A run id is 32 bytes, written as 66 characters.");
   }
+  // A run belongs to the payer who used its id first. Anyone can call the contract with
+  // any run id, so rows a stranger adds under the same id later are theirs, not this run's.
+  const id = runId.toLowerCase();
   const rows = database()
     .prepare(
       `SELECT r.*, n.text AS reason_text
          FROM receipts r
          LEFT JOIN reasons n ON n.hash = r.reason_hash
         WHERE r.run_id = ?
-        ORDER BY r.log_index ASC`,
+          AND r.payer = (SELECT payer FROM receipts WHERE run_id = ?
+                          ORDER BY block_number ASC, log_index ASC LIMIT 1)
+        ORDER BY r.block_number ASC, r.log_index ASC`,
     )
-    .all(runId) as Array<Record<string, unknown>>;
+    .all(id, id) as Array<Record<string, unknown>>;
 
   return ok(rows.map(toReceipt));
 }

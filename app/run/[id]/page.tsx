@@ -37,10 +37,15 @@ export default async function RunPage({params}: Params) {
 
   const rows = found.value;
   const total = rows.reduce((sum, r) => sum + r.stableAmount, 0n);
-  const delivered = rows.reduce((sum, r) => sum + r.assetAmount, 0n);
-  const symbol = rows[0]?.assetSymbol ?? "";
-  const decimals = rows[0]?.assetDecimals ?? 18;
-  const payer = rows[0]?.txHash;
+  // Summed per stock, never across them: units of two different stocks do not add up.
+  const delivered = new Map<string, {units: bigint; symbol: string; decimals: number}>();
+  for (const r of rows) {
+    const d = delivered.get(r.asset) ?? {units: 0n, symbol: r.assetSymbol, decimals: r.assetDecimals};
+    d.units += r.assetAmount;
+    delivered.set(r.asset, d);
+  }
+  const transactions = [...new Set(rows.map((r) => r.txHash))];
+  const people = new Set(rows.map((r) => r.recipient.toLowerCase())).size;
 
   return (
     <div className="wa-landing">
@@ -62,13 +67,16 @@ export default async function RunPage({params}: Params) {
         ) : (
           <>
             <p className="wa-lede">
-              {rows.length} {rows.length === 1 ? "person" : "people"} paid{" "}
-              {rows[0]?.blockTime ? `on ${dateUTC(rows[0].blockTime)}` : ""}, with one
-              signature.{" "}
-              {payer ? (
-                <Link href={EXPLORER_TX(payer)}>The transaction on X Layer</Link>
-              ) : null}
-              .
+              {people} {people === 1 ? "person" : "people"} paid{" "}
+              {rows[0]?.blockTime ? `on ${dateUTC(rows[0].blockTime)}` : ""}
+              {transactions.length === 1 ? (
+                <>
+                  , with one signature.{" "}
+                  <Link href={EXPLORER_TX(transactions[0]!)}>The transaction on X Layer</Link>.
+                </>
+              ) : (
+                <>, in {transactions.length} transactions.</>
+              )}
             </p>
 
             <section className="wa-co-figures">
@@ -76,15 +84,17 @@ export default async function RunPage({params}: Params) {
                 <p className="k">Paid</p>
                 <p className="wa-units-sm">{usdt(total)}</p>
               </div>
-              <div>
-                <p className="k">Delivered</p>
-                <p className="wa-units-sm">
-                  {unitsFromRaw(delivered, decimals)} <span className="wa-co-sym">{symbol}</span>
-                </p>
-              </div>
+              {[...delivered.entries()].map(([asset, d]) => (
+                <div key={asset}>
+                  <p className="k">Delivered</p>
+                  <p className="wa-units-sm">
+                    {unitsFromRaw(d.units, d.decimals)} <span className="wa-co-sym">{d.symbol}</span>
+                  </p>
+                </div>
+              ))}
               <div>
                 <p className="k">People</p>
-                <p className="wa-units-sm">{rows.length}</p>
+                <p className="wa-units-sm">{people}</p>
               </div>
             </section>
 

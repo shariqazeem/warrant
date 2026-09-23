@@ -13,7 +13,7 @@
 import Database from "better-sqlite3";
 import {mkdirSync} from "node:fs";
 import {dirname} from "node:path";
-import {MAX_REASON_LENGTH, reasonHash} from "./reason";
+import {MAX_REASON_LENGTH, normaliseReason, reasonHash} from "./reason";
 
 const PATH = process.env.WARRANT_DB_PATH ?? "var/warrant.db";
 
@@ -115,12 +115,15 @@ export function rememberReason(text: string): `0x${string}` {
     throw new Error(`A reason cannot be longer than ${MAX_REASON_LENGTH} characters.`);
   }
   const hash = reasonHash(text);
+  // Kept as it was hashed: the hash is of the normalised text, so the normalised text is
+  // what an outside checker must be able to hash again — with the contract's own
+  // hashReason, which takes the bytes as they are — and arrive at the same hash.
   database()
     .prepare(
       `INSERT INTO reasons (hash, text, written_at) VALUES (?, ?, ?)
        ON CONFLICT(hash) DO NOTHING`,
     )
-    .run(hash, text, Math.floor(Date.now() / 1000));
+    .run(hash, normaliseReason(text), Math.floor(Date.now() / 1000));
   return hash;
 }
 

@@ -24,12 +24,25 @@ function stamp(now: Date): string {
   );
 }
 
-/** "pay-260919-143205" — one person, and when. */
-export function singlePayRunId(now = new Date()): `0x${string}` {
-  return runIdFromName(`pay-${stamp(now)}`);
+/**
+ * FOUR CHARACTERS NOBODY CAN GUESS. The time alone is predictable, and anyone can call the
+ * contract with any run id: a name like "run-260925-130000" could be taken minutes before
+ * the payer who meant it, and the run's public page would open on a stranger's rows. With
+ * a tag drawn at random (about a million possibilities, no look-alike letters) the name is
+ * still sayable, and it cannot be claimed in advance.
+ */
+const TAG_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+
+export function runTag(random: (n: number) => Uint8Array = (n) => crypto.getRandomValues(new Uint8Array(n))): string {
+  return Array.from(random(4), (b) => TAG_ALPHABET[b % TAG_ALPHABET.length]).join("");
 }
 
-/** "run-260919-1432" — a file of people, and when. */
-export function newRunId(now = new Date()): `0x${string}` {
-  return runIdFromName(`run-${stamp(now)}`);
+/** "pay-260919-143205-k3f9" — one person, when, and a tag. */
+export function singlePayRunId(now = new Date(), tag = runTag()): `0x${string}` {
+  return runIdFromName(`pay-${stamp(now)}-${tag}`);
+}
+
+/** "run-260919-143205-k3f9" — a file of people, when, and a tag. */
+export function newRunId(now = new Date(), tag = runTag()): `0x${string}` {
+  return runIdFromName(`run-${stamp(now)}-${tag}`);
 }

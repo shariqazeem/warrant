@@ -13,6 +13,7 @@
 import {createPublicClient, http, parseAbiItem, type Log} from "viem";
 import {STABLE, xLayer} from "./chain";
 import {confirmClaims, stableMovements} from "./confirm";
+import {database} from "./db";
 import {attempt, held, ok, type Outcome} from "./outcome";
 
 export const PAID_EVENT = parseAbiItem(
@@ -126,6 +127,12 @@ export function paidInTransaction(hash: `0x${string}`): Promise<Outcome<Receipt[
     const address = payrollAddress();
     if (!address.ok) return address;
 
+    // A payment that is already on the record costs no reads at all. A shared stub is
+    // opened by everyone who sees the post, and the public endpoint answers two or three
+    // reads a second; reading the chain for each of them is how a good day takes it down.
+    const stored = storedPayments(hash);
+    if (stored.length > 0) return ok(stored);
+
     const rpc = client();
     const receipt = await rpc.getTransactionReceipt({hash});
 
@@ -173,6 +180,63 @@ export function paidInTransaction(hash: `0x${string}`): Promise<Outcome<Receipt[
     );
     if (!backed.ok) return backed;
 
-    return ok(await withTimestamps(rpc, out));
+    const stamped = await withTimestamps(rpc, out);
+    store(stamped);
+    return ok(stamped);
   });
+}
+
+type Row = Record<string, unknown>;
+
+/** The rows the indexer (or an earlier read of this receipt) confirmed and kept. */
+function storedPayments(hash: `0x${string}`): Receipt[] {
+  const rows = database()
+    .prepare(`SELECT * FROM receipts WHERE tx_hash = ? ORDER BY log_index`)
+    .all(hash.toLowerCase()) as Row[];
+  return rows.map((r) => ({
+    txHash: String(r.tx_hash) as `0x${string}`,
+    logIndex: Number(r.log_index),
+    blockNumber: BigInt(Number(r.block_number)),
+    timestamp: r.block_time === null ? null : Number(r.block_time),
+    payer: String(r.payer) as `0x${string}`,
+    recipient: String(r.recipient) as `0x${string}`,
+    runId: String(r.run_id) as `0x${string}`,
+    asset: String(r.asset) as `0x${string}`,
+    stableAmount: BigInt(String(r.stable_amount)),
+    cashAmount: BigInt(String(r.cash_amount)),
+    assetAmount: BigInt(String(r.asset_amount)),
+    reasonHash: String(r.reason_hash) as `0x${string}`,
+  }));
+}
+
+/**
+ * Keep what was just confirmed, in the same table and shape the indexer writes, so the
+ * next visitor reads it from here. The same row arriving twice is ignored; the indexer's
+ * cursor is untouched, because this proves nothing about the blocks around it.
+ */
+export function store(receipts: readonly Receipt[]): void {
+  const insert = database().prepare(
+    `INSERT INTO receipts (tx_hash, log_index, block_number, block_time, payer, recipient,
+       run_id, asset, stable_amount, cash_amount, asset_amount, reason_hash)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(tx_hash, log_index) DO NOTHING`,
+  );
+  database().transaction(() => {
+    for (const r of receipts) {
+      insert.run(
+        r.txHash.toLowerCase(),
+        r.logIndex,
+        Number(r.blockNumber),
+        r.timestamp,
+        r.payer.toLowerCase(),
+        r.recipient.toLowerCase(),
+        r.runId,
+        r.asset.toLowerCase(),
+        r.stableAmount.toString(),
+        r.cashAmount.toString(),
+        r.assetAmount.toString(),
+        r.reasonHash,
+      );
+    }
+  })();
 }

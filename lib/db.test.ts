@@ -10,6 +10,7 @@ import {mkdtempSync, rmSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {afterAll, beforeAll, describe, expect, it} from "vitest";
+import {keccak256, toHex} from "viem";
 import {reasonHash} from "./reason";
 
 let db: typeof import("./db");
@@ -35,6 +36,15 @@ describe("the reason cache", () => {
     const b = db.rememberReason("  Shipped the   indexer ");
     expect(b).toBe(a);
     expect(db.reasonFor(a).found).toBe(true);
+  });
+
+  it("keeps the text an outside checker can hash with the contract's own hashReason", () => {
+    // The contract hashes the bytes as they are. The stored text must be exactly what was
+    // hashed, so keccak256 of it — no normalising on the checker's side — gives the hash.
+    const hash = db.rememberReason("  Paid  for the\tlogo ");
+    const got = db.reasonFor(hash);
+    expect(got.found && got.text).toBe("Paid for the logo");
+    expect(keccak256(toHex("Paid for the logo"))).toBe(hash);
   });
 
   it("says nothing is stored rather than inventing a reason", () => {

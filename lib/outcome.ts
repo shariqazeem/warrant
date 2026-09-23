@@ -68,13 +68,38 @@ export async function attempt<T>(what: string, fn: () => Promise<Outcome<T>>): P
   try {
     return await fn();
   } catch (err) {
-    const why = err instanceof Error ? err.message : String(err);
-    const throttled = /429|rate limit|too many/i.test(why);
     return held(
-      throttled
+      isThrottle(err)
         ? `X Layer's endpoint is refusing reads right now, so ${what} could not be read. ` +
           `It is not lost; try again in a moment.`
-        : `Could not read ${what} (${why}).`,
+        : `Could not read ${what} (${shortReason(err)}).`,
     );
   }
+}
+
+type RpcLike = {status?: unknown; code?: unknown; details?: unknown; shortMessage?: unknown; cause?: unknown};
+
+/**
+ * A THROTTLE, TOLD BY WHAT THE ENDPOINT SAID. Not by a "429" found anywhere in the text:
+ * viem puts the request body in its message, and the GrantOpened topic hash has "429" in
+ * it, so every failed escrow read used to look like rate limiting. The public endpoint
+ * answers a throttle with HTTP 429 and JSON-RPC code -32016, "over rate limit".
+ */
+export function isThrottle(err: unknown, depth = 0): boolean {
+  if (typeof err !== "object" || err === null || depth > 5) return false;
+  const e = err as RpcLike;
+  if (e.status === 429 || e.code === 429 || e.code === -32016) return true;
+  const said = `${typeof e.details === "string" ? e.details : ""} ${typeof e.shortMessage === "string" ? e.shortMessage : ""}`;
+  if (/over rate limit|rate limited|too many requests/i.test(said)) return true;
+  return isThrottle(e.cause, depth + 1);
+}
+
+/** The one line of an error a person can read: viem's short message, never its request dump. */
+export function shortReason(err: unknown): string {
+  if (typeof err === "object" && err !== null) {
+    const s = (err as RpcLike).shortMessage;
+    if (typeof s === "string" && s.trim()) return s.trim();
+  }
+  const m = err instanceof Error ? err.message : String(err);
+  return m.split("\n")[0]!.slice(0, 200);
 }
