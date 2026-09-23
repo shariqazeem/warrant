@@ -1,50 +1,70 @@
 # Warrant
 
-**A company pays its people in ownership.**
+**Pay your team in stocks.**
 
-Upload a file of names and amounts, sign once, and every person is paid in a tokenized
-stock in their own wallet, each with a receipt carrying the reason they were paid. Or give
-someone a grant that vests on a schedule, out of an escrow the payer cannot reach into.
+A company uploads a file of names, amounts and a note for each person, and signs once. Each
+person receives a tokenized stock (an xStock, such as SPYx for the S&P 500) in their own
+wallet, with a public receipt that says why they were paid. Or give someone a grant that
+vests on a schedule, out of an escrow the payer cannot spend.
 
-Built for **OKX Dev Day 2026** on **X Layer**, using **xStocks** as the asset and the **OKX
-DEX aggregator** as the route. Primary track: X Layer, tokenized stocks and RWA.
+Built for **OKX Dev Day 2026** on **X Layer**, with **xStocks** as the asset, the **OKX DEX
+aggregator** as the route and **OKX Wallet** (by QR, through OKX Connect) as the wallet.
+Primary track: X Layer, tokenized stocks and RWA.
+
+**Live on X Layer mainnet: https://warrant.world**
 
 ---
+
+## On mainnet
+
+| | |
+| --- | --- |
+| `Payroll` | [`0xbe70cb6941e9943ad00968858388c580E0DBb5cD`](https://www.oklink.com/x-layer/address/0xbe70cb6941e9943ad00968858388c580E0DBb5cD), deployed in block 71309331 ([tx](https://www.oklink.com/x-layer/tx/0xab4079a6d409df8d017621de8b09d1ed260a92fb28becb6671c876e6876225dc)) |
+| `GrantEscrow` | [`0x5A5AF2d85e46b56e8F6DE73D273eEA9e868C71DC`](https://www.oklink.com/x-layer/address/0x5A5AF2d85e46b56e8F6DE73D273eEA9e868C71DC), deployed in block 71309334 ([tx](https://www.oklink.com/x-layer/tx/0x1006428a0a5f55b6bbecdccc01c28c2405a32ab5e76fd1a2af9a83df72565c62)) |
+| Stablecoin | USDT, `0x1E4a5963aBFD975d8c9021ce480b42188849D41d` (6 decimals, EIP-2612 permit) |
+| Route | The OKX DEX router `0x7c5bEE2a8091C3ef39072f64F18Fac913060AEaF`, approval spender `0x8b773D83bc66Be128c60e07E17C8901f7a64F000` |
+| Assets | SPYx, NVDAx, QQQx |
+
+The deployed runtime bytecode matches this source (immutables masked). The first real
+payments will be listed here, each beside its transaction, as they happen.
 
 ## The demo, in six beats
 
 1. A file of names and amounts, dropped onto `/run`. It becomes lines, with a line that
    will not pay shown in place and the rule it broke named.
 2. **One signature.** USDT on X Layer implements EIP-2612, so approval is a signature
-   rather than a transaction and the whole run is one transaction.
+   rather than a transaction, and the whole run is one transaction.
 3. The receipts print. One transaction, N stubs, one run id.
 4. Open one on a phone: what was paid, what it became, at what price, why, and the
-   transaction it is anchored to. No session needed.
-5. The company's public page: paid in ownership since, people paid, the total, every
+   transaction it is anchored to. No account needed.
+5. The company's public page: paying people in stock since, people paid, the total, every
    payment with its reason.
-6. The same rail pays agents earning through x402.
+6. A grant: stock bought on day one, held in escrow, released on a schedule by anyone who
+   calls `vest`, with a receipt for each release.
 
 ## What is in here
 
 | | |
 | --- | --- |
-| `contracts/src/Payroll.sol` | `payOne` / `payMany`, and the permit variants. Pulls the stablecoin, routes through the OKX aggregator, delivers the asset to the recipient's **own** address, reverts below the floor the payer signed for |
-| `contracts/src/GrantEscrow.sol` | `open`, `seal`, `vest`, `revoke`, `close`. Buys the asset once and holds it in shares of a pool. `vest` is permissionless and tips whoever calls it |
-| `lib/okx.ts` | The signed aggregator client, V6, server only |
-| `lib/indexer.ts` | Walks the logs into SQLite. Finds its own deploy block; the cursor only advances on a window that read cleanly |
-| `app/` | `/`, `/pay`, `/run`, `/grants`, `/receipt/[tx]`, `/[company]`, `/run/[id]`, and share cards for the last two |
+| `contracts/src/Payroll.sol` | `payOne` / `payMany`, and the permit variants. Pulls the stablecoin once, routes each line through the OKX aggregator with the person being paid as the receiver, measures what reached their wallet, and reverts the whole run if any line is below its minimum |
+| `contracts/src/GrantEscrow.sol` | `open`, `seal`, `vest`, `revoke`, `close`. Buys the asset once and holds it in shares of a pool, so an issuer's mint, burn or rebase is shared fairly. `vest` is permissionless and tips whoever calls it |
+| `lib/okx.ts` | The signed OKX aggregator client, V6, server only |
+| `lib/confirm.ts` | An event is only as honest as the call that made it. Nothing is shown as a payment unless its asset is a listed xStock and the payer's USDT really left, read from the transaction's own transfers |
+| `lib/indexer.ts` | Walks the contracts' events into SQLite, 100 blocks at a time (the public RPC's cap), waiting out rate limits. The cursor only advances on a window that read cleanly |
+| `middleware.ts` | A per-visitor allowance for price requests and record pages, so one script can't spend everyone's OKX quota or RPC reads |
+| `app/` | `/`, `/pay`, `/run`, `/grants`, `/receipt/[tx]`, `/@[address]`, `/run/[id]`, `/grant/[id]`, with share cards |
 
-**156 tests.** 65 Foundry, 91 Vitest. Four of the Foundry tests exist only for what an
-xStock issuer can do to the escrow; four more only for what a donated token must not be
+**Tests: 65 Foundry and 221 Vitest.** Four of the Foundry tests exist only for what an
+xStock issuer can do to the escrow, and four more only for what a donated token must not be
 able to do to a receipt.
 
 ## Start here
 
-1. `CLAUDE.md` — the product, the architecture, the standing policies
-2. `docs/plan.md` — what to build, in order, and the scope guards
-3. `docs/liquidity.md` — which xStocks can actually be paid in, measured
-4. `docs/go-live.md` — what mainnet costs and the bring-up in order
-5. `docs/brief.md` — every fact about the hackathon and the chain, with what was verified
+1. `CLAUDE.md`: the product, the architecture, the standing policies
+2. `docs/plan.md`: what to build, in order, and the scope guards
+3. `docs/liquidity.md`: which xStocks can actually be paid in, measured
+4. `docs/go-live.md`: what mainnet costs and the bring-up in order
+5. `docs/brief.md`: the hackathon and the chain, with what was verified
 
 ## Commands
 
@@ -55,10 +75,12 @@ npm run probe          # which xStocks have real liquidity, and how deep
 npm run check-issuer   # what the issuer of each asset can do, read from the chain
 npm run check-permit   # whether a run can be one transaction on this chain
 npm run deploy         # both contracts. IRREVERSIBLE
-npm run index          # walk the logs into the cache
-npm run keeper         # release what is due on every grant
+npm run index          # walk the logs into the cache (--watch to keep up)
+npm run keeper         # release what is due on every grant (dry unless --send)
 
 cd contracts && forge test
+
+scripts/deploy-vm.sh   # ship to the server: build beside the live site, then swap
 ```
 
 Proofs that cost nothing, against a fork of mainnet with the real router and real tokens:
@@ -74,33 +96,25 @@ After changing a contract: `cd contracts && forge build && npx tsx scripts/sync-
 
 ## The rules this is built to
 
-From `CLAUDE.md`, and they are load-bearing rather than decorative:
+From `CLAUDE.md`. They carry weight in the code, not just in the docs:
 
 - **Every money moment prints a receipt** anyone can open, anchored to a real transaction.
 - **Never render a number the chain or a stored receipt cannot confirm.** No simulated
-  balances, no projections, no sample rows. There is no example stub anywhere in this
-  product, because a worked example on a page about receipts is the one lie it cannot
-  afford.
+  balances, no projections, no sample rows.
 - **Failure returns a value.** `Outcome<T>`; nothing throws for control flow.
-- **Money-critical code requires tests before it ships.** The split arithmetic, the minimum
-  out, the vesting schedule, the reason hash.
+- **Money-critical code requires tests before it ships**: the split arithmetic, the minimum
+  out, the vesting schedule, the reason hash, the payment confirmation.
 - **Two lists that drift is the dominant defect shape.** The reason hash, the ABI, the
-  vesting schedule and the grant limits each exist in two languages, and each has a test
-  that reads both.
-- **Disclose what the issuer can do** on every asset row, read from the chain rather than
-  from anyone's marketing.
+  events, the vesting schedule and the grant limits each exist in two places, and each has
+  a test that reads both.
+- **Disclose what the issuer can do** on every asset row, read from the chain: one
+  upgradeable owner can create units, destroy units and replace the code. And who may not
+  hold one: xStocks are not available to US persons, or in Canada, the UK or Australia.
 - Say **"a stock position"**, never "shareholder". xStocks carry no voting rights.
 
 ## This is not Scrip
 
 Scrip is the same author's other project: the person's side, on Solana, a rule on the
 wallet you get paid to. Warrant is the company's side, on X Layer, a rail for paying people
-in ownership. One engine, two products, two chains. The design system is shared and the
-contracts, the chain and the product are not.
-
-## Status
-
-Deployed: nothing yet. Every contract, surface and script in here has been proved end to
-end against a **fork of X Layer mainnet** — real USDT, the real OKX router, real calldata,
-real state — which costs nothing and is the right place to find things. `docs/go-live.md`
-is the bring-up.
+in stock. One engine, two products, two chains. The design system was ported from Scrip
+(`docs/reuse.md` lists exactly what); the contracts, the chain and the product are Warrant's.
