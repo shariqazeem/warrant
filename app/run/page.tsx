@@ -26,8 +26,9 @@ export default function RunPage() {
         <p className="wa-kicker">Payroll</p>
         <h1 className="wa-h2">Pay your whole team at once.</h1>
         <p className="wa-lede">
-          Paste or upload a list. Everyone is paid in stock in a single transaction, with one
-          signature — and each person gets their own receipt.
+          Paste or upload a list of who and how much. You pay in dollars; each person is paid
+          the way they chose — part in stock, all in stock, or none — in a single transaction,
+          with one signature, and each gets their own receipt.
         </p>
 
         <div style={{marginTop: "var(--s-7)"}}>

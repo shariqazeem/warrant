@@ -30,10 +30,11 @@ export default function PayPage() {
 
       <main className="wa-sec is-wide">
         <p className="wa-kicker">Pay someone</p>
-        <h1 className="wa-h2">Pay someone in stock.</h1>
+        <h1 className="wa-h2">Pay someone. They choose the stock.</h1>
         <p className="wa-lede">
-          You send USDT. They receive a tokenized stock — like the S&amp;P 500 — in their own
-          wallet, with a receipt that shows your note.
+          You send USDT. If they have chosen how much of their pay becomes stock — like the
+          S&amp;P 500 — they get exactly that in their own wallet; if not, you decide this once.
+          Either way, a receipt shows your note.
         </p>
 
         <div style={{marginTop: "var(--s-7)"}}>
