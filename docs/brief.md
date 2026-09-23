@@ -62,7 +62,8 @@ agent service or payment flow does.
 | Architecture | Migrated from Polygon zkEVM to the **OP Stack** in October 2025. EVM equivalent |
 | Gas token | OKB. Transactions are roughly $0.0005 |
 | Explorer | OKLink, `https://www.oklink.com/x-layer` |
-| Log queries | The public RPCs **refuse wide `eth_getLogs` ranges** with HTTP 400. The indexer must page in small block ranges or use a paid endpoint |
+| Log queries | The public RPCs **refuse wide `eth_getLogs` ranges**: measured 23 Sep, the cap is **100 blocks** ("block range greater than 100 max") on both `rpc.xlayer.tech` and `xlayerrpc.okx.com`, and dRPC's free tier behaves the same. The indexer pages in 100-block windows |
+| Rate limit | Measured 23 Sep from the server: about **2.5 reads a second** per address. 12 of 80 back-to-back log reads came back HTTP 429, JSON-RPC `-32016` "over rate limit"; the other two endpoints throttle the same way. Anything that reads the chain per page view must be cached or rationed |
 
 ### Assets on X Layer
 
