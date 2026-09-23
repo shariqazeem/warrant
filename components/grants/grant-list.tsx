@@ -2,6 +2,7 @@
 
 import {Loader2, Lock} from "lucide-react";
 import {useRouter} from "next/navigation";
+import Link from "next/link";
 import {useAccount} from "wagmi";
 import {ScheduleBar} from "./schedule-bar";
 import {useGrantAction} from "./use-grant";
@@ -57,6 +58,9 @@ export function GrantList({
         return (
           <article className="wa-grant" key={g.id}>
             <div className="wa-grant-head">
+              <Link href={`/grant/${g.id}`} className="wa-linkish">
+                Grant {g.id}
+              </Link>
               <span className="wa-grant-who">
                 <span className="wa-mono">{short(g.beneficiary)}</span>
                 {isBeneficiary ? " — you" : null}

@@ -1,10 +1,11 @@
 /**
- * WHAT A GRANT'S PAGE MAY CLAIM.
+ * WHAT A GRANTS PAGE MAY CLAIM.
  *
- * The public endpoint throttles, so a grant that will not read is an ordinary event, and it
- * is not a grant that does not exist. These hold a missing grant to a 404 only when the
- * contract itself says so, and the words beside a grant to what its terms and the clock
- * actually say.
+ * The public endpoint throttles, and every grant is three reads, so a grant that will not
+ * read is an ordinary event. The page used to drop it and still head the list "Grants (k)",
+ * which is a count the chain does not agree with. These hold the shelf to an honest count,
+ * a missing grant to a 404 only when the contract itself says it does not exist, and the
+ * words beside a grant to what its terms and the clock actually say.
  */
 import {rmSync} from "node:fs";
 import {dirname} from "node:path";
@@ -29,7 +30,7 @@ vi.mock("viem", async (importOriginal) => ({
 }));
 
 import {ASSETS} from "./assets";
-import {findGrant, grantStanding, parseGrantId} from "./grants";
+import {findGrant, grantStanding, parseGrantId, readGrantShelf, readGrants, shelfHeading} from "./grants";
 import {grantEscrowAbi} from "./payroll-abi";
 
 afterAll(() => rmSync(dirname(process.env.WARRANT_DB_PATH!), {recursive: true, force: true}));
@@ -108,6 +109,56 @@ describe("findGrant", () => {
     escrowOf(2);
     const r = await findGrant(1);
     expect(r.ok && r.value).toMatchObject({id: 1, heldUnits: 5n, releasableUnits: 1n, state: "open"});
+  });
+});
+
+describe("readGrantShelf", () => {
+  it("keeps every grant it could not read, with the reason, instead of dropping it", async () => {
+    escrowOf(4, [3]);
+    const r = await readGrantShelf();
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.count).toBe(4);
+    expect(r.value.asked).toBe(4);
+    expect(r.value.grants.map((g) => g.id)).toEqual([4, 2, 1]);
+    expect(r.value.unread.map((u) => u.id)).toEqual([3]);
+    expect(r.value.unread[0]!.why).toMatch(/refusing reads/);
+  });
+
+  it("asks for the newest first, and no more than the limit", async () => {
+    escrowOf(5);
+    const r = await readGrantShelf(2);
+    expect(r.ok && r.value.grants.map((g) => g.id)).toEqual([5, 4]);
+    expect(r.ok && r.value.asked).toBe(2);
+  });
+
+  it("still gives the keeper the grants that read", async () => {
+    escrowOf(3, [1]);
+    const r = await readGrants();
+    expect(r.ok && r.value.map((g) => g.id)).toEqual([3, 2]);
+  });
+});
+
+describe("shelfHeading", () => {
+  const shelf = (count: number, asked: number, read: number) => ({
+    count,
+    asked,
+    grants: Array.from({length: read}) as never[],
+  });
+
+  it("counts them when every one was read", () => {
+    expect(shelfHeading(shelf(3, 3, 3))).toBe("Grants (3)");
+    expect(shelfHeading(shelf(0, 0, 0))).toBe("Grants (0)");
+  });
+
+  it("says when it shows only the newest", () => {
+    expect(shelfHeading(shelf(80, 50, 50))).toBe("The newest 50 of 80 grants");
+  });
+
+  it("never heads a partial list with a total", () => {
+    expect(shelfHeading(shelf(4, 4, 3))).toBe("3 of 4 grants could be read");
+    expect(shelfHeading(shelf(80, 50, 47))).toBe("47 of the newest 50 grants could be read");
+    expect(shelfHeading(shelf(2, 2, 0))).toBe("0 of 2 grants could be read");
   });
 });
 

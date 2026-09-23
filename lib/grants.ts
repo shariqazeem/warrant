@@ -11,7 +11,7 @@ import {xLayer} from "./chain";
 import {assetByAddress} from "./assets";
 import {reasonFor} from "./db";
 import {dateUTC} from "./format";
-import {attempt, held, ok, type Outcome} from "./outcome";
+import {attempt, held, map, ok, type Outcome} from "./outcome";
 
 export type GrantState = "open" | "closed";
 
@@ -187,12 +187,29 @@ export async function readGrant(id: number): Promise<Outcome<Grant>> {
   return found.value === null ? held(`There is no grant ${id}.`) : ok(found.value);
 }
 
+/** The grants a page asked for, and an honest account of the ones it did not get. */
+export type GrantShelf = {
+  /** Every grant the escrow has ever opened. Ids run 1..count. */
+  count: number;
+  /** How many of the newest were asked for: the limit, or all of them if there are fewer. */
+  asked: number;
+  /** The ones that could be read, newest first. */
+  grants: Grant[];
+  /** The ones asked for that could not be read, newest first, each with the reason. */
+  unread: {id: number; why: string}[];
+};
+
 /**
- * Every grant, newest first. A hackathon-scale read: the contract has one counter and a
- * handful of grants, so this is honest and simple. When there are thousands it becomes an
+ * The newest grants, newest first. A hackathon-scale read: the contract has one counter and
+ * a handful of grants, so this is honest and simple. When there are thousands it becomes an
  * indexer query, and the page above it does not change.
+ *
+ * ONE UNREADABLE GRANT MUST NOT EMPTY THE PAGE, AND MUST NOT VANISH FROM IT EITHER. The
+ * public endpoint throttles at two or three reads a second and each grant is three reads, so
+ * a grant that will not read is an ordinary event. It is kept in `unread` with its reason,
+ * and a page says how many of how many it is showing.
  */
-export function readGrants(limit = 50): Promise<Outcome<Grant[]>> {
+export function readGrantShelf(limit = 50): Promise<Outcome<GrantShelf>> {
   return attempt("the grants", async () => {
     const count = await grantCount();
     if (!count.ok) return count;
@@ -202,12 +219,34 @@ export function readGrants(limit = 50): Promise<Outcome<Grant[]>> {
 
     const results = await Promise.all(ids.map((id) => readGrant(id)));
     const grants: Grant[] = [];
-    for (const r of results) {
-      // One unreadable grant must not empty the page.
+    const unread: {id: number; why: string}[] = [];
+    results.forEach((r, i) => {
       if (r.ok) grants.push(r.value);
-    }
-    return ok(grants);
+      else unread.push({id: ids[i]!, why: r.why});
+    });
+    return ok({count: count.value, asked: ids.length, grants, unread});
   });
+}
+
+/**
+ * Every grant that could be read, newest first — the keeper's view, where a grant that did
+ * not read this pass is simply released on the next one. A page reads `readGrantShelf`
+ * instead, because a page has to say what it is missing.
+ */
+export async function readGrants(limit = 50): Promise<Outcome<Grant[]>> {
+  return map(await readGrantShelf(limit), (shelf) => shelf.grants);
+}
+
+/** The heading over a shelf of grants. It never claims more than was read. */
+export function shelfHeading(shelf: Pick<GrantShelf, "count" | "asked" | "grants">): string {
+  const read = shelf.grants.length;
+  const all = shelf.asked === shelf.count;
+  if (read === shelf.asked) {
+    return all ? `Grants (${shelf.count})` : `The newest ${shelf.asked} of ${shelf.count} grants`;
+  }
+  return all
+    ? `${read} of ${shelf.count} grants could be read`
+    : `${read} of the newest ${shelf.asked} grants could be read`;
 }
 
 /** Where a grant stands, in the words a page shows beside it. */
