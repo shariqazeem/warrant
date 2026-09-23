@@ -22,8 +22,24 @@ import "@/components/site/site.css";
  */
 export default function ErrorPage({error, reset}: {error: Error & {digest?: string}; reset: () => void}) {
   useEffect(() => {
-    // The server logged the same failure under this digest; the console is where to look.
     console.error(error);
+    // A failure in one browser leaves nothing on the server unless the page sends it. Only
+    // the error and the page it happened on — never anything the person typed or holds.
+    try {
+      void fetch("/api/client-error", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          message: error.message,
+          stack: error.stack?.split("\n").slice(0, 8).join("\n"),
+          digest: error.digest,
+          path: window.location.pathname,
+        }),
+        keepalive: true,
+      }).catch(() => undefined);
+    } catch {
+      // reporting must never become a second failure
+    }
   }, [error]);
 
   return (
@@ -56,11 +72,15 @@ export default function ErrorPage({error, reset}: {error: Error & {digest?: stri
             Go to the front page
           </Link>
         </div>
-        {error.digest ? (
-          <p className="wa-kicker" style={{marginTop: "var(--s-6)"}}>
-            Reference <span className="wa-mono">{error.digest}</span>
-          </p>
-        ) : null}
+        {/* What broke, in one line a person can screenshot and send. */}
+        <p className="wa-kicker" style={{marginTop: "var(--s-6)"}}>
+          {error.digest ? (
+            <>
+              Reference <span className="wa-mono">{error.digest}</span> ·{" "}
+            </>
+          ) : null}
+          <span className="wa-mono">{(error.message || String(error)).slice(0, 160)}</span>
+        </p>
       </main>
     </div>
   );
