@@ -7,6 +7,7 @@ import {buildPayment, type BuiltLine} from "@/app/pay/actions";
 import {ASSETS, defaultAsset} from "@/lib/assets";
 import {MAX_RUN_LINES, RUN_TEMPLATE, parseRunFile, type ParsedRow} from "@/lib/csv";
 import {short, unitsFromRaw, usdt} from "@/lib/format";
+import {impactText, worstPriceImpact} from "@/lib/payment";
 import {newRunId} from "@/lib/run-id";
 import {freshness, quoteAge} from "@/lib/quote-age";
 import {WalletPanel} from "@/components/wallet/wallet-panel";
@@ -18,7 +19,8 @@ import {AssetNote} from "@/components/pay/asset-note";
 import "@/components/pay/pay.css";
 import "./run.css";
 
-type Built = {row: ParsedRow; line: BuiltLine; expectedOut: string};
+/** One priced line. `impact` is the aggregator's price impact for it, or null if unsaid. */
+type Built = {row: ParsedRow; line: BuiltLine; expectedOut: string; impact: number | null};
 
 /**
  * Priced lines, and the lines they were priced FOR. `sig` is the run's inputs at the
@@ -127,7 +129,12 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
         return;
       }
       firstAskedAt ??= askedAt;
-      out.push({row, line: res.value.line, expectedOut: res.value.expectedOut});
+      out.push({
+        row,
+        line: res.value.line,
+        expectedOut: res.value.expectedOut,
+        impact: res.value.priceImpactPercent,
+      });
       setBuildDone(out.length);
     }
 
@@ -164,6 +171,13 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
   // go, and a run that reverts in front of an audience is worth avoiding.
   const age = builtAt === null ? null : freshness(builtAt);
   const totalOut = current?.lines.reduce((sum, b) => sum + BigInt(b.expectedOut), 0n) ?? 0n;
+  // The run's price impact is its worst line's. A line paid all in USDT swaps nothing and
+  // has none; if any line that swaps went unmeasured, the run's figure is not claimed.
+  const worstImpact = worstPriceImpact(
+    (current?.lines ?? [])
+      .filter((b) => BigInt(b.line.stableAmount) > BigInt(b.line.cashAmount))
+      .map((b) => b.impact),
+  );
 
   return (
     <div className="wa-run">
@@ -321,6 +335,12 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
                   {unitsFromRaw(totalOut, chosen.decimals)} {chosen.symbol}
                 </strong>
                 , each straight into their own wallet.
+              </p>
+            ) : null}
+            {current && worstImpact !== null ? (
+              <p className="wa-run-impact">
+                Price impact at most <span className="wa-mono">{impactText(worstImpact)}</span> on
+                any line.
               </p>
             ) : null}
           </div>

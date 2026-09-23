@@ -9,6 +9,7 @@ import {ASSETS, defaultAsset} from "@/lib/assets";
 import {AssetNote} from "@/components/pay/asset-note";
 import {STABLE} from "@/lib/chain";
 import {parseMoney} from "@/lib/csv";
+import {impactText} from "@/lib/payment";
 import {settledUnitPrice, unitsFromRaw, usdt} from "@/lib/format";
 import {humanDuration} from "@/lib/schedule";
 import {WalletPanel} from "@/components/wallet/wallet-panel";
@@ -334,6 +335,13 @@ export function GrantForm({escrow}: {escrow: `0x${string}` | undefined}) {
                     : `1 ${chosen.symbol} = $${price.toFixed(2)}`}
                 </dd>
               </div>
+              {/* Only the aggregator's own figure; no row at all when it gives none. */}
+              {quote.priceImpactPercent !== null ? (
+                <div>
+                  <dt>Price impact</dt>
+                  <dd>{impactText(quote.priceImpactPercent)}</dd>
+                </div>
+              ) : null}
               <div>
                 <dt>Guaranteed at least</dt>
                 <dd>

@@ -8,6 +8,7 @@ import {syncFromChain} from "@/app/sync/actions";
 import {ASSETS, defaultAsset} from "@/lib/assets";
 import {STABLE} from "@/lib/chain";
 import {parseMoney} from "@/lib/csv";
+import {impactText} from "@/lib/payment";
 import {settledUnitPrice, unitsFromRaw, usdt} from "@/lib/format";
 import {singlePayRunId} from "@/lib/run-id";
 import {QUOTE_FRESH_MS, freshness, quoteAge} from "@/lib/quote-age";
@@ -331,6 +332,14 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
               <dt>Price</dt>
               <dd>{price === null ? "not available" : `1 ${chosen.symbol} = $${price.toFixed(2)}`}</dd>
             </div>
+            {/* The aggregator's own figure. When it gives none, the row is left out rather
+                than showing a zero it never said. */}
+            {quote.priceImpactPercent !== null ? (
+              <div>
+                <dt>Price impact</dt>
+                <dd>{impactText(quote.priceImpactPercent)}</dd>
+              </div>
+            ) : null}
             <div>
               <dt>Guaranteed at least</dt>
               <dd>
