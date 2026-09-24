@@ -50,7 +50,7 @@ Written for Warrant, for X Layer and for EVM, from the first day:
 | --- | --- | --- |
 | 19 Sep 12:00 | `b8d9992` | Scrip's motion helpers (`reveal`, `roll`) removed |
 | 23 Sep 10:17 | `c5f58e5` | Scrip's voice on every surface rewritten in plain words for Warrant |
-| 24 Sep 12:25 | `9e328f5` | The `from-scrip/` reference copy removed from the tree |
+| 24 Sep 12:25 | `9e328f5` | The `from-scrip/` reference copy removed from the tree on main. It was never imported by the app, and stays readable in the history before that commit |
 | 24 Sep | `0704437` | Scrip's receipt stub replaced by Warrant's **payslip**: company to person, a two-part bar for stock and USD₮0, the price, the route, the note and a Paid stamp. "Which became" and the other Scrip words retired |
 | 24 Sep | `4d6a8ce`, `0704437`, `2c81fd0` | The person-first pitch ("Get paid in stocks") replaced by the company's: "Give your team stock that vests". The front page, `/me`, payroll, the public record and the company page rewritten around grants and the certificate |
 | 24–25 Sep | the redesign | Scrip's tokens, fonts, torn-paper seam and document blue replaced by Warrant's own identity: vault, bond and canvas; Bodoni Moda, Hanken Grotesk and JetBrains Mono; the certificate with its guilloche, seal and vesting rule. `git log -- styles/tokens.css` shows the commit that replaced the tokens |

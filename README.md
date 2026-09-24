@@ -1,5 +1,7 @@
 # Warrant
 
+![tests](https://github.com/shariqazeem/warrant/actions/workflows/tests.yml/badge.svg)
+
 **Give your team stock that vests.**
 
 A company grants one of its people a tokenized stock (the S&P 500, NVIDIA or thirteen more).
@@ -13,7 +15,8 @@ Built during **OKX Dev Day 2026** on **X Layer mainnet**, with **xStocks** as th
 **OKX DEX aggregator** as the route, **USD₮0** as the money and **OKX Wallet** (by QR,
 through OKX Connect) as the wallet. Track: X Layer, tokenized stocks and RWA.
 
-**Live: https://warrant.world**
+**Live on X Layer mainnet: https://warrant.world**. The code is public at
+https://github.com/shariqazeem/warrant, with its full history.
 
 ---
 
