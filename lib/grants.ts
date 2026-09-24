@@ -7,7 +7,7 @@
  */
 import {BaseError, ContractFunctionRevertedError, createPublicClient, erc20Abi, http} from "viem";
 import {grantEscrowAbi} from "./payroll-abi";
-import {xLayer} from "./chain";
+import {transport, xLayer} from "./chain";
 import {assetByAddress} from "./assets";
 import {reasonFor} from "./db";
 import {dateUTC} from "./format";
@@ -56,7 +56,7 @@ export function escrowAddress(): Outcome<`0x${string}`> {
 }
 
 function client() {
-  return createPublicClient({chain: xLayer, transport: http()});
+  return createPublicClient({chain: xLayer, transport: transport()});
 }
 
 /** How many grants have ever been opened. Ids run 1..count. */

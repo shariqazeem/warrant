@@ -14,7 +14,7 @@
  * The decoding and the checks are pure and tested; the readers around them only fetch.
  */
 import {createPublicClient, decodeEventLog, http, type DecodeEventLogReturnType} from "viem";
-import {STABLE, xLayer} from "./chain";
+import {STABLE, transport, xLayer} from "./chain";
 import {assetByAddress} from "./assets";
 import {confirmClaims, stableMovements, type Claim, type Movement} from "./confirm";
 import {database} from "./db";
@@ -235,7 +235,7 @@ export type Opening = {
   timestamp: number | null;
 };
 
-const client = () => createPublicClient({chain: xLayer, transport: http()});
+const client = () => createPublicClient({chain: xLayer, transport: transport()});
 
 async function blockTime(rpc: ReturnType<typeof client>, blockNumber: bigint): Promise<number | null> {
   try {

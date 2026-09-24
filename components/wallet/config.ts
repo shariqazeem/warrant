@@ -5,7 +5,7 @@ import {createConfig, http} from "wagmi";
 // including the Coinbase SDK, which drags in a transitive module that does not resolve and
 // fails the build. `injected` is a core connector and needs none of it.
 import {injected} from "@wagmi/core";
-import {xLayer} from "@/lib/chain";
+import {transport, xLayer} from "@/lib/chain";
 import {okxConnect} from "./okx-connect";
 
 /**
@@ -17,7 +17,7 @@ import {okxConnect} from "./okx-connect";
 export const wagmiConfig = createConfig({
   chains: [xLayer],
   connectors: [okxConnect(), injected()],
-  transports: {[xLayer.id]: http(xLayer.rpcUrls.default.http[0])},
+  transports: {[xLayer.id]: transport()},
   ssr: true,
 });
 

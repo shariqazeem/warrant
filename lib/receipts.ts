@@ -11,7 +11,7 @@
  * lib/indexer.ts in windows the endpoint accepts.
  */
 import {createPublicClient, http, parseAbiItem, parseEventLogs, type Log} from "viem";
-import {STABLE, xLayer} from "./chain";
+import {STABLE, transport, xLayer} from "./chain";
 import {confirmClaims, stableMovements} from "./confirm";
 import {database} from "./db";
 import {attempt, held, ok, type Outcome} from "./outcome";
@@ -41,7 +41,7 @@ export type Receipt = {
 };
 
 export function client() {
-  return createPublicClient({chain: xLayer, transport: http()});
+  return createPublicClient({chain: xLayer, transport: transport()});
 }
 
 /**
