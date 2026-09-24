@@ -44,8 +44,16 @@ export function RecordRows({entries}: {entries: readonly RecordEntry[]}) {
                     .join(" and ")}${e.cashTotal > 0n ? ` and ${usdt(e.cashTotal)} in USD₮0` : ""}`
                 : ", all in USD₮0"}
               . Paid by <span className="wa-rec-mono">{short(e.payer)}</span>
-              {e.transactions === 1 ? " in one transaction" : ` in ${e.transactions} transactions`}, run{" "}
-              <span className="wa-rec-mono">{runLabel(e.runId)}</span>.
+              {e.transactions === 1 ? " in one transaction" : ` in ${e.transactions} transactions`}
+              {/* A run's name is what someone types into Jump to find it again; a single
+                  payment's generated name is not, because its payslip is the handle. */}
+              {e.people === 1 && e.payments === 1 ? (
+                "."
+              ) : (
+                <>
+                  , run <span className="wa-rec-mono">{runLabel(e.runId)}</span>.
+                </>
+              )}
             </p>
             <p className="wa-rec-when">{e.blockTime === null ? `Block ${e.blockNumber}` : dateUTC(e.blockTime)}</p>
           </li>

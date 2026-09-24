@@ -24,7 +24,7 @@ export const alt = "A payslip on X Layer: what was paid, to whom, in which stock
 export const size = OG_SIZE;
 export const contentType = OG_TYPE;
 
-const {ink: INK, paper: PAPER, sheet: SHEET, muted: MUTED, faint: FAINT, line: LINE, ok: OK} = OG;
+const {ink: INK, paper: PAPER, sheet: SHEET, muted: MUTED, faint: FAINT, line: LINE} = OG;
 
 function Card({children}: {children: React.ReactNode}) {
   return (
@@ -147,7 +147,7 @@ export default async function Image({params}: {params: {tx: string}}) {
             <div style={{display: "flex", fontFamily: DISPLAY, fontWeight: 600, fontSize: 104, color: INK, letterSpacing: -3}}>
               {dollarsOnly ? (Number(r.cashAmount) / 1e6).toFixed(2) : unitsFromRaw(r.assetAmount, decimals)}
             </div>
-            <div style={{display: "flex", fontSize: 34, color: MUTED, marginLeft: 18}}>
+            <div style={{display: "flex", fontFamily: DISPLAY, fontWeight: 500, fontSize: 40, color: MUTED, marginLeft: 18}}>
               {symbol}
             </div>
           </div>
@@ -231,12 +231,12 @@ function GrantCard({g, many, tx}: {g: GrantReceipt; many: number; tx: string}) {
           flexDirection: "column",
           background: SHEET,
           border: `1px solid ${LINE}`,
-          borderRadius: 16,
+          borderRadius: 8,
           padding: 44,
         }}
       >
         <div style={{display: "flex", justifyContent: "space-between", fontSize: 22, color: FAINT}}>
-          <div style={{display: "flex", color: OK}}>{label}</div>
+          <div style={{display: "flex", color: INK}}>{label}</div>
           <div style={{display: "flex"}}>Warrant</div>
         </div>
         <div style={{display: "flex", fontSize: 30, color: MUTED, marginTop: 32}}>{lead}</div>

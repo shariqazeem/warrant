@@ -77,8 +77,8 @@ export default async function RecordPage() {
         )}
 
         <p className="wa-record-note">
-          A payroll run is everyone paid under one run in one signature; a single payment is a run
-          of one, with one payslip.
+          A payroll run is everyone paid with one signature, each with their own payslip; a single
+          payment is a run of one.
           {payroll.ok && escrow.ok ? (
             <>
               {" "}

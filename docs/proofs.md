@@ -2,16 +2,20 @@
 
 > For the founder, who signs; the engineer prepares each step and records every hash here as it
 > lands. Total spend under about $30 plus gas unless the founder says otherwise. Wallets the founder
-> controls are labelled as his on every certificate and in the proof table. Nothing is staged.
+> controls are labelled as the founder's on every certificate and in the proof table. Nothing is staged.
 
 ## Before any proof
 
 1. Fund the paying wallet on X Layer: about **$30 of USD₮0** (`0x779Ded0c9e1022225f8E0630b35a9b54bE713736`)
-   and about **$1 of OKB** for fees. Withdraw from OKX to the X Layer network, or swap in OKX Wallet.
+   and about **$1 of OKB** for fees. Withdraw USDT from OKX on the X Layer network (it lands as USD₮0;
+   the "Top up from OKX" steps under the wallet panel on `/grants` walk through it), or swap in OKX Wallet.
 2. A **second wallet the founder controls** (an OKX Wallet account or MetaMask account) with a little
    OKB, to play the recipient for Grants A and B. Its address goes into the proof table as "founder's
    second wallet".
-3. The keeper running (`docs/keeper.md`), with `curl localhost:3101/health` answering `ok: true`.
+3. Fund the keeper: about **$1 of OKB** on X Layer to `0x173B066A5558697b3ce5dC26b57764162ec55E79`. It
+   already runs on the VM under pm2 (`docs/keeper.md`) and passes every 60 seconds, but sends nothing
+   while it holds under 0.002 OKB. Within a minute of the OKB landing, `curl localhost:3101/health` on
+   the VM answers `ok: true`, and certificates say their stock is released automatically.
 4. OKX Wallet QR signing confirmed on the founder's phone: sign a choice at `/me` and see it saved.
 5. Screen recording on (Cmd+Shift+5 on the Mac, screen recording on the phone). Every proof is also
    footage for the video.

@@ -88,6 +88,9 @@ function DollarsOnly({r}: {r: Receipt}) {
         </Line>
         <Line k="Paid by">
           <Address value={r.payer} />
+          <span className="wa-r-aside">
+            <Link href={`/@${r.payer}`}>Everything this wallet has paid through Warrant</Link>
+          </span>
         </Line>
       </Sheet>
 
@@ -161,6 +164,9 @@ function One({r, symbol, decimals}: {r: Receipt; symbol: string; decimals: numbe
         </Line>
         <Line k="Paid by">
           <Address value={r.payer} />
+          <span className="wa-r-aside">
+            <Link href={`/@${r.payer}`}>Everything this wallet has paid through Warrant</Link>
+          </span>
         </Line>
       </Sheet>
 
