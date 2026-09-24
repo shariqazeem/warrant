@@ -17,6 +17,7 @@ import {syncFromChain} from "@/app/sync/actions";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {usePay} from "@/components/pay/use-pay";
 import {AssetNote} from "@/components/pay/asset-note";
+import {STALE_PAGE, isStaleBuild} from "@/components/app/report";
 import "@/components/pay/pay.css";
 import "./run.css";
 import {zeroAddress} from "viem";
@@ -166,10 +167,11 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
           asset,
           reason: row.reason,
         });
-      } catch {
+      } catch (err) {
         // The request never came back. The build stops here rather than spinning for ever,
-        // and "Get prices" is the way to try again.
-        res = held(QUOTE_LOST);
+        // and "Get prices" is the way to try again — unless the tab is older than the site,
+        // which no retry fixes until it reloads.
+        res = held(isStaleBuild(err) ? STALE_PAGE : QUOTE_LOST);
       }
       if (mine !== seq.current) return;
       if (!res.ok) {

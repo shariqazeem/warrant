@@ -64,6 +64,10 @@ grep -E "Compiled" .build.log | head -2
 rm -rf .next-prev
 [ -d .next ] && mv .next .next-prev
 mv .next-build .next
+# A tab opened before this deploy still asks for the last build's code files by name. Keep
+# them beside the new ones (the names are content hashes, so nothing is overwritten), and an
+# open page keeps working instead of failing on its next click.
+if [ -d .next-prev/static ]; then cp -Rn .next-prev/static/. .next/static/ 2>/dev/null || true; fi
 
 # Every stream closed: a restarted server that inherits this SSH session's output keeps
 # the session open forever, and the deploy never returns even though it finished.

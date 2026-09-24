@@ -2,6 +2,7 @@ import type {Metadata} from "next";
 import {ChoiceForm} from "@/components/choice/choice-form";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {WalletProvider} from "@/components/wallet/provider";
+import {Guard} from "@/components/app/guard";
 import "@/app/landing.css";
 
 export const metadata: Metadata = {
@@ -37,9 +38,11 @@ export default function MePage() {
         </p>
 
         <div style={{marginTop: "var(--s-7)"}}>
-          <WalletProvider>
-            <ChoiceForm />
-          </WalletProvider>
+          <Guard where="me">
+            <WalletProvider>
+              <ChoiceForm />
+            </WalletProvider>
+          </Guard>
         </div>
       </main>
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {useEffect} from "react";
 import {Wordmark} from "@/components/brand/wordmark";
+import {isStaleBuild, reloadOnce, reportError} from "@/components/app/report";
 import "@/app/landing.css";
 import "@/components/site/site.css";
 
@@ -21,25 +22,13 @@ import "@/components/site/site.css";
  * has, the fewer can fail with it.
  */
 export default function ErrorPage({error, reset}: {error: Error & {digest?: string}; reset: () => void}) {
+  const stale = isStaleBuild(error);
   useEffect(() => {
+    // A tab older than the site is not broken: one reload fixes it, so it happens by itself.
+    if (isStaleBuild(error) && reloadOnce()) return;
     console.error(error);
-    // A failure in one browser leaves nothing on the server unless the page sends it. Only
-    // the error and the page it happened on — never anything the person typed or holds.
-    try {
-      void fetch("/api/client-error", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          message: error.message,
-          stack: error.stack?.split("\n").slice(0, 8).join("\n"),
-          digest: error.digest,
-          path: window.location.pathname,
-        }),
-        keepalive: true,
-      }).catch(() => undefined);
-    } catch {
-      // reporting must never become a second failure
-    }
+    // A failure in one browser leaves nothing on the server unless the page sends it.
+    reportError(error, "page");
   }, [error]);
 
   return (
@@ -57,16 +46,21 @@ export default function ErrorPage({error, reset}: {error: Error & {digest?: stri
         <p className="wa-kicker">Something went wrong</p>
         <h1 className="wa-h2">This page could not be shown.</h1>
         <p className="wa-lede">
-          It failed while it was being put together, most often because X Layer&rsquo;s public
-          endpoint refused a read for a moment. Trying again usually works.
+          {stale
+            ? "Warrant was updated while this page was open, so it asked for parts that have since changed. Reloading the page fixes it."
+            : "It failed while it was being put together, most often because X Layer\u2019s public endpoint refused a read for a moment. Trying again usually works."}
         </p>
         <p className="wa-lede">
           If you had just signed a payment or a grant, it settled or it did not on X Layer,
           whatever this page says. Check your wallet&rsquo;s history before you send it again.
         </p>
         <div className="wa-actions">
-          <button type="button" className="wa-btn is-primary" onClick={reset}>
-            Try again
+          <button
+            type="button"
+            className="wa-btn is-primary"
+            onClick={stale ? () => window.location.reload() : reset}
+          >
+            {stale ? "Reload the page" : "Try again"}
           </button>
           <Link href="/" className="wa-btn">
             Go to the front page

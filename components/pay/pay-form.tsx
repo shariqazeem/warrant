@@ -6,6 +6,7 @@ import {useRouter} from "next/navigation";
 import {buildPayment, type BuiltPayment, readChoices, type ChoiceView} from "@/app/pay/actions";
 import {syncFromChain} from "@/app/sync/actions";
 import {choiceLine} from "@/components/link/pay-link";
+import {STALE_PAGE, isStaleBuild} from "@/components/app/report";
 import {ASSETS, assetByAddress, defaultAsset} from "@/lib/assets";
 import {STABLE} from "@/lib/chain";
 import {parseMoney} from "@/lib/csv";
@@ -183,11 +184,12 @@ export function PayForm({payroll, to}: {payroll: `0x${string}` | undefined; to?:
       let lost = false;
       try {
         out = await buildPayment({recipient, usd, cashUsd, asset, reason});
-      } catch {
+      } catch (err) {
         // The request never came back: the connection dropped or the server failed. That
         // is not a refusal, and it must not leave "Getting the price…" on screen for ever.
-        out = held(QUOTE_LOST);
-        lost = true;
+        // A tab older than the site can never get a price until it reloads, so it says so.
+        out = held(isStaleBuild(err) ? STALE_PAGE : QUOTE_LOST);
+        lost = !isStaleBuild(err);
       }
       if (mine !== seq.current) return;
       setQuoting(false);

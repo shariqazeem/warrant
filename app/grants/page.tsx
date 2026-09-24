@@ -2,6 +2,7 @@ import type {Metadata} from "next";
 import Link from "next/link";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {WalletProvider} from "@/components/wallet/provider";
+import {Guard} from "@/components/app/guard";
 import {Toasts} from "@/components/toast/toasts";
 import {GrantForm} from "@/components/grants/grant-form";
 import {GrantList} from "@/components/grants/grant-list";
@@ -70,31 +71,33 @@ export default async function GrantsPage() {
         </p>
 
         {escrow.ok ? (
-          <WalletProvider>
-            <div style={{marginTop: "var(--s-7)"}}>
-              <GrantForm escrow={escrow.value} />
-            </div>
+          <Guard where="grants">
+            <WalletProvider>
+              <div style={{marginTop: "var(--s-7)"}}>
+                <GrantForm escrow={escrow.value} />
+              </div>
 
-            <section style={{marginTop: "var(--s-9)"}}>
-              <p className="wa-kicker">{grants?.ok ? shelfHeading(grants.value) : "Grants"}</p>
-              {grants?.ok ? (
-                <>
-                  {grants.value.unread.length > 0 ? <Unread unread={grants.value.unread} /> : null}
-                  {/* "No grants yet" is only true when the escrow has none, not when the
-                      ones it has would not read. */}
-                  {grants.value.grants.length > 0 || grants.value.count === 0 ? (
-                    <GrantList grants={grants.value.grants} escrow={escrow.value} now={now} />
-                  ) : null}
-                </>
-              ) : (
-                <div className="wa-nothing">
-                  <strong>Grants could not be loaded.</strong>
-                  {grants?.ok === false ? grants.why : "The chain did not answer."}
-                </div>
-              )}
-            </section>
-            <Toasts />
-          </WalletProvider>
+              <section style={{marginTop: "var(--s-9)"}}>
+                <p className="wa-kicker">{grants?.ok ? shelfHeading(grants.value) : "Grants"}</p>
+                {grants?.ok ? (
+                  <>
+                    {grants.value.unread.length > 0 ? <Unread unread={grants.value.unread} /> : null}
+                    {/* "No grants yet" is only true when the escrow has none, not when the
+                        ones it has would not read. */}
+                    {grants.value.grants.length > 0 || grants.value.count === 0 ? (
+                      <GrantList grants={grants.value.grants} escrow={escrow.value} now={now} />
+                    ) : null}
+                  </>
+                ) : (
+                  <div className="wa-nothing">
+                    <strong>Grants could not be loaded.</strong>
+                    {grants?.ok === false ? grants.why : "The chain did not answer."}
+                  </div>
+                )}
+              </section>
+              <Toasts />
+            </WalletProvider>
+          </Guard>
         ) : (
           <div className="wa-nothing" style={{marginTop: "var(--s-7)"}}>
             <strong>Grants are not switched on yet.</strong>

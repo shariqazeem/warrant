@@ -1,6 +1,7 @@
 import {PayForm, type FixedRecipient} from "@/components/pay/pay-form";
 import {Toasts} from "@/components/toast/toasts";
 import {WalletProvider} from "@/components/wallet/provider";
+import {Guard} from "@/components/app/guard";
 import type {Outcome} from "@/lib/outcome";
 
 /**
@@ -23,9 +24,11 @@ export function PayBox({payroll, to}: {payroll: Outcome<`0x${string}`>; to?: Fix
     );
   }
   return (
-    <WalletProvider>
-      <PayForm key={to?.address.toLowerCase() ?? "anyone"} payroll={payroll.value} to={to} />
-      <Toasts />
-    </WalletProvider>
+    <Guard where="pay">
+      <WalletProvider>
+        <PayForm key={to?.address.toLowerCase() ?? "anyone"} payroll={payroll.value} to={to} />
+        <Toasts />
+      </WalletProvider>
+    </Guard>
   );
 }

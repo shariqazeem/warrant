@@ -1,6 +1,7 @@
 import type {Metadata} from "next";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {WalletProvider} from "@/components/wallet/provider";
+import {Guard} from "@/components/app/guard";
 import {Toasts} from "@/components/toast/toasts";
 import {RunBuilder} from "@/components/run/run-builder";
 import {payrollAddress} from "@/lib/receipts";
@@ -33,10 +34,12 @@ export default function RunPage() {
 
         <div style={{marginTop: "var(--s-7)"}}>
           {payroll.ok ? (
-            <WalletProvider>
-              <RunBuilder payroll={payroll.value} />
-              <Toasts />
-            </WalletProvider>
+            <Guard where="run">
+              <WalletProvider>
+                <RunBuilder payroll={payroll.value} />
+                <Toasts />
+              </WalletProvider>
+            </Guard>
           ) : (
             <div className="wa-nothing">
               <strong>Payroll is not switched on yet.</strong>

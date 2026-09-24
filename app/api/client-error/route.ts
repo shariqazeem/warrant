@@ -24,6 +24,7 @@ export async function POST(req: Request) {
       stack: clip(body.stack, 1_500),
       digest: clip(body.digest, 64),
       path: clip(body.path, 200),
+      where: clip(body.where, 40),
       agent: clip(req.headers.get("user-agent"), 200),
       at: new Date().toISOString(),
     }),
