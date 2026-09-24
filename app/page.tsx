@@ -247,7 +247,7 @@ export default async function Home() {
               <p className="v">
                 Every grant and every payslip is bought through the OKX DEX aggregator at a live
                 quote, at no less than a minimum the contract enforces, and every certificate
-                prints the route it took.
+                shows the route it took.
                 {cert && cert.route.length > 0 ? (
                   <span className="wa-home-route">
                     Grant No. {certificateNumber(cert.id)}: {cert.route.join(" → ")}
