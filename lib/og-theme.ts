@@ -41,3 +41,17 @@ export const OG = {
 
 export const OG_SIZE = {width: 1200, height: 630} as const;
 export const OG_TYPE = "image/png" as const;
+
+/**
+ * The certificate's own colours, for the certificate share card (app/g/[id]/opengraph-image).
+ * The same values as the bond, engrave, muted-bond, seal and vault tokens in tokens.css.
+ */
+export const OG_CERT = {
+  vault: "#0B2A21",
+  bond: "#F2ECDC",
+  engrave: "#173B2F",
+  mutedBond: "#4A5E54",
+  seal: "#8C1D1D",
+  onVault: "#F2ECDC",
+  onVault2: "#C9D3CC",
+} as const;

@@ -1,39 +1,3 @@
-/* STUB — removed at merge; lane A owns tokens */
-:root {
-  --vault: #0B2A21;
-  --vault-raised: #0F3327;
-  --vault-line: #24493B;
-  --bond: #F2ECDC;
-  --canvas: #EEF2EE;
-  --engrave: #173B2F;
-  --ink: #0F1A15;
-  --muted: #45544C;
-  --muted-bond: #4A5E54;
-  --on-vault: #F2ECDC;
-  --on-vault-2: #C9D3CC;
-  --on-vault-3: #A9B8AF;
-  --rule: #C5D0CA;
-  --field: #9AABA2;
-  --field-bg: #FFFFFF;
-  --seal: #8C1D1D;
-  --foil: #B38B3E;
-  --settled: #0F7A4F;
-  --warn: #b45309;
-  --refused: #dc2626;
-  --surface: #FFFFFF;
-  --font-display: "Bodoni Moda", Georgia, serif;
-  --font-ui: "Hanken Grotesk", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --r-control: 6px;
-  --r-panel: 8px;
-  --r-cert: 3px;
-  --shadow-cert-vault: 0 40px 80px rgba(0, 0, 0, 0.45);
-  --fs-display: clamp(2.75rem, 1.2rem + 4.2vw, 4.5rem);
-  --fs-h2: 28px;
-  --fs-lead: 20px;
-}
-/* END STUB */
-
 /**
  * home.css — THE FRONT PAGE. Vault for the network (the hero, the three rules, the close),
  * canvas for everything read closely. The certificate is the one object; everything else is

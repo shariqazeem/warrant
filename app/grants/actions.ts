@@ -19,9 +19,9 @@
  *
  * Relative imports, so the tests can load this file without the app's alias.
  */
-import {createPublicClient, getAddress, http, parseEventLogs, zeroHash} from "viem";
+import {createPublicClient, getAddress, parseEventLogs, zeroHash} from "viem";
 import {assetByAddress} from "../../lib/assets";
-import {STABLE, xLayer} from "../../lib/chain";
+import {STABLE, xLayer, transport} from "../../lib/chain";
 import {rememberReason, rememberRoute as keepRoute} from "../../lib/db";
 import {escrowAddress} from "../../lib/grants";
 import {
@@ -249,7 +249,7 @@ async function openedIn(
   txHash: `0x${string}`,
   escrow: `0x${string}`,
 ): Promise<Outcome<{id: bigint; asset: `0x${string}`}>> {
-  const rpc = createPublicClient({chain: xLayer, transport: http()});
+  const rpc = createPublicClient({chain: xLayer, transport: transport()});
   for (let attempt = 1; ; attempt++) {
     try {
       const receipt = await rpc.getTransactionReceipt({hash: txHash});

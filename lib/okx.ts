@@ -21,8 +21,8 @@
  *                                                     all-tokens still says `decimals`
  */
 import {createHmac} from "node:crypto";
-import {createPublicClient, http} from "viem";
-import {xLayer} from "./chain";
+import {createPublicClient} from "viem";
+import {xLayer, transport} from "./chain";
 import {held, ok, type Outcome} from "./outcome";
 
 const BASE = process.env.OKX_API_BASE ?? "https://web3.okx.com";
@@ -400,7 +400,7 @@ export async function routerOf(contract: `0x${string}`): Promise<Outcome<`0x${st
   if (known) return ok(known);
 
   try {
-    const rpc = createPublicClient({chain: xLayer, transport: http()});
+    const rpc = createPublicClient({chain: xLayer, transport: transport()});
     const router = await rpc.readContract({address: contract, abi: ROUTER_ABI, functionName: "router"});
     routers.set(contract.toLowerCase(), router);
     return ok(router);

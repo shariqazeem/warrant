@@ -1,0 +1,294 @@
+/* /g/[id] — the certificate page. Layout only: every colour, font and radius is a token, and
+ * the shared classes (.wa-btn, .wa-actions, .wa-fine…) are lane A's, refined here in context. */
+
+.wa-cp-top {
+  padding-bottom: 176px;
+}
+.wa-cp-hero {
+  box-sizing: border-box;
+  max-width: 1296px;
+  margin: 0 auto;
+  padding: var(--s-7, 48px) 72px 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3, 12px);
+}
+.wa-cp-hero h1 {
+  margin: 0;
+  max-width: 22ch;
+}
+.wa-cp-hero .wa-cp-sub {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--on-vault-2);
+  font-size: var(--fs-lead, 20px);
+  line-height: 1.55;
+}
+.wa-cp-kicker {
+  margin: 0;
+  color: var(--on-vault-3);
+  font-size: var(--fs-small, 14px);
+}
+
+.wa-cp-main {
+  box-sizing: border-box;
+  max-width: 1296px;
+  margin: 0 auto;
+  padding: 0 72px var(--s-9, 80px);
+}
+.wa-cp-cert {
+  margin-top: -156px;
+  position: relative;
+}
+.wa-cp-pending {
+  max-width: 760px;
+  margin: var(--s-4, 16px) auto 0;
+  color: var(--warn);
+  font-size: var(--fs-small, 14px);
+}
+
+.wa-cp-grid {
+  max-width: 1040px;
+  margin: var(--s-7, 48px) auto 0;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: var(--s-7, 48px);
+  align-items: start;
+}
+.wa-cp-grid > * {
+  min-width: 0;
+}
+.wa-cp-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5, 24px);
+}
+.wa-cp-rule {
+  display: none;
+}
+.wa-cp-state {
+  margin: 0;
+  font-size: var(--fs-body, 16px);
+  line-height: 1.6;
+  color: var(--ink);
+}
+.wa-cp-state strong {
+  font-weight: 600;
+}
+
+/* the facts */
+.wa-cp h2 {
+  margin: 0 0 var(--s-3, 12px);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-h2, 28px);
+  letter-spacing: -0.02em;
+}
+.wa-cp-facts {
+  margin: 0;
+  border-top: 1px solid var(--rule);
+}
+.wa-cp-facts > div {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: var(--s-4, 16px);
+  padding: var(--s-3, 12px) 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+.wa-cp-facts dt {
+  color: var(--muted);
+}
+.wa-cp-facts dd {
+  margin: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.wa-cp-aside {
+  display: block;
+  color: var(--muted);
+  font-size: var(--fs-caption, 13px);
+}
+.wa-cp-facts a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.wa-cp-facts .wa-action,
+.wa-cp-facts .wa-btn {
+  margin-left: var(--s-2, 8px);
+  vertical-align: middle;
+}
+.wa-cp-seal-word {
+  color: var(--seal);
+  font-weight: 600;
+}
+.wa-cp-moments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2, 8px);
+}
+.wa-cp-moments li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--s-3, 12px);
+}
+.wa-cp-moment-k {
+  font-weight: 600;
+}
+.wa-cp-stock {
+  margin-top: var(--s-6, 32px);
+}
+.wa-cp-stock p {
+  margin: 0 0 var(--s-2, 8px);
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* the actions */
+.wa-cx {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4, 16px);
+}
+.wa-cx-lead,
+.wa-cx-who {
+  margin: 0;
+  font-size: var(--fs-body, 16px);
+  line-height: 1.55;
+  color: var(--ink);
+}
+.wa-cx-part {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2, 8px);
+  border-radius: var(--r-panel);
+}
+.wa-cx-part.is-called {
+  outline: 2px solid var(--seal);
+  outline-offset: 8px;
+}
+.wa-cx .wa-fine,
+.wa-cx .wa-refusal {
+  margin: 0;
+}
+.wa-cx-note,
+.wa-cx-done {
+  margin: 0;
+  display: flex;
+  gap: var(--s-2, 8px);
+  align-items: flex-start;
+  line-height: 1.5;
+}
+.wa-cx-note svg,
+.wa-cx-done svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--settled);
+}
+.wa-cx-done {
+  color: var(--settled);
+}
+.wa-cx-status p {
+  margin: 0;
+}
+.wa-cx-confirm {
+  padding: var(--s-4, 16px);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-panel);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2, 8px);
+}
+.wa-cx-confirm p {
+  margin: 0;
+  line-height: 1.55;
+}
+.wa-cx-share {
+  margin-top: var(--s-2, 8px);
+}
+
+/* the held page */
+.wa-cp-held {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--s-7, 48px) 0 var(--s-9, 80px);
+}
+
+/* the phone: the portrait certificate, the rule under it, everything in one column */
+@media (max-width: 899px) {
+  .wa-cp-hero {
+    padding: var(--s-5, 24px) 20px 0;
+  }
+  .wa-cp-top {
+    padding-bottom: 146px;
+  }
+  .wa-cp-main {
+    padding: 0 20px var(--s-8, 64px);
+  }
+  .wa-cp-cert {
+    margin-top: -126px;
+  }
+  .wa-cp-grid {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: var(--s-6, 32px);
+    gap: var(--s-6, 32px);
+  }
+  .wa-cp-rule {
+    display: block;
+  }
+  .wa-cp-facts > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+
+@media print {
+  .wa-cp-top,
+  .wa-cp-grid,
+  .wa-cp-pending,
+  .wa-site-foot,
+  .wa-dark,
+  .wa-vault,
+  .wa-tear {
+    display: none !important;
+  }
+  .wa-cp-main {
+    padding: 0;
+    max-width: none;
+  }
+  .wa-cp-cert {
+    margin: 0;
+  }
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+}
+
+/* the certificate's place, while it is read: a bond sheet of its shape, nothing on it */
+.wa-cp-skel-cert {
+  max-width: 760px;
+  margin: 0 auto;
+  aspect-ratio: 760 / 468;
+  background: var(--bond);
+  border-radius: var(--r-cert);
+  box-shadow: var(--shadow-cert);
+}
+@media (max-width: 899px) {
+  .wa-cp-skel-cert {
+    max-width: 350px;
+    aspect-ratio: 350 / 520;
+  }
+}
+
+/* the connect row's place while the wallet code loads */
+.wa-cx-wait {
+  height: 44px;
+}

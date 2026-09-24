@@ -510,7 +510,7 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
     // The route for the certificate, and the grant onto the public record, in the background.
     void rememberRoute(done.hash, route).catch(() => undefined);
     void syncFromChain(done.hash).catch(() => undefined);
-    if (done.id !== null) router.push(`/g/${done.id}?issued=1${sealAfter ? "&seal=1" : ""}`);
+    if (done.id !== null) router.push(`/g/${done.id}?issued=1${sealAfter ? "&seal=1" : ""}&tx=${done.hash}`);
   };
 
   const doRecheck = async (hash: `0x${string}`) => {

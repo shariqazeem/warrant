@@ -1,32 +1,3 @@
-/* STUB — removed at merge; lane A owns tokens */
-:root {
-  --vault: #0b2a21;
-  --vault-raised: #0f3327;
-  --vault-line: #24493b;
-  --bond: #f2ecdc;
-  --canvas: #eef2ee;
-  --engrave: #173b2f;
-  --muted: #45544c;
-  --muted-bond: #4a5e54;
-  --on-vault: #f2ecdc;
-  --on-vault-2: #c9d3cc;
-  --on-vault-3: #a9b8af;
-  --rule: #c5d0ca;
-  --field: #9aaba2;
-  --field-bg: #f6f8f6;
-  --seal: #8c1d1d;
-  --foil: #b38b3e;
-  --settled: #0f7a4f;
-  --refused: #b42318;
-  --font-display: "Bodoni Moda", Georgia, serif;
-  --font-ui: "Hanken Grotesk", system-ui, sans-serif;
-  --r-control: 6px;
-  --r-panel: 8px;
-  --r-cert: 3px;
-  --shadow-cert: 0 26px 60px rgba(11, 42, 33, 0.28);
-}
-/* END STUB */
-
 /*
  * ISSUE A GRANT. The form on the left, 520 wide at full size; the specimen and its summary on
  * the right, 760 wide, held in view while the form scrolls. Below 900px it is one column:

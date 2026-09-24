@@ -1,0 +1,678 @@
+/* ── THE CERTIFICATE ────────────────────────────────────────────────────────────────────
+ * Every length is a multiple of --u: one 760th of the landscape certificate's width (one
+ * 350th of the portrait's), so it scales down in a narrower column and prints at any size
+ * without a single thing moving relative to anything else. */
+
+.wa-cert {
+  container-type: inline-size;
+  width: 100%;
+  margin-inline: auto;
+  font-family: var(--font-ui);
+  color: var(--engrave);
+}
+.wa-cert.is-landscape {
+  max-width: 760px;
+}
+.wa-cert.is-portrait {
+  max-width: 350px;
+}
+
+.wa-cert-sheet {
+  --u: calc(100cqw / 760);
+  position: relative;
+  width: 100%;
+  aspect-ratio: 760 / 468;
+  overflow: hidden;
+  background: var(--bond);
+  color: var(--engrave);
+  border-radius: var(--r-cert);
+  box-shadow: var(--shadow-cert);
+  font-variant-numeric: lining-nums tabular-nums;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.wa-cert.is-portrait .wa-cert-sheet {
+  --u: calc(100cqw / 350);
+  aspect-ratio: 350 / 520;
+}
+.wa-cert.on-vault .wa-cert-sheet {
+  box-shadow: var(--shadow-cert-vault);
+}
+
+/* the engraving */
+.wa-cert-engraving {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.wa-cert-frame {
+  fill: none;
+  stroke: var(--engrave);
+  stroke-width: 1;
+}
+.wa-cert-frame.is-inner {
+  stroke-width: 0.6;
+}
+.wa-cert-rosette {
+  fill: none;
+  stroke: var(--engrave);
+  stroke-width: 0.5;
+  opacity: 0.17;
+}
+.wa-cert.is-portrait .wa-cert-rosette {
+  opacity: 0.15;
+}
+.wa-cert-waves {
+  fill: none;
+  stroke: var(--engrave);
+  stroke-width: 0.55;
+  opacity: 0.8;
+}
+.wa-cert.is-portrait .wa-cert-waves {
+  stroke-width: 0.5;
+}
+.wa-cert-corners {
+  fill: none;
+  stroke: var(--engrave);
+  stroke-width: 0.6;
+  opacity: 0.85;
+}
+
+/* the text */
+.wa-cert-body {
+  position: absolute;
+  inset: calc(62 * var(--u)) calc(66 * var(--u)) calc(58 * var(--u));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.wa-cert-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.wa-cert-title {
+  font-family: var(--font-display);
+  font-size: calc(16 * var(--u));
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  font-variant-caps: all-small-caps;
+}
+.wa-cert-no {
+  font-family: var(--font-display);
+  font-size: calc(17 * var(--u));
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.wa-cert-grant {
+  display: flex;
+  flex-direction: column;
+  gap: calc(5 * var(--u));
+}
+.wa-cert-kicker {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: calc(17 * var(--u));
+  line-height: 1.2;
+  color: var(--muted-bond);
+}
+.wa-cert-to {
+  font-family: var(--font-mono);
+  font-size: calc(15 * var(--u));
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+}
+.wa-cert-units {
+  display: flex;
+  align-items: baseline;
+  gap: calc(12 * var(--u));
+  margin-top: calc(2 * var(--u));
+}
+.wa-cert-units-n {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: calc(66 * var(--u));
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.wa-cert-units-sym {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: calc(26 * var(--u));
+}
+.wa-cert-line {
+  font-size: calc(13.5 * var(--u));
+  line-height: 1.45;
+  color: var(--muted-bond);
+}
+.wa-cert-line.is-first {
+  margin-top: calc(4 * var(--u));
+}
+.wa-cert-line.is-route {
+  font-size: calc(12.5 * var(--u));
+  letter-spacing: 0.01em;
+}
+.wa-cert-route-k {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: calc(13.5 * var(--u));
+  margin-right: calc(4 * var(--u));
+}
+.wa-cert.is-landscape .wa-cert-rulebox,
+.wa-cert.is-landscape .wa-cert-sign {
+  padding-right: calc(132 * var(--u));
+}
+.wa-cert-sign {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(4 * var(--u)) calc(26 * var(--u));
+  font-size: calc(12 * var(--u));
+  line-height: 1.4;
+  color: var(--muted-bond);
+}
+.wa-cert-v {
+  font-family: var(--font-mono);
+  color: var(--engrave);
+}
+.wa-cert-link {
+  text-decoration: none;
+  border-radius: 2px;
+}
+.wa-cert-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.wa-cert-link:focus-visible {
+  outline: 2px solid var(--engrave);
+  outline-offset: 2px;
+}
+.wa-cert-onpaper {
+  display: none;
+}
+
+/* the watermark on a specimen */
+.wa-cert-specimen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.wa-cert-specimen span {
+  position: absolute;
+  left: calc(150 * var(--u));
+  top: calc(150 * var(--u));
+  transform: rotate(-15deg);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: calc(118 * var(--u));
+  line-height: 1;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--seal) 12%, transparent);
+}
+
+/* the seal's place */
+.wa-cert.is-landscape .wa-cert-sealbox {
+  position: absolute;
+  right: calc(30 * var(--u));
+  bottom: calc(24 * var(--u));
+  width: calc(118 * var(--u));
+  height: calc(118 * var(--u));
+}
+
+/* ── portrait: the phone's certificate, centred ─────────────────────────────────────── */
+.wa-cert.is-portrait .wa-cert-body {
+  inset: calc(54 * var(--u)) calc(50 * var(--u)) calc(46 * var(--u));
+  align-items: center;
+  text-align: center;
+  justify-content: flex-start;
+}
+.wa-cert.is-portrait .wa-cert-head {
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--u));
+}
+.wa-cert.is-portrait .wa-cert-title,
+.wa-cert.is-portrait .wa-cert-no {
+  font-size: calc(14 * var(--u));
+}
+.wa-cert.is-portrait .wa-cert-grant {
+  align-items: center;
+  gap: calc(4 * var(--u));
+  margin-top: calc(14 * var(--u));
+}
+.wa-cert.is-portrait .wa-cert-kicker {
+  font-size: calc(15 * var(--u));
+}
+.wa-cert.is-portrait .wa-cert-to {
+  font-size: calc(13.5 * var(--u));
+}
+.wa-cert.is-portrait .wa-cert-units {
+  gap: calc(8 * var(--u));
+}
+.wa-cert.is-portrait .wa-cert-units-n {
+  font-size: calc(50 * var(--u));
+  letter-spacing: 0;
+}
+.wa-cert.is-portrait .wa-cert-units-sym {
+  font-size: calc(21 * var(--u));
+}
+.wa-cert.is-portrait .wa-cert-line {
+  font-size: calc(12.5 * var(--u));
+  line-height: 1.4;
+}
+.wa-cert.is-portrait .wa-cert-line.is-first {
+  margin-top: calc(5 * var(--u));
+}
+.wa-cert.is-portrait .wa-cert-line.is-route {
+  font-size: calc(11.5 * var(--u));
+}
+.wa-cert-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6 * var(--u));
+}
+.wa-cert.is-portrait .wa-cert-sealbox {
+  width: calc(96 * var(--u));
+  height: calc(96 * var(--u));
+}
+.wa-cert.is-portrait .wa-cert-sign {
+  flex-direction: column;
+  align-items: center;
+  gap: calc(1 * var(--u));
+  font-size: calc(11.5 * var(--u));
+}
+.wa-cert.is-portrait .wa-cert-specimen span {
+  left: calc(-10 * var(--u));
+  top: calc(214 * var(--u));
+  width: calc(370 * var(--u));
+  text-align: center;
+  transform: rotate(-24deg);
+  font-size: calc(76 * var(--u));
+  letter-spacing: 0.1em;
+  color: color-mix(in srgb, var(--seal) 11%, transparent);
+}
+
+/* both, and the viewport chooses */
+.wa-cert-auto > .wa-cert.is-landscape {
+  display: none;
+}
+@media (min-width: 900px) {
+  .wa-cert-auto > .wa-cert.is-landscape {
+    display: block;
+  }
+  .wa-cert-auto > .wa-cert.is-portrait {
+    display: none;
+  }
+}
+
+/* ── THE SEAL ─────────────────────────────────────────────────────────────────────────── */
+.wa-seal {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.wa-seal-body {
+  width: 100%;
+  height: 100%;
+}
+.wa-seal.is-sealed .wa-seal-body {
+  filter: drop-shadow(0 calc(3 * var(--u, 1px)) calc(2 * var(--u, 1px)) color-mix(in srgb, var(--seal) 45%, transparent));
+}
+.wa-seal-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.wa-seal-word,
+.wa-seal-outline-b {
+  font-family: var(--font-ui);
+}
+.wa-seal-no,
+.wa-seal-outline-a {
+  font-family: var(--font-display);
+}
+.wa-seal-ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--seal);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── THE VESTING RULE ─────────────────────────────────────────────────────────────────── */
+.wa-vest {
+  --r: 1px;
+  --rule-ink: var(--engrave);
+  --rule-muted: var(--muted);
+  --rule-line: var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: calc(9 * var(--r));
+  font-variant-numeric: tabular-nums;
+}
+.wa-vest.is-engrave {
+  --r: var(--u);
+  --rule-ink: var(--engrave);
+  --rule-muted: var(--muted-bond);
+}
+.wa-vest.is-canvas {
+  --rule-ink: var(--vault);
+  --rule-muted: var(--muted);
+}
+.wa-vest.is-vault {
+  --rule-ink: var(--on-vault);
+  --rule-muted: var(--on-vault-2);
+  --rule-line: var(--vault-line);
+}
+.wa-vest.is-stack {
+  gap: calc(10 * var(--r));
+}
+
+.wa-vest-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: calc(12 * var(--r));
+  min-height: calc(18 * var(--r));
+  font-size: calc(13 * var(--r));
+  color: var(--rule-muted);
+}
+.wa-vest-n {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: calc(14 * var(--r));
+  color: var(--rule-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.wa-vest-n.is-small {
+  font-weight: 400;
+  font-size: calc(13 * var(--r));
+}
+
+.wa-vest-bar {
+  position: relative;
+  height: calc(14 * var(--r));
+}
+.wa-vest-bar > span {
+  position: absolute;
+  display: block;
+}
+.wa-vest-line {
+  left: 0;
+  right: 0;
+  top: calc(7 * var(--r));
+  border-top: 1px solid var(--rule-ink);
+}
+.wa-vest-tick {
+  top: calc(3 * var(--r));
+  height: calc(9 * var(--r));
+  border-left: 1px solid color-mix(in srgb, var(--rule-ink) 50%, transparent);
+}
+.wa-vest-vested {
+  left: 0;
+  top: calc(2 * var(--r));
+  height: calc(10 * var(--r));
+  background: repeating-linear-gradient(
+    135deg,
+    var(--rule-ink) 0 1px,
+    color-mix(in srgb, var(--rule-ink) 0%, transparent) 1px 4px
+  );
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.wa-vest-released {
+  left: 0;
+  top: calc(5 * var(--r));
+  height: calc(5 * var(--r));
+  background: var(--rule-ink);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.wa-vest-cliff {
+  top: calc(-3 * var(--r));
+  height: calc(20 * var(--r));
+  border-left: 1.5px solid var(--seal);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .wa-vest-vested.is-growing {
+    animation-name: wa-vest-grow;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+}
+@keyframes wa-vest-grow {
+  from {
+    width: var(--wa-grow-from);
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.wa-vest-labels {
+  position: relative;
+  height: calc(16 * var(--r));
+  font-size: calc(12 * var(--r));
+  color: var(--rule-muted);
+  white-space: nowrap;
+}
+.wa-vest-labels > span {
+  position: absolute;
+  top: 0;
+}
+.wa-vest-start {
+  left: 0;
+}
+.wa-vest-end {
+  right: 0;
+}
+.wa-vest-cliff-label {
+  transform: translateX(-50%);
+  color: var(--seal);
+}
+.wa-vest.is-vault .wa-vest-cliff-label {
+  color: var(--on-vault);
+}
+
+/* the phone's readout */
+.wa-vest-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wa-vest-k {
+  font-size: 14px;
+  color: var(--rule-muted);
+}
+.wa-vest-big {
+  font-family: var(--font-mono);
+  font-size: 25px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--rule-ink);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.wa-vest-sym {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 600;
+}
+.wa-vest-of {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--rule-muted);
+}
+.wa-vest-rows {
+  margin: 6px 0 0;
+  border-top: 1px solid var(--rule-line);
+}
+.wa-vest-rows > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule-line);
+  font-size: 15px;
+}
+.wa-vest-rows dt {
+  color: var(--rule-muted);
+}
+.wa-vest-rows dd {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 400;
+}
+
+/* for screen readers only */
+.wa-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── THE ENGRAVE-IN ───────────────────────────────────────────────────────────────────
+ * Played once, when a certificate has just been issued: the pattern wipes in over the bond,
+ * the text rises in three steps, and the seal lands last. Nothing here exists under
+ * reduced motion, so nothing is ever left hidden by an animation that does not run. */
+.wa-cert-wipe {
+  display: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .wa-cert.is-engraving .wa-cert-wipe {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: var(--bond);
+    transform-origin: right center;
+    animation: wa-cert-wipe var(--dur-wipe) var(--ease-wipe, cubic-bezier(0.3, 0.6, 0.2, 1)) 0.25s both;
+  }
+  .wa-cert.is-engraving .wa-cert-rise {
+    opacity: 0;
+    animation: wa-cert-rise var(--dur-rise, 0.7s) ease-out forwards;
+  }
+  .wa-cert.is-engraving .is-d1 {
+    animation-delay: 1s;
+  }
+  .wa-cert.is-engraving .is-d2 {
+    animation-delay: 1.15s;
+  }
+  .wa-cert.is-engraving .is-d3 {
+    animation-delay: 1.3s;
+  }
+  .wa-cert.is-engraving .wa-cert-specimen {
+    opacity: 0;
+    animation: wa-cert-fade 0.9s ease-out 1.5s forwards;
+  }
+  .wa-cert.is-engraving .wa-cert-sealbox.is-landing .wa-seal-body {
+    animation: wa-seal-press var(--dur-press) var(--ease-press, cubic-bezier(0.2, 0.8, 0.25, 1.15)) 1.75s both;
+  }
+  /* The seal transaction has just confirmed: press it now, with a ring. */
+  .wa-seal.is-pressing .wa-seal-body {
+    animation: wa-seal-press var(--dur-press) var(--ease-press, cubic-bezier(0.2, 0.8, 0.25, 1.15)) 0.1s both;
+  }
+  .wa-seal.is-pressing .wa-seal-ripple {
+    animation: wa-seal-ripple 0.9s ease-out 0.4s both;
+  }
+}
+@keyframes wa-cert-wipe {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+@keyframes wa-cert-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wa-cert-fade {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes wa-seal-press {
+  0% {
+    transform: scale(1.45) rotate(-12deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.94) rotate(2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes wa-seal-ripple {
+  from {
+    transform: scale(0.7);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* ── ON PAPER ─────────────────────────────────────────────────────────────────────────
+ * The certificate prints as itself: landscape, no shadow, every address and hash in full,
+ * and nothing mid-animation. */
+@media print {
+  .wa-cert-sheet {
+    box-shadow: none;
+    border: 0.5pt solid var(--engrave);
+  }
+  .wa-cert-onscreen {
+    display: none;
+  }
+  .wa-cert-onpaper {
+    display: inline;
+  }
+  .wa-cert-wipe {
+    display: none !important;
+  }
+  .wa-cert-rise,
+  .wa-cert-specimen,
+  .wa-seal-body {
+    opacity: 1 !important;
+    animation: none !important;
+    transform: none !important;
+  }
+  .wa-cert-auto > .wa-cert.is-landscape {
+    display: block;
+  }
+  .wa-cert-auto > .wa-cert.is-portrait {
+    display: none;
+  }
+  .wa-cert.is-landscape {
+    max-width: none;
+    break-inside: avoid;
+  }
+  .wa-cert.is-landscape .wa-cert-sign {
+    font-size: calc(10.5 * var(--u));
+  }
+}

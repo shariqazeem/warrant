@@ -13,7 +13,7 @@
 import {useCallback, useState} from "react";
 import type {Address, Hex} from "viem";
 import {useAccount, useConfig} from "wagmi";
-import {waitForTransactionReceipt, writeContract} from "wagmi/actions";
+import {simulateContract, waitForTransactionReceipt, writeContract} from "wagmi/actions";
 import {xLayer} from "@/lib/chain";
 import {grantEscrowAbi} from "@/lib/payroll-abi";
 
@@ -58,13 +58,18 @@ export function useGrantAction(escrow: Address | undefined) {
       if (!escrow) return refuse("GrantEscrow is not deployed, so there is nothing to act on.");
 
       try {
-        setPhase("signing");
-        const tx = await writeContract(config, {
+        // SIMULATE FIRST. A call the escrow would refuse — nothing due, already sealed, not
+        // the grantor — is refused here, in words, before the wallet is asked for anything.
+        const {request} = await simulateContract(config, {
           address: escrow,
           abi: grantEscrowAbi,
           functionName: which,
           args: [BigInt(id)],
+          account: address,
+          chainId: xLayer.id,
         });
+        setPhase("signing");
+        const tx = await writeContract(config, request);
         setHash(tx);
 
         setPhase("confirming");
