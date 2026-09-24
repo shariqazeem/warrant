@@ -85,7 +85,7 @@ export function purchaseLine(
   if (d.units === null) return `${name}, bought through OKX DEX when it is issued.`;
   if (d.stableCost === null) return `${name}, bought through OKX DEX.`;
   const price = withPrice && d.unitPriceUsd ? ` at $${d.unitPriceUsd} a unit` : "";
-  return `${name}, bought for ${costText(d.stableCost)} USDT through OKX DEX${price}.`;
+  return `${name}, bought for ${costText(d.stableCost)} in USD₮0 through OKX DEX${price}.`;
 }
 
 /** The route, token by token, or null when there is none to print. */

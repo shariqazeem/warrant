@@ -2,6 +2,7 @@ import Link from "next/link";
 import {Stub} from "@/components/stub/stub";
 import {PrintButton} from "@/components/app/print-button";
 import {EXPLORER_ADDRESS, EXPLORER_TX, STABLE} from "@/lib/chain";
+import {STABLE_NAME} from "@/lib/grant-terms";
 import type {GrantReceipt, Opening} from "@/lib/grant-receipts";
 import {bps, settledUnitPrice, short, stampUTC, unitsFromRaw, usdt} from "@/lib/format";
 import {humanDuration} from "@/lib/schedule";
@@ -68,7 +69,7 @@ export function GrantTerms({
   return (
     <Sheet title="What was granted">
       <Line k="Paid">
-        {usdt(o.stableCost)} in {STABLE.symbol}
+        {usdt(o.stableCost)} in {STABLE_NAME}
       </Line>
       <Line k="Bought">
         {unitsFromRaw(o.units, facts.decimals)} {facts.symbol}

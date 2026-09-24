@@ -245,7 +245,7 @@ function readableFailure(err: unknown): string {
   }
   if (isPermitRefusal(err)) {
     // True because the wallet is remembered on the way here: the next press approves first.
-    return "Your wallet's approval signature was not accepted, so nothing was paid. Try again — it will ask you to approve the USDT with a transaction first.";
+    return "Your wallet's approval signature was not accepted, so nothing was paid. Try again — it will ask you to approve the USD₮0 with a transaction first.";
   }
   if (/TransferFromFailed|allowance/i.test(raw)) {
     return "The payment could not draw the stablecoin from this wallet. Check the balance and the approval.";

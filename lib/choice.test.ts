@@ -436,14 +436,14 @@ describe("the split", () => {
 describe("the words for a choice", () => {
   it("says all cash plainly", () => {
     expect(choiceWords({stockBps: 0, asset: ZERO_ADDRESS})).toBe(
-      "0% of each payment becomes stock: all of it arrives as USDT",
+      "0% of each payment becomes stock: all of it arrives as USD₮0",
     );
   });
 
   it("names every listed stock by its name and symbol", () => {
     for (const a of ASSETS) {
       expect(choiceWords({stockBps: 2_500, asset: a.address})).toBe(
-        `25% of each payment into ${a.name} (${a.symbol}), the rest as USDT`,
+        `25% of each payment into ${a.name} (${a.symbol}), the rest as USD₮0`,
       );
     }
   });
@@ -467,10 +467,10 @@ describe("the words for a choice", () => {
 
   it("works the $100 example out with the same split the payments use", () => {
     const at = (stockBps: number) => exampleWords({stockBps, asset: SPYX.address});
-    expect(at(2_500)).toBe(`On a $100 payment, $25 becomes ${SPYX.symbol} and $75 arrives as USDT.`);
-    expect(at(0)).toBe("On a $100 payment, all $100 arrives as USDT.");
+    expect(at(2_500)).toBe(`On a $100 payment, $25 becomes ${SPYX.symbol} and $75 arrives as USD₮0.`);
+    expect(at(0)).toBe("On a $100 payment, all $100 arrives as USD₮0.");
     expect(at(MAX_BPS)).toBe(`On a $100 payment, all $100 becomes ${SPYX.symbol}.`);
-    expect(at(3_333)).toBe(`On a $100 payment, $33.33 becomes ${SPYX.symbol} and $66.67 arrives as USDT.`);
+    expect(at(3_333)).toBe(`On a $100 payment, $33.33 becomes ${SPYX.symbol} and $66.67 arrives as USD₮0.`);
     expect(EXAMPLE_PAYMENT).toBe(100_000_000n);
   });
 

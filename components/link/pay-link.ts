@@ -67,15 +67,15 @@ export type SplitLike = {stockBps: number; asset: string | null};
  * THE SPLIT AS A PAYER READS IT: the share, for a page to print as a figure, and the words
  * after it. With nothing as stock there is no share to print.
  *
- *   {share: "25%", rest: "of each payment in S&P 500 xStock (SPYx), the rest in USDT."}
- *   {share: null,  rest: "all of each payment in USDT, no stock."}
+ *   {share: "25%", rest: "of each payment in S&P 500 xStock (SPYx), the rest in USD₮0."}
+ *   {share: null,  rest: "all of each payment in USD₮0, no stock."}
  *
  * The same reading of a choice as the payment builder's (lib/payment.ts, resolveSplit): a
- * share with no stock named is all USDT.
+ * share with no stock named is all USD₮0.
  */
 export function splitWords(c: SplitLike): {share: string | null; rest: string} {
   if (c.stockBps <= 0 || c.asset === null || c.asset.toLowerCase() === ZERO_ADDRESS) {
-    return {share: null, rest: "all of each payment in USDT, no stock."};
+    return {share: null, rest: "all of each payment in USD₮0, no stock."};
   }
   const stock = assetByAddress(c.asset);
   // A choice signed for a stock that has since been taken off the list says so, rather than
@@ -83,11 +83,11 @@ export function splitWords(c: SplitLike): {share: string | null; rest: string} {
   const named = stock
     ? `${stock.name} (${stock.symbol})`
     : `a stock Warrant no longer pays in (${short(c.asset)})`;
-  const rest = c.stockBps >= MAX_BPS ? "" : ", the rest in USDT";
+  const rest = c.stockBps >= MAX_BPS ? "" : ", the rest in USD₮0";
   return {share: bps(c.stockBps), rest: `of each payment in ${named}${rest}.`};
 }
 
-/** Beside a "They chose" label: "25% of each payment in S&P 500 xStock (SPYx), the rest in USDT." */
+/** Beside a "They chose" label: "25% of each payment in S&P 500 xStock (SPYx), the rest in USD₮0." */
 export function choiceLine(c: SplitLike): string {
   const {share, rest} = splitWords(c);
   return share ? `${share} ${rest}` : cap(rest);

@@ -74,7 +74,7 @@ describe("asking a wallet for a permit", () => {
 
   it("falls back when the signature recovers to someone else, as a smart wallet's does", async () => {
     const out = await ask((typed) => someoneElse.signTypedData(typed));
-    expect(out).toEqual({kind: "unusable", why: "This wallet signs in a form USDT cannot check."});
+    expect(out).toEqual({kind: "unusable", why: "This wallet signs in a form USD₮0 cannot check."});
   });
 
   it("falls back when the wallet returns a contract signature the token cannot read", async () => {
@@ -129,7 +129,7 @@ describe("asking a wallet for a permit", () => {
 
   it("says plainly that the fallback takes two requests", () => {
     expect(approveFirst("pay")).toBe(
-      "Your wallet can't approve by signature, so it will ask twice: once to approve the USDT, then once to pay.",
+      "Your wallet can't approve by signature, so it will ask twice: once to approve the USD₮0, then once to pay.",
     );
   });
 });

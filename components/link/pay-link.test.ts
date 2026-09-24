@@ -80,11 +80,11 @@ describe("when an address's page is a pay link", () => {
 describe("the split, as a payer reads it", () => {
   it("says a part-stock choice with its share, its stock and the rest", () => {
     const c = {stockBps: 2_500, asset: SPYX.address};
-    expect(theyGet(c)).toBe(`They get 25% of each payment in ${SPYX.name} (${SPYX.symbol}), the rest in USDT.`);
-    expect(choiceLine(c)).toBe(`25% of each payment in ${SPYX.name} (${SPYX.symbol}), the rest in USDT.`);
+    expect(theyGet(c)).toBe(`They get 25% of each payment in ${SPYX.name} (${SPYX.symbol}), the rest in USD₮0.`);
+    expect(choiceLine(c)).toBe(`25% of each payment in ${SPYX.name} (${SPYX.symbol}), the rest in USD₮0.`);
     expect(splitWords(c)).toEqual({
       share: "25%",
-      rest: `of each payment in ${SPYX.name} (${SPYX.symbol}), the rest in USDT.`,
+      rest: `of each payment in ${SPYX.name} (${SPYX.symbol}), the rest in USD₮0.`,
     });
   });
 
@@ -103,8 +103,8 @@ describe("the split, as a payer reads it", () => {
       {stockBps: 2_500, asset: null},
     ]) {
       expect(splitWords(c).share).toBeNull();
-      expect(theyGet(c)).toBe("They get all of each payment in USDT, no stock.");
-      expect(choiceLine(c)).toBe("All of each payment in USDT, no stock.");
+      expect(theyGet(c)).toBe("They get all of each payment in USD₮0, no stock.");
+      expect(choiceLine(c)).toBe("All of each payment in USD₮0, no stock.");
     }
   });
 
@@ -116,7 +116,7 @@ describe("the split, as a payer reads it", () => {
   it("says so when a choice names a stock no longer listed, rather than hiding it", () => {
     const gone = "0x1111111111111111111111111111111111111111";
     expect(theyGet({stockBps: 2_500, asset: gone})).toBe(
-      "They get 25% of each payment in a stock Warrant no longer pays in (0x111111…1111), the rest in USDT.",
+      "They get 25% of each payment in a stock Warrant no longer pays in (0x111111…1111), the rest in USD₮0.",
     );
   });
 

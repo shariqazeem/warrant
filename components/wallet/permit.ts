@@ -143,7 +143,7 @@ export async function signPermit(args: {
   }
 
   const parts = splitPermitSignature(signature);
-  if (!parts) return {kind: "unusable", why: "This wallet signs in a form USDT cannot check."};
+  if (!parts) return {kind: "unusable", why: "This wallet signs in a form USD₮0 cannot check."};
 
   // The token will run ecrecover on this. If it does not come back to the payer — as with a
   // smart-contract wallet — the token would refuse it on chain, so it is not used.
@@ -151,10 +151,10 @@ export async function signPermit(args: {
   try {
     signer = await recoverTypedDataAddress({...typed, signature});
   } catch {
-    return {kind: "unusable", why: "This wallet signs in a form USDT cannot check."};
+    return {kind: "unusable", why: "This wallet signs in a form USD₮0 cannot check."};
   }
   if (signer.toLowerCase() !== args.owner.toLowerCase()) {
-    return {kind: "unusable", why: "This wallet signs in a form USDT cannot check."};
+    return {kind: "unusable", why: "This wallet signs in a form USD₮0 cannot check."};
   }
 
   return {kind: "signed", permit: {value: args.value, deadline, ...parts}};
@@ -162,5 +162,5 @@ export async function signPermit(args: {
 
 /** What the payer is told when it takes two transactions instead of one: "…then once to pay." */
 export const approveFirst = (then: string): string =>
-  `Your wallet can't approve by signature, so it will ask twice: once to approve the USDT, ` +
+  `Your wallet can't approve by signature, so it will ask twice: once to approve the USD₮0, ` +
   `then once to ${then}.`;

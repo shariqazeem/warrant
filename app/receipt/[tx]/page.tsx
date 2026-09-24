@@ -5,6 +5,7 @@ import {AddToWallet} from "@/components/stub/add-to-wallet";
 import {assetByAddress} from "@/lib/assets";
 import {PrintButton} from "@/components/app/print-button";
 import {EXPLORER_ADDRESS, EXPLORER_TX, STABLE} from "@/lib/chain";
+import {STABLE_NAME} from "@/lib/grant-terms";
 import {paidInTransaction, type Receipt} from "@/lib/receipts";
 import {readGrantMoments} from "@/lib/grant-receipts";
 import {escrowAddress} from "@/lib/grants";
@@ -67,7 +68,7 @@ function DollarsOnly({r}: {r: Receipt}) {
         landed={<><strong>{usdt(r.stableAmount)}</strong> paid</>}
         became="all of it in USD₮0"
         units={(Number(r.stableAmount) / 1e6).toFixed(2)}
-        symbol={STABLE.symbol}
+        symbol={STABLE_NAME}
         when={r.timestamp === null ? "Paid on X Layer" : stampUTC(r.timestamp)}
         from={r.payer}
         to={r.recipient}
@@ -78,9 +79,9 @@ function DollarsOnly({r}: {r: Receipt}) {
       />
 
       <Sheet title="What was paid">
-        <Line k="Paid">{usdt(r.stableAmount)} in {STABLE.symbol}</Line>
+        <Line k="Paid">{usdt(r.stableAmount)} in {STABLE_NAME}</Line>
         <Line k="Received">
-          {usdt(r.cashAmount)} in {STABLE.symbol}
+          {usdt(r.cashAmount)} in {STABLE_NAME}
           <span className="wa-r-aside">no stock: this payment was taken all in dollars</span>
         </Line>
         <Line k="Paid to">
@@ -142,10 +143,10 @@ function One({r, symbol, decimals}: {r: Receipt; symbol: string; decimals: numbe
       />
 
       <Sheet title="What was paid">
-        <Line k="Paid">{usdt(r.stableAmount)} in {STABLE.symbol}</Line>
+        <Line k="Paid">{usdt(r.stableAmount)} in {STABLE_NAME}</Line>
         {r.cashAmount > 0n ? (
           <>
-            <Line k="Kept as USDT">{usdt(r.cashAmount)}</Line>
+            <Line k="Kept as USD₮0">{usdt(r.cashAmount)}</Line>
             <Line k="Turned into stock">{usdt(swapped)}</Line>
           </>
         ) : null}

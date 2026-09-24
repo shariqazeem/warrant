@@ -321,21 +321,21 @@ export function splitByChoice(stable: bigint, stockBps: number): {stock: bigint;
 
 // ── the words ────────────────────────────────────────────────────────────────────────
 
-/** "25%" and "of each payment into S&P 500 xStock (SPYx), the rest as USDT". */
+/** "25%" and "of each payment into S&P 500 xStock (SPYx), the rest as USD₮0". */
 export function choiceParts(c: {stockBps: number; asset: string}): {share: string; rest: string} {
   const share = bps(c.stockBps);
   if (c.stockBps === 0) {
-    return {share, rest: "of each payment becomes stock: all of it arrives as USDT"};
+    return {share, rest: "of each payment becomes stock: all of it arrives as USD₮0"};
   }
   const stock = assetByAddress(c.asset);
   const named = stock
     ? `${stock.name} (${stock.symbol})`
     : `a stock Warrant no longer pays in (${short(c.asset)})`;
-  const rest = c.stockBps === MAX_BPS ? "" : ", the rest as USDT";
+  const rest = c.stockBps === MAX_BPS ? "" : ", the rest as USD₮0";
   return {share, rest: `of each payment into ${named}${rest}`};
 }
 
-/** The choice in one line: "25% of each payment into S&P 500 xStock (SPYx), the rest as USDT". */
+/** The choice in one line: "25% of each payment into S&P 500 xStock (SPYx), the rest as USD₮0". */
 export function choiceWords(c: {stockBps: number; asset: string}): string {
   const {share, rest} = choiceParts(c);
   return `${share} ${rest}`;
@@ -352,7 +352,7 @@ export function exampleWords(c: {stockBps: number; asset: string}): string {
   const {stock, cash} = splitByChoice(EXAMPLE_PAYMENT, c.stockBps);
   const symbol = assetByAddress(c.asset)?.symbol ?? "stock";
   const on = `On a ${usdt(EXAMPLE_PAYMENT)} payment`;
-  if (stock === 0n) return `${on}, all ${usdt(cash)} arrives as USDT.`;
+  if (stock === 0n) return `${on}, all ${usdt(cash)} arrives as USD₮0.`;
   if (cash === 0n) return `${on}, all ${usdt(stock)} becomes ${symbol}.`;
-  return `${on}, ${usdt(stock)} becomes ${symbol} and ${usdt(cash)} arrives as USDT.`;
+  return `${on}, ${usdt(stock)} becomes ${symbol} and ${usdt(cash)} arrives as USD₮0.`;
 }

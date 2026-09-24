@@ -88,7 +88,7 @@ export default async function Home() {
                 </Link>
               </div>
               <p className="wa-home-fine">
-                Paid in USDT and priced by OKX DEX on X Layer. The contracts have no owner, no
+                Paid in USD₮0 and priced by OKX DEX on X Layer. The contracts have no owner, no
                 admin and no upgrade path.
               </p>
             </div>

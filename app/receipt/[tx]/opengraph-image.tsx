@@ -94,7 +94,7 @@ export default async function Image({params}: {params: {tx: string}}) {
   // A payment taken all in dollars names no stock; its card shows the dollars.
   const dollarsOnly = r.asset.toLowerCase() === "0x0000000000000000000000000000000000000000";
   const known = assetByAddress(r.asset);
-  const symbol = dollarsOnly ? "USDT" : (known?.symbol ?? "units");
+  const symbol = dollarsOnly ? "USD\u20ae0" : (known?.symbol ?? "units");
   const decimals = dollarsOnly ? 6 : (known?.decimals ?? 18);
 
   const stored = reasonFor(r.reasonHash);

@@ -1008,9 +1008,9 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
           <Status phase={phase} base={base} onRetry={() => void doIssue()} onAnother={issueAnother} requoting={requoting} />
           <p className="wa-issue-fine">
             {oneSignature
-              ? "One signature approves the USDT and issues the grant."
-              : "Your wallet will ask twice: once to approve the USDT, then once to issue."}{" "}
-            If the price moves and the contract would buy less than the guaranteed minimum, nothing happens and no USDT
+              ? "One signature approves the USD₮0 and issues the grant."
+              : "Your wallet will ask twice: once to approve the USD₮0, then once to issue."}{" "}
+            If the price moves and the contract would buy less than the guaranteed minimum, nothing happens and no USD₮0
             leaves your wallet.
           </p>
         </div>
@@ -1053,10 +1053,10 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
             <dd>
               {shown && asset && shownMin !== null ? (
                 <>
-                  {floorUnits(shownMin, asset.decimals)} {asset.symbol}. Below that, the contract cancels and no USDT moves.
+                  {floorUnits(shownMin, asset.decimals)} {asset.symbol}. Below that, the contract cancels and no USD₮0 moves.
                 </>
               ) : (
-                "Set by the live quote. Below it, the contract cancels and no USDT moves."
+                "Set by the live quote. Below it, the contract cancels and no USD₮0 moves."
               )}
             </dd>
           </div>

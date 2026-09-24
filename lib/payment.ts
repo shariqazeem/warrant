@@ -90,7 +90,7 @@ export function checkLine(req: LineRequest): Outcome<Split> {
   if (!asset.ok) return asset;
   if (req.asset.toLowerCase() === STABLE.address.toLowerCase()) {
     return held(
-      `${STABLE.symbol} is what the payment is made with, so it cannot also be what it buys.`,
+      `USD₮0 is what the payment is made with, so it cannot also be what it buys.`,
     );
   }
   if (req.reason.trim().length === 0) {

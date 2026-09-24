@@ -126,7 +126,7 @@ export default async function Image() {
                   }}
                 >
                   {`${unitsFromRaw(newest.units, newest.assetDecimals)} ${newest.assetSymbol} granted to ` +
-                    `${short(newest.beneficiary)}, bought for ${usdt(newest.stableCost)} USDT through OKX DEX, ` +
+                    `${short(newest.beneficiary)}, bought for ${usdt(newest.stableCost)} in USD₮0 through OKX DEX, ` +
                     `vesting over ${humanDuration(newest.durationSeconds)}.`}
                 </div>
               ) : null}

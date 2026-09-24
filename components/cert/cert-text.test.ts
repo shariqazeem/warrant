@@ -62,12 +62,12 @@ describe("the number, the recipient and the units", () => {
 
 describe("line one: what was bought", () => {
   it("says the cost, the venue and the price when all are known", () => {
-    expect(purchaseLine(base)).toBe("S&P 500 xStock, bought for $1,000.00 USDT through OKX DEX at $767.34 a unit.");
+    expect(purchaseLine(base)).toBe("S&P 500 xStock, bought for $1,000.00 in USD₮0 through OKX DEX at $767.34 a unit.");
   });
 
   it("leaves out the price when there is none, or when asked to", () => {
-    expect(purchaseLine({...base, unitPriceUsd: null})).toBe("S&P 500 xStock, bought for $1,000.00 USDT through OKX DEX.");
-    expect(purchaseLine(base, {withPrice: false})).toBe("S&P 500 xStock, bought for $1,000.00 USDT through OKX DEX.");
+    expect(purchaseLine({...base, unitPriceUsd: null})).toBe("S&P 500 xStock, bought for $1,000.00 in USD₮0 through OKX DEX.");
+    expect(purchaseLine(base, {withPrice: false})).toBe("S&P 500 xStock, bought for $1,000.00 in USD₮0 through OKX DEX.");
   });
 
   it("on a specimen with no quote yet, says when it will be bought", () => {

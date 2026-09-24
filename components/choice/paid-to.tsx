@@ -61,7 +61,7 @@ export function PaidToWallet({paid, hasChoice}: {paid: Outcome<PaidTo>; hasChoic
         ))}
         {p.cashTotal > 0n ? (
           <div>
-            <p className="k">Arrived as USDT</p>
+            <p className="k">Arrived as USD₮0</p>
             <p className="wa-units-sm">{usdt(p.cashTotal)}</p>
           </div>
         ) : null}
@@ -92,9 +92,9 @@ export function PaidToWallet({paid, hasChoice}: {paid: Outcome<PaidTo>; hasChoic
             <span className="wa-co-got wa-mono">
               {r.assetAmount > 0n
                 ? `${unitsFromRaw(r.assetAmount, r.assetDecimals)} ${r.assetSymbol}`
-                : `${usdt(r.cashAmount)} USDT`}
+                : `${usdt(r.cashAmount)} USD₮0`}
               {r.assetAmount > 0n && r.cashAmount > 0n ? (
-                <span className="wa-paid-cash">+ {usdt(r.cashAmount)} USDT</span>
+                <span className="wa-paid-cash">+ {usdt(r.cashAmount)} USD₮0</span>
               ) : null}
             </span>
             <Link href={`/run/${r.runId}`} className="wa-co-run wa-mono">

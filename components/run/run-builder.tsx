@@ -243,7 +243,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
   const chose = (current?.lines ?? []).filter((b) => b.decidedBy === "their-choice").length;
 
   function getsText(b: Built): string {
-    if (b.line.asset === zeroAddress) return `${usdt(BigInt(b.line.cashAmount))} USDT`;
+    if (b.line.asset === zeroAddress) return `${usdt(BigInt(b.line.cashAmount))} USD₮0`;
     const s = symbolOf(b.line.asset);
     const units = `${unitsFromRaw(BigInt(b.expectedOut), s?.decimals ?? 18)} ${s?.symbol ?? ""}`;
     return BigInt(b.line.cashAmount) > 0n ? `${units} + ${usdt(BigInt(b.line.cashAmount))}` : units;
@@ -251,7 +251,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
 
   function choiceChip(c: ChoiceView | null | undefined): string {
     if (c === undefined) return "…";
-    if (c === null) return fallback === DOLLARS ? "not chosen · dollars" : `not chosen · ${chosen.symbol}`;
+    if (c === null) return fallback === DOLLARS ? "not chosen, gets dollars" : `not chosen, gets ${chosen.symbol}`;
     if (c.stockBps === 0 || !c.asset) return "chose dollars";
     return `chose ${Number((c.stockBps / 100).toFixed(2))}% ${c.symbol ?? ""}`;
   }
@@ -347,7 +347,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
               setBuildWhy(null);
             }}
           >
-            <option value={DOLLARS}>All in dollars (USDT)</option>
+            <option value={DOLLARS}>All in dollars (USD₮0)</option>
             {ASSETS.map((a) => (
               <option key={a.address} value={a.address}>
                 All in {a.name} ({a.symbol})
@@ -542,7 +542,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
           <p className="wa-fine">
             One signature pays everyone in a single transaction. Each payment has a minimum
             amount of stock that the contract enforces; if the price moves too far on any
-            line, the whole batch is cancelled and no USDT leaves your wallet.
+            line, the whole batch is cancelled and no USD₮0 leaves your wallet.
           </p>
         </div>
       ) : null}

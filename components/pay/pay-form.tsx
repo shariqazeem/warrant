@@ -327,7 +327,7 @@ export function PayForm({payroll, to}: {payroll: `0x${string}` | undefined; to?:
               placeholder="0"
               inputMode="decimal"
             />
-            <span className="wa-money-unit">paid in USDT</span>
+            <span className="wa-money-unit">paid in USD₮0</span>
           </span>
         </label>
 
@@ -395,11 +395,11 @@ export function PayForm({payroll, to}: {payroll: `0x${string}` | undefined; to?:
             onClick={() => setSplitOpen((v) => !v)}
           >
             <ChevronDown size={14} strokeWidth={2} aria-hidden className={splitOpen ? "is-open" : ""} />
-            Pay part of it as USDT instead
+            Pay part of it as USD₮0 instead
           </button>
           {splitOpen ? (
             <label className="wa-field is-nested">
-              <span className="k">Keep as USDT</span>
+              <span className="k">Keep as USD₮0</span>
               <span className="wa-money">
                 <span className="wa-money-sign">$</span>
                 <input
@@ -448,7 +448,7 @@ export function PayForm({payroll, to}: {payroll: `0x${string}` | undefined; to?:
         <dl className="wa-sum">
           <div>
             <dt>You send</dt>
-            <dd className="wa-mono">{usd > 0 ? usdt(total) : "—"} <span className="u">USDT</span></dd>
+            <dd className="wa-mono">{usd > 0 ? usdt(total) : "—"} <span className="u">USD₮0</span></dd>
           </div>
           <div className="is-big">
             <dt>They receive</dt>
@@ -459,14 +459,14 @@ export function PayForm({payroll, to}: {payroll: `0x${string}` | undefined; to?:
                 </>
               ) : quote ? (
                 <>
-                  {usdt(BigInt(quote.line.cashAmount))} <span className="u">USDT</span>
+                  {usdt(BigInt(quote.line.cashAmount))} <span className="u">USD₮0</span>
                 </>
               ) : (
                 "—"
               )}
             </dd>
             {quote && BigInt(quote.line.cashAmount) > 0n && quote.expectedOut !== "0" ? (
-              <dd className="wa-sum-plus wa-mono">+ {usdt(BigInt(quote.line.cashAmount))} USDT</dd>
+              <dd className="wa-sum-plus wa-mono">+ {usdt(BigInt(quote.line.cashAmount))} USD₮0</dd>
             ) : null}
           </div>
         </dl>
@@ -517,7 +517,7 @@ export function PayForm({payroll, to}: {payroll: `0x${string}` | undefined; to?:
                 contract refuses less
                 <span className="wa-quote-aside">
                   If the price moves and they would get less, the payment is cancelled and no
-                  USDT leaves your wallet.
+                  USD₮0 leaves your wallet.
                 </span>
               </dd>
             </div>
@@ -558,7 +558,7 @@ export function PayForm({payroll, to}: {payroll: `0x${string}` | undefined; to?:
         ) : null}
 
         <p className="wa-quote-foot">
-          {STABLE.symbol} and {bought.symbol} on X Layer. Network fees are paid in OKB and
+          {STABLE_NAME} and {bought.symbol} on X Layer. Network fees are paid in OKB and
           are typically a fraction of a cent.
         </p>
       </aside>

@@ -311,7 +311,7 @@ export function ChoiceForm() {
         ? choiceParts({stockBps, asset: picked?.address ?? ZERO_ADDRESS})
         : {
             share: bps(stockBps),
-            rest: `of each payment into the stock you pick${stockBps === MAX_BPS ? "" : ", the rest as USDT"}`,
+            rest: `of each payment into the stock you pick${stockBps === MAX_BPS ? "" : ", the rest as USD₮0"}`,
           };
   const offNetwork = chainId !== undefined && chainId !== xLayer.id;
 
@@ -372,7 +372,7 @@ export function ChoiceForm() {
               ) : null}
             </div>
             <p className="wa-fine">
-              The rest of each payment arrives as USDT, a digital dollar, in the same wallet.
+              The rest of each payment arrives as USD₮0, a digital dollar, in the same wallet.
             </p>
           </fieldset>
 

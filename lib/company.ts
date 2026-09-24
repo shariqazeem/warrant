@@ -98,7 +98,7 @@ function toReceipt(r: Record<string, unknown>): CompanyReceipt {
 const ZERO_ASSET = "0x0000000000000000000000000000000000000000";
 
 function assetFacts(address: string) {
-  if (address === ZERO_ASSET) return {symbol: "USDT", decimals: 6};
+  if (address === ZERO_ASSET) return {symbol: "USD₮0", decimals: 6};
   const known = assetByAddress(address);
   return known
     ? {symbol: known.symbol, decimals: known.decimals}
