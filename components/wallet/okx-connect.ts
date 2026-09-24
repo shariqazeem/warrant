@@ -20,6 +20,7 @@ import {createConnector} from "@wagmi/core";
 import {getAddress, numberToHex, type Address} from "viem";
 import {xLayer} from "@/lib/chain";
 import {OKX_CLOSED} from "./wallet-words";
+import {okxParams} from "./okx-params";
 
 const CHAIN = `eip155:${xLayer.id}`;
 const RPC = xLayer.rpcUrls.default.http[0]!;
@@ -105,7 +106,7 @@ function providerFor(ui: UI) {
     async request({method, params}: {method: string; params?: unknown}) {
       if (method === "eth_chainId") return numberToHex(xLayer.id);
       if (method === "eth_accounts" || method === "eth_requestAccounts") return accountsOf(ui);
-      if (WALLET_METHODS.has(method)) return ui.request({method, params}, CHAIN);
+      if (WALLET_METHODS.has(method)) return ui.request({method, params: okxParams(method, params)}, CHAIN);
       return rpc(method, params);
     },
     on: () => {},
