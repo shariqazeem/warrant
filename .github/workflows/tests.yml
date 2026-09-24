@@ -1,0 +1,32 @@
+# Every push: the app's typecheck and tests, and the contracts' tests.
+# The same commands a judge can run locally (README, "Tests").
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  app:
+    name: App (typecheck and Vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test
+
+  contracts:
+    name: Contracts (Foundry)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test -vv
+        working-directory: contracts
