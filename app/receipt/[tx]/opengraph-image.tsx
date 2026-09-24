@@ -120,7 +120,7 @@ export default async function Image({params}: {params: {tx: string}}) {
             flexDirection: "column",
             background: SHEET,
             border: `1px solid ${LINE}`,
-            borderRadius: 16,
+            borderRadius: 8,
             padding: 44,
           }}
         >
@@ -132,12 +132,12 @@ export default async function Image({params}: {params: {tx: string}}) {
               color: FAINT,
             }}
           >
-            <div style={{display: "flex", color: OK}}>Settled on X Layer</div>
+            <div style={{display: "flex", color: INK}}>Payslip, paid on X Layer</div>
             <div style={{display: "flex"}}>Warrant</div>
           </div>
 
           <div style={{display: "flex", fontSize: 30, color: MUTED, marginTop: 32}}>
-            {dollarsOnly ? `${usdt(r.stableAmount)} paid, all in dollars` : `${usdt(r.stableAmount)} paid, which became`}
+            {dollarsOnly ? `${usdt(r.stableAmount)} paid, all in USD\u20ae0` : `${short(r.payer)} paid ${usdt(r.stableAmount)}`}
           </div>
 
           {/* The units are the largest thing on any surface they appear on. */}
@@ -153,8 +153,8 @@ export default async function Image({params}: {params: {tx: string}}) {
           {/* ONE STRING PER BLOCK. Satori measures a flex child with several text nodes
               badly, and the blocks then draw on top of one another. */}
           <div style={{display: "flex", fontSize: 24, color: MUTED, marginTop: 16}}>
-            {`in ${short(r.recipient)}\u2019s own wallet` +
-              (dollarsOnly || price === null ? "" : `, at $${price.toFixed(2)} a unit`)}
+            {`to ${short(r.recipient)}\u2019s own wallet` +
+              (dollarsOnly || price === null ? "" : `, at $${price.toFixed(2)} a unit through OKX DEX`)}
           </div>
 
           {reasonText ? (

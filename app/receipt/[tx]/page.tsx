@@ -9,6 +9,7 @@ import {paidInTransaction, type Receipt} from "@/lib/receipts";
 import {readGrantMoments} from "@/lib/grant-receipts";
 import {escrowAddress} from "@/lib/grants";
 import {runLabel, settledUnitPrice, short, stampUTC, unitsFromRaw, usdt} from "@/lib/format";
+import {reasonFor, routeFor} from "@/lib/db";
 import {GrantMomentReceipt} from "./grant-stubs";
 import {Address, AssetIdentity, Line, Note, Sheet} from "./parts";
 import "./receipt.css";
@@ -37,7 +38,7 @@ export async function generateMetadata({params}: Params): Promise<Metadata> {
   const {tx} = await params;
   return {
     title: `Stub ${short(tx)} — Warrant`,
-    description: "A payment in ownership, with the reason it was paid.",
+    description: "A payslip on X Layer: what was paid, to whom, in what, and why.",
   };
 }
 
@@ -64,12 +65,15 @@ function DollarsOnly({r}: {r: Receipt}) {
     <article className="wa-r-one">
       <Stub
         landed={<><strong>{usdt(r.stableAmount)}</strong> paid</>}
-        became="all of it in dollars"
+        became="all of it in USD₮0"
         units={(Number(r.stableAmount) / 1e6).toFixed(2)}
         symbol={STABLE.symbol}
-        when={r.timestamp === null ? "settled on X Layer" : stampUTC(r.timestamp)}
-        where="in their own wallet"
-        whereName={short(r.recipient)}
+        when={r.timestamp === null ? "Paid on X Layer" : stampUTC(r.timestamp)}
+        from={r.payer}
+        to={r.recipient}
+        stableAmount={r.stableAmount}
+        cashAmount={r.cashAmount}
+        note={verifiedNote(r.reasonHash)}
         printing
       />
 
@@ -120,12 +124,17 @@ function One({r, symbol, decimals}: {r: Receipt; symbol: string; decimals: numbe
     <article className="wa-r-one">
       <Stub
         landed={<><strong>{usdt(r.stableAmount)}</strong> paid</>}
-        became={r.cashAmount > 0n ? `${usdt(swapped)} of it became` : "which became"}
+        became={r.cashAmount > 0n ? `${usdt(swapped)} of it bought ${symbol}` : `all of it bought ${symbol}`}
         units={unitsFromRaw(r.assetAmount, decimals)}
         symbol={symbol}
-        when={r.timestamp === null ? "settled on X Layer" : stampUTC(r.timestamp)}
-        where="in their own wallet"
-        whereName={short(r.recipient)}
+        when={r.timestamp === null ? "Paid on X Layer" : stampUTC(r.timestamp)}
+        from={r.payer}
+        to={r.recipient}
+        stableAmount={r.stableAmount}
+        cashAmount={r.cashAmount}
+        price={price === null ? null : `$${price.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
+        route={routeFor(r.txHash) ?? undefined}
+        note={verifiedNote(r.reasonHash)}
         printing
       />
 
@@ -274,4 +283,10 @@ export default async function ReceiptPage({params}: Params) {
       })}
     </main>
   );
+}
+
+/** The payment's note for the payslip, only when the stored text hashes to the fingerprint on chain. */
+function verifiedNote(hash: string): string | null {
+  const stored = reasonFor(hash);
+  return stored.found && stored.verified ? stored.text : null;
 }

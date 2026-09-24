@@ -8,7 +8,7 @@
  */
 import {erc20Abi} from "viem";
 // Server only: it reads SQLite, and the grant readers below read the escrow live.
-import {database} from "./db";
+import {database, routeFor} from "./db";
 import {assetByAddress} from "./assets";
 import type {PoolFacts} from "./certificate-data";
 import {escrowAddress, readGrant, type Grant} from "./grants";
@@ -489,12 +489,11 @@ export async function readFeaturedGrant(
 /**
  * THE OKX DEX ROUTE A GRANT WAS BOUGHT THROUGH, by symbol ("USD₮0", "USDG", "wSPYx", "SPYx"),
  * or an empty list when it is not known. The issue flow keeps the route of the real quote it
- * signed; until that store is wired in, no route is claimed.
+ * signed (lib/db.ts `routeFor`); a grant opened elsewhere has none, and none is claimed.
  */
-// STUB — returns lane C's stored route (lib/db.ts `routeFor`) once merged; until then, none.
 export function routeOfGrant(id: number): string[] {
-  void id;
-  return [];
+  const row = database().prepare(`SELECT tx_hash FROM grants WHERE id = ?`).get(id) as {tx_hash: string} | undefined;
+  return row ? (routeFor(row.tx_hash) ?? []) : [];
 }
 
 /**

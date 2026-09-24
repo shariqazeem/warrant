@@ -2,7 +2,7 @@ import {ImageResponse} from "next/og";
 import {readOpenedGrants} from "@/lib/company";
 import {humanDuration} from "@/lib/schedule";
 import {short, unitsFromRaw, usdt} from "@/lib/format";
-import {OG_SIZE, OG_TYPE} from "@/lib/og-theme";
+import {OG, OG_SIZE, OG_TYPE} from "@/lib/og-theme";
 
 /**
  * THE FRONT PAGE'S CARD: a certificate on bond paper, what a link to warrant.world unfurls
@@ -19,18 +19,8 @@ export const alt = "Warrant: give your team stock that vests";
 export const size = OG_SIZE;
 export const contentType = OG_TYPE;
 
-/**
- * The palette, for a renderer that reads no stylesheet. The same values as the token
- * contract's --bond, --engrave, --muted-bond, --vault and --seal; lib/og-theme.ts is where
- * they belong once the palette lands there.
- */
-const CARD = {
-  bond: "#F2ECDC",
-  engrave: "#173B2F",
-  mutedBond: "#4A5E54",
-  vault: "#0B2A21",
-  seal: "#8C1D1D",
-} as const;
+/** The palette, from the one copy every card reads (lib/og-theme.ts). */
+const CARD = OG;
 
 export default async function Image() {
   let newest: ReturnType<typeof readOpenedGrants>[number] | undefined;
