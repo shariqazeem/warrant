@@ -1,5 +1,5 @@
 import {LoadingFrame} from "@/components/app/loading-frame";
 
 export default function Loading() {
-  return <LoadingFrame eyebrow="A company's record" title="Reading the record" rows={6} />;
+  return <LoadingFrame eyebrow="A wallet on Warrant" title="Reading the chain" rows={6} />;
 }

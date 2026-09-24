@@ -30,7 +30,7 @@ export function PaidToWallet({paid, hasChoice}: {paid: Outcome<PaidTo>; hasChoic
       <section className="wa-co-section wa-paid">
         <p className="wa-kicker">Paid to this wallet</p>
         <p className="wa-paid-none">
-          Nobody has paid this wallet through Warrant yet. When a company does, each payment
+          Nobody has paid this wallet through Warrant yet. When someone does, each payment
           appears here with its note and a receipt anyone can open.
         </p>
       </section>
@@ -46,7 +46,7 @@ export function PaidToWallet({paid, hasChoice}: {paid: Outcome<PaidTo>; hasChoic
           <p className="wa-units-sm">{p.paymentCount}</p>
         </div>
         <div>
-          <p className="k">{p.payers === 1 ? "From one company" : "From companies"}</p>
+          <p className="k">{p.payers === 1 ? "From one payer" : "From payers"}</p>
           <p className="wa-units-sm">{p.payers}</p>
         </div>
         <div>
@@ -69,7 +69,7 @@ export function PaidToWallet({paid, hasChoice}: {paid: Outcome<PaidTo>; hasChoic
 
       <p className="wa-paid-intro">
         {p.since !== null ? <>First paid on {dateUTC(p.since)}. </> : null}
-        Newest first. Each date opens its receipt; the address is the company that paid.
+        Newest first. Each date opens its receipt; the address is who paid.
         {hasChoice ? null : (
           <>
             {" "}
