@@ -126,10 +126,20 @@ The schedule lives in two languages, so it is held to one fixture by both.
   OKX route on an Anvil fork and moves the clock: nothing is due before the cliff, a
   keeper's fee is exactly the grant's release fee, the beneficiary pays none, and at the end
   the escrow is empty to within a few wei.
-  <!-- MERGE: add the vesting parity proof (scripts/prove-vesting-fork.ts: the page's vesting figures against the escrow's own view function, about 20 cases) and its command once it lands. -->
+- **The certificate against the escrow itself.** `scripts/prove-vesting-fork.ts` opens a grant
+  on the deployed escrow on an Anvil fork and compares the certificate's arithmetic
+  ([`lib/vesting.ts`](lib/vesting.ts)) with the escrow's own view functions at every moment
+  that matters: before the start, around the cliff, midway, at and after the end, after a
+  release, and after a cancel, including what a cancel returns, predicted before it is sent.
+  53 of 53 figures agree.
 
-**Tests.** <!-- MERGE: update the counts after the merge --> 69 Foundry tests and 348 Vitest
-tests, all passing at this commit.
+  ```bash
+  anvil --fork-url https://rpc.xlayer.tech --port 8547 --silent &
+  FORK_URL=http://127.0.0.1:8547 npx tsx scripts/prove-vesting-fork.ts
+  ```
+
+**Tests.** 69 Foundry tests and 530 Vitest tests, all passing, run by CI on every push
+([tests](https://github.com/shariqazeem/warrant/actions/workflows/tests.yml)).
 
 ```bash
 npm run test                    # Vitest
