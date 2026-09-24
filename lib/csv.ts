@@ -49,6 +49,22 @@ export type ParsedFile = {
   tooMany: string | null;
 };
 
+/**
+ * A PERSON'S PAY LINK STANDS FOR THEIR WALLET. People send the link /me gives them
+ * (warrant.world/@0x…) rather than a bare address, so a cell that is exactly such a link, or
+ * the address with an @ in front, is read as the address in it.
+ *
+ * Only that shape. Anything else is handed back as it was, for the address check to refuse
+ * in its own words: a cell is never searched for something that looks like an address.
+ */
+const PAY_LINK = /^(?:https?:\/\/)?[^\s/?#@]+\/@(0x[0-9a-fA-F]{40})\/?(?:[?#]\S*)?$/;
+const AT_ADDRESS = /^@(0x[0-9a-fA-F]{40})$/;
+
+export function recipientFromCell(cell: string): string {
+  const value = cell.trim();
+  return (AT_ADDRESS.exec(value) ?? PAY_LINK.exec(value))?.[1] ?? value;
+}
+
 /** Splits one CSV line, honouring double quotes so a reason may contain a comma. */
 export function splitCsvLine(line: string): string[] {
   const out: string[] = [];
@@ -141,7 +157,7 @@ export function parseRunFile(text: string, asset: string): ParsedFile {
       continue;
     }
 
-    const recipient = cells[0] ?? "";
+    const recipient = recipientFromCell(cells[0] ?? "");
     const amountText = cells[1] ?? "";
     const reason = cells[2] ?? "";
     const cashText = cells[3] ?? "";

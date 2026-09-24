@@ -12,8 +12,10 @@ import {
   RUN_TEMPLATE,
   parseMoney,
   parseRunFile,
+  recipientFromCell,
   splitCsvLine,
 } from "./csv";
+import {payLinkPath} from "../components/link/pay-link";
 import {ASSETS} from "./assets";
 import {STABLE} from "./chain";
 
@@ -212,5 +214,54 @@ describe("the size of one run", () => {
     const f = parseRunFile(`${people(MAX_RUN_LINES)}\n0xnope,1,Bad address`, ASSET);
     expect(f.bad).toHaveLength(1);
     expect(f.tooMany).toBeNull();
+  });
+});
+
+describe("a pay link in place of an address", () => {
+  // What /me hands a person, checksummed, and the domain they will paste it from.
+  const LINK = `https://warrant.world${payLinkPath(A)}`;
+
+  it("reads the link /me hands out as the wallet in it", () => {
+    expect(recipientFromCell(LINK).toLowerCase()).toBe(A);
+    const f = parseRunFile(`${LINK},5,Found the confusing button`, ASSET);
+    expect(f.bad).toHaveLength(0);
+    expect(f.good[0]!.recipient.toLowerCase()).toBe(A);
+    expect(f.total).toBe(5_000_000n);
+  });
+
+  it("takes it without the scheme, with a trailing slash, or as @0x…", () => {
+    for (const cell of [`warrant.world/@${A}`, `https://warrant.world/@${A}/`, `@${A}`, `  @${B}  `]) {
+      expect([A, B]).toContain(recipientFromCell(cell).toLowerCase());
+    }
+  });
+
+  it("leaves a plain address exactly as it was", () => {
+    expect(recipientFromCell(A)).toBe(A);
+    expect(recipientFromCell(` ${B} `)).toBe(B);
+  });
+
+  it("REFUSES anything else rather than hunting for an address inside it", () => {
+    for (const cell of [
+      `https://warrant.world/receipt/${A}`, // a receipt is not a person
+      `https://warrant.world/@${A}/@${B}`, // two wallets: whose?
+      `pay me at warrant.world/@${A}`, // a sentence, not a link
+      `https://warrant.world/@${A.slice(0, 41)}`, // one character short
+      `mailto:x@${A}`,
+    ]) {
+      const f = parseRunFile(`${cell},5,note`, ASSET);
+      expect(f.good, cell).toHaveLength(0);
+      expect(f.bad[0]!.recipient, cell).toBe(cell);
+    }
+  });
+
+  it("still holds a link whose address fails its checksum, with the reason", () => {
+    // A checksummed address with one letter's case flipped: the shape of a mistyped character.
+    const good = payLinkPath(A).slice(2); // drop "/@"
+    const i = good.search(/[a-f]/i);
+    const flipped = good.slice(0, i) + (good[i] === good[i]!.toUpperCase() ? good[i]!.toLowerCase() : good[i]!.toUpperCase()) + good.slice(i + 1);
+    const f = parseRunFile(`https://warrant.world/@${flipped},5,note`, ASSET);
+    expect(f.good).toHaveLength(0);
+    const v = f.bad[0]!.verdict;
+    expect(!v.ok && v.why).toMatch(/checksum/);
   });
 });

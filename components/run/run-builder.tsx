@@ -323,8 +323,8 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
             Download template
           </a>
           <span className="wa-drop-hint">
-            Paste your team or drop a CSV here — one person per line: wallet address,
-            amount in USD, and a note for their receipt. How much of it becomes stock is
+            Paste your team or drop a CSV here — one person per line: wallet address or
+            their Warrant link, amount in USD, and a note for their receipt. How much of it becomes stock is
             each person&rsquo;s own choice.
           </span>
         </div>
