@@ -2,55 +2,61 @@ import Link from "next/link";
 import type {ReactNode} from "react";
 import {Wordmark} from "@/components/brand/wordmark";
 import {Jump} from "@/components/shell/jump";
+import {DOORS} from "./doors";
+import {NavLinks} from "./nav-links";
 import "@/app/landing.css";
 import "./site.css";
 
+export {DOORS};
+
 /**
- * THE MARKETING FRAME — the floor's nav on ink, then the page tears off onto paper. Every
- * page under it is a stranger's page: no session, no owner chrome, the same doors as the
- * front door.
+ * THE SITE FRAME: the nav on vault, the canvas the page works on, the footer on vault.
  *
- * ONE LIST OF DOORS, used by the nav and the footer both. A link that appears in two
- * places and drifts is the defect shape this project is most prone to, so there is only
- * ever one list, and nothing is listed here that does not exist.
+ * ONE LIST OF DOORS (./doors.ts), read by the nav, the footer and ⌘K. A link that appears
+ * in two places and drifts is the defect shape this project is most prone to.
+ *
+ * Landmarks: the nav renders a <header> with a skip link to `#main`, the footer a <footer>.
+ * Every page's <main> carries id="main".
  */
-export const DOORS = [
-  {href: "/me", label: "Get paid"},
-  {href: "/pay", label: "Pay someone"},
-  {href: "/run", label: "Pay a team"},
-  {href: "/grants", label: "Grants"},
-] as const;
 
 export function SiteNav() {
   return (
-    <nav className="wa-nav">
-      <Link href="/" className="wa-nav-brand" aria-label="Warrant home">
-        <Wordmark size={22} />
-      </Link>
-      {DOORS.map((d) => (
-        <Link key={d.href} href={d.href} className="wa-nav-link">
-          {d.label}
+    <header className="wa-header">
+      <a className="wa-skip" href="#main">
+        Skip to content
+      </a>
+      <nav className="wa-nav" aria-label="Main">
+        <Link href="/" className="wa-nav-brand" aria-label="Warrant, the front page">
+          <Wordmark size={28} />
         </Link>
-      ))}
-      <span className="wa-nav-spacer" />
-      <Jump />
-      <Link href="/me" className="wa-btn is-primary">
-        Get your link
-      </Link>
-    </nav>
+        <NavLinks doors={DOORS} />
+        <div className="wa-nav-end">
+          <Jump />
+          <Link href="/grants" className="wa-btn is-primary wa-nav-cta">
+            Grant stock
+          </Link>
+        </div>
+      </nav>
+    </header>
   );
 }
 
 export function SiteFoot() {
   return (
     <footer className="wa-site-foot">
-      <span>Warrant</span>
-      <span className="wa-foot-spacer" />
-      {DOORS.map((d) => (
-        <Link key={d.href} href={d.href}>
-          {d.label}
+      <div className="wa-foot-row">
+        <Link href="/" className="wa-foot-brand" aria-label="Warrant, the front page">
+          <Wordmark size={24} />
         </Link>
-      ))}
+        <ul className="wa-foot-doors">
+          {DOORS.map((d) => (
+            <li key={d.href}>
+              <Link href={d.href}>{d.label}</Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <p className="wa-foot-word">war·rant: a document that grants a right; to guarantee.</p>
     </footer>
   );
 }
@@ -70,17 +76,19 @@ export function SiteFrame({
 }) {
   return (
     <div className="wa-landing wa-site">
-      <div className="wa-dark">
+      <div className="wa-vault">
         <SiteNav />
       </div>
       <div className="wa-tear" aria-hidden />
-      <main className={`wa-sec wa-site-main${wide ? " is-wide" : ""}`}>
+      <main id="main" className={`wa-sec wa-site-main${wide ? " is-wide" : ""}`}>
         <p className="wa-kicker">{eyebrow}</p>
-        <h1 className="wa-site-h1">{title}</h1>
+        <h1 className="wa-h1">{title}</h1>
         <p className="wa-lede">{lede}</p>
         <div className="wa-site-body">{children}</div>
       </main>
-      <SiteFoot />
+      <div className="wa-vault">
+        <SiteFoot />
+      </div>
     </div>
   );
 }
@@ -106,7 +114,7 @@ export function SiteSection({
   );
 }
 
-/** A ruled row. If it is not a stub, it is one of these or a paragraph. */
+/** A ruled row: a label and what it says. */
 export function Row({k, children}: {k: string; children: ReactNode}) {
   return (
     <div className="wa-rule-row">

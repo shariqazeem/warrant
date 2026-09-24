@@ -1,14 +1,15 @@
+import {Check} from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type {ReactNode} from "react";
 import "./stub.css";
 
 /**
- * THE STUB — the receipt, rendered as the paper stub it is.
+ * A PAYMENT'S SHEET: what was paid, what it bought, when, and where it went.
  *
- * No state, and no variant that shows a figure nobody signed for. Every value it prints
- * was read from a Paid log or the transaction that wrote it. There is no example stub and
- * no ghost stub here: Scrip needed those because money could land before a keeper acted,
- * and on this rail a payment either settled or it did not.
+ * A plain sheet on white with a hairline edge. No state, and no variant that shows a figure
+ * nobody signed for: every value on it was read from a Paid log or the transaction that
+ * wrote it. The payslip for payroll lines is built from this later; the certificate is a
+ * different object and does not live here.
  */
 export type StubRow = { readonly k: string; readonly v: ReactNode; readonly tone?: "ok" | "muted" };
 export type StubSection = { readonly title?: string; readonly rows: readonly StubRow[] };
@@ -25,7 +26,7 @@ export function Stub({
   href,
   compact = false,
   printing = false,
-  kicker = "Settled on X Layer",
+  kicker = "Paid on X Layer",
   foot,
 }: {
   landed: ReactNode;
@@ -38,6 +39,7 @@ export function Stub({
   sections?: readonly StubSection[];
   href?: string;
   compact?: boolean;
+  /** The sheet arrives with a short rise: the one moment on a page that shows a payment. */
   printing?: boolean;
   kicker?: string;
   foot?: ReactNode;
@@ -45,11 +47,11 @@ export function Stub({
   const body = (
     <>
       <div className="stub-head">
-        <span className="settled">
-          <span className="dot" aria-hidden />
+        <span className="stub-kicker">
+          <Check size={14} strokeWidth={2.25} aria-hidden />
           {kicker}
         </span>
-        <span>Warrant</span>
+        <span className="stub-brand">Warrant</span>
       </div>
       <p className="stub-landed">{landed}</p>
       <p className="stub-became">{became}</p>
@@ -78,7 +80,7 @@ export function Stub({
       {foot ? <p className="stub-foot">{foot}</p> : null}
     </>
   );
-  const cls = `stub${compact ? " is-compact" : ""}${printing ? " is-printing" : ""}`;
+  const cls = `stub${compact ? " is-compact" : ""}${printing ? " is-arriving" : ""}`;
   if (href) {
     return (
       <Link href={href} className={cls}>
@@ -89,9 +91,9 @@ export function Stub({
   return <article className={cls}>{body}</article>;
 }
 
-/** The stub before any payment exists: what will fill it, in words. */
+/** Before any payment exists: what will fill this place, in words, never a sample figure. */
 export function EmptyStub({
-  title = "No payment has settled yet",
+  title = "No payment yet",
   note,
 }: {
   title?: string;
@@ -101,11 +103,10 @@ export function EmptyStub({
     <article className="stub is-empty">
       <div className="stub-head">
         <span>{title}</span>
-        <span>Warrant</span>
+        <span className="stub-brand">Warrant</span>
       </div>
-      <p className="stub-landed">The next real stub prints here.</p>
-      <p className="stub-became">Read from the chain, never a sample</p>
-      <p className="stub-units">&mdash;</p>
+      <p className="stub-landed">The next real payment appears here.</p>
+      <p className="stub-became">Read from X Layer, never a sample</p>
       <p className="stub-foot">{note}</p>
     </article>
   );

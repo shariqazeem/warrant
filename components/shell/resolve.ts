@@ -2,24 +2,22 @@
  * WHAT A TYPED STRING IS, AND WHERE IT GOES.
  *
  * Pure, so it can be tested without a browser. The shapes are unambiguous on this chain:
- * a 32-byte hash is a transaction, a 20-byte one is an address, and a run id is a name
- * somebody chose. Nothing here guesses — a string that is not one of those resolves to the
- * doors, not to a half-matched address that would send a payment to the wrong place.
+ * a 32-byte hash is a transaction, a 20-byte one is an address, a short number is a
+ * certificate, and a run id is a name somebody chose. Nothing here guesses — a string that
+ * is not one of those resolves to the doors, not to a half-matched address that would send
+ * a grant to the wrong person.
  */
+import {DOORS} from "../site/doors";
+
 export type Destination = {
-  kind: "receipt" | "company" | "run" | "page";
+  kind: "receipt" | "company" | "certificate" | "run" | "page";
   href: string;
   label: string;
   hint: string;
 };
 
-const PAGES: Destination[] = [
-  {kind: "page", href: "/pay", label: "Pay one person", hint: "Address, amount, reason"},
-  {kind: "page", href: "/run", label: "Pay a run", hint: "A file of names, one signature"},
-  {kind: "page", href: "/grants", label: "Grants", hint: "Ownership that vests"},
-  {kind: "page", href: "/me", label: "How you get paid", hint: "Choose how much of your pay becomes stock"},
-  {kind: "page", href: "/", label: "The front door", hint: "The tape, and what the rail has done"},
-];
+/** The nav's four doors, in the nav's order, each said as the thing you came to do. */
+const PAGES: Destination[] = DOORS.map((d) => ({kind: "page", href: d.href, label: d.jump, hint: d.hint}));
 
 /** bytes32, left-aligned ASCII with zero padding — how a run id is written. */
 function runIdFromName(name: string): string {
@@ -39,16 +37,20 @@ export function resolve(raw: string): Destination[] {
     // 32 bytes is a transaction hash, and also the width of a run id. Offer both, the
     // likelier first — somebody pasting 64 hex characters has copied a transaction.
     return [
-      {kind: "receipt", href: `/receipt/${hex}`, label: "Open this receipt", hint: "A payment, with the reason it was made"},
-      {kind: "run", href: `/run/${hex}`, label: "Open this run", hint: "Everyone paid under this id"},
+      {kind: "receipt", href: `/receipt/${hex}`, label: "Open this transaction", hint: "What it paid or granted, and why"},
+      {kind: "run", href: `/run/${hex}`, label: "Open this payroll run", hint: "Everyone paid under this id"},
     ];
   }
 
   if (/^0x[0-9a-fA-F]{40}$/.test(hex)) {
     return [
-      {kind: "company", href: `/@${hex}`, label: "Open this company's record", hint: "Everything it has paid, with reasons"},
+      {kind: "company", href: `/@${hex}`, label: "Open this wallet's record", hint: "What it has granted and paid, with reasons"},
     ];
   }
+
+  // A certificate number as it is engraved: "000042", "No. 42", "#42".
+  const cert = /^(?:no\.?\s*|#)?(\d{1,6})$/i.exec(q);
+  const certN = cert ? Number(cert[1]) : 0;
 
   // A run people say out loud: "run-260919-143205-k3f9".
   if (/^[\x20-\x7e]{1,32}$/.test(q) && /[a-zA-Z0-9]/.test(q)) {
@@ -56,7 +58,10 @@ export function resolve(raw: string): Destination[] {
       (p) => p.label.toLowerCase().includes(q.toLowerCase()) || p.href.includes(q.toLowerCase()),
     );
     return [
-      {kind: "run", href: `/run/${runIdFromName(q)}`, label: `Open the run “${q}”`, hint: "By the name it was given"},
+      ...(certN > 0
+        ? [{kind: "certificate" as const, href: `/g/${certN}`, label: `Open certificate No. ${String(certN).padStart(6, "0")}`, hint: "A grant, vesting"}]
+        : []),
+      {kind: "run", href: `/run/${runIdFromName(q)}`, label: `Open the payroll run “${q}”`, hint: "By the name it was given"},
       ...matches,
     ];
   }

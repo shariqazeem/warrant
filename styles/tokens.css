@@ -1,90 +1,71 @@
 /**
- * tokens.css — the SINGLE design-token source of truth for every Warrant surface.
+ * tokens.css: every design value Warrant uses, defined once.
  *
- * THE SUBJECT IS A RECEIPT. Paper, ink, ruled ledger lines, and the perforated edge of a pay
- * stub. One accent — document blue — on every interactive and brand element. Green and red
- * are reserved for money outcomes.
+ * SECURITY PRINTING, MADE MODERN. Three materials, assigned by surface:
+ *   vault   the deep green of the nav, the hero and the footer;
+ *   canvas  the pale ground every app page sits on;
+ *   bond    the cream paper of a certificate, engraved in dark green.
+ * One oxblood seal, one hairline of foil, and nothing borrowed from Scrip.
  *
- * Carried over from Scrip unchanged, because the design contract is the same one: there is
- * no opening bell, and the stub is the only object. What changed is the mark and the
- * wordmark, because this is a different company.
+ * Every other stylesheet reads these names and never declares a colour, a font, a radius
+ * or a shadow of its own. A raw hex outside this file is a defect.
  *
- * Imported once in the root layout; every per-surface stylesheet ALIASES these
- * (`--line: var(--border)`) and never redeclares a palette value. Never write a raw hex in
- * a component or a page stylesheet.
+ * The three families are bound by next/font in app/layout.tsx to --font-face-display,
+ * --font-face-ui and --font-face-mono, self-hosted, and read only through the names below.
  *
- * Fonts (--font-sans / --font-mono) are set on <html> by next/font in layout.tsx.
+ * Contrast, checked (WCAG AA is 4.5:1 for text, 3:1 at 24px and up):
+ *   ink on canvas 15.8   muted on canvas 7.1   muted on surface 8.0   muted-bond on bond 5.9
+ *   engrave on bond 10.5   on-vault on vault 13.0   on-vault-2 on vault 10.0
+ *   on-vault-3 on vault 7.4 (6.7 on vault-raised)   bond on vault 13.0   bond on seal 7.7
+ *   settled on canvas 4.7   warn on canvas 4.8   refused on canvas 5.8   foil on vault 4.9
+ * Settled, warn and refused are for canvas and surface only; on vault they fall under 3:1.
  */
 
 :root {
-  /* clearance under the app shell's floating mode pill — consumed by shelled pages */
-  --pill-clear: 4.75rem;
+  /* ── type families ─────────────────────────────────────────────── */
+  /* Bodoni Moda: headlines and everything on a certificate. */
+  --font-display: var(--font-face-display, "Bodoni Moda"), "Bodoni 72", Didot, "Bodoni MT", Georgia, serif;
+  /* Hanken Grotesk: every word of the interface. */
+  --font-ui: var(--font-face-ui, "Hanken Grotesk"), system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* JetBrains Mono: addresses, hashes and live counters, and nothing else. */
+  --font-mono: var(--font-face-mono, "JetBrains Mono"), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* ── type families — defined ONCE, here ─────────────────────────── */
-  /* Words: Instrument Sans. Figures: IBM Plex Mono, tabular, at every size. The inner
-   * var() fallbacks keep font-family valid when a next/font variable is missing. */
-  --font-sans: var(--font-instrument, ui-sans-serif), system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono, ui-monospace), SFMono-Regular, "IBM Plex Mono", monospace;
-  /* The wordmark and a statement's title line, and nothing else. */
-  --font-serif: var(--font-fraunces, Georgia), "Iowan Old Style", serif;
+  /* ── colour ────────────────────────────────────────────────────── */
+  --vault: #0B2A21;          /* hero, nav, footer; primary buttons on canvas */
+  --vault-raised: #0F3327;   /* a band on vault */
+  --vault-line: #24493B;     /* a hairline on vault */
+  --vault-field: #6E8C80;    /* the border of a secondary button on vault */
+  --bond: #F2ECDC;           /* certificates; primary buttons on vault */
+  --canvas: #EEF2EE;         /* the app page ground */
+  --engrave: #173B2F;        /* lines and text on a certificate */
+  --ink: #0F1A15;            /* body text on canvas */
+  --muted: #45544C;          /* secondary text on canvas and surface */
+  --muted-bond: #4A5E54;     /* secondary text on bond */
+  --on-vault: #F2ECDC;       /* primary text on vault */
+  --on-vault-2: #C9D3CC;     /* secondary text on vault */
+  --on-vault-3: #A9B8AF;     /* tertiary text on vault */
+  --on-vault-hover: #FFFFFF; /* a link on vault, hovered */
+  --rule: #C5D0CA;           /* a divider on canvas */
+  --field: #9AABA2;          /* the border of an input or a secondary button */
+  --field-bg: #F6F8F6;       /* an option not chosen */
+  --surface: #FFFFFF;        /* an input, a chosen option, a panel */
+  --seal: #8C1D1D;           /* the seal, "irrevocable", the seal button, the cliff */
+  --foil: #B38B3E;           /* one hairline on a sealed certificate; icons and focus on vault */
+  --settled: #0F7A4F;        /* success, always with a check */
+  --warn: #9A5B00;           /* waiting, stale, short of funds */
+  --refused: #B42318;        /* failed, refused */
+  --vault-scrim: rgba(11, 42, 33, 0.55); /* behind the jump box */
 
-  /* ── surface + text ─────────────────────────────────────────────── */
-  --bg: #f7f5ef;             /* paper */
-  --surface: #ffffff;        /* the sheet */
-  --ink: #14161c;            /* primary text, everywhere */
-  --ink-muted: #5a5d66;      /* secondary text */
-  --ink-faint: #8b8e97;      /* tertiary / captions */
+  /* ── radii ─────────────────────────────────────────────────────── */
+  --r-control: 6px;          /* buttons, inputs, chips */
+  --r-panel: 8px;            /* a panel, a notice */
+  --r-cert: 3px;             /* a certificate */
 
-  /* ── brand accent — document blue, ALL interactive/brand elements ── */
-  --accent: #2b4acb;
-  --accent-strong: #1f3aa8;  /* hover / active */
-  --accent-soft: #e8edfb;    /* subtle wash (selected, hover) */
-  --accent-ink: #ffffff;     /* text on an accent fill */
-  --accent-border: #c9d4f4;
+  /* ── shadow: one, on certificates only ─────────────────────────── */
+  --shadow-cert: 0 26px 60px rgba(11, 42, 33, 0.28);
+  --shadow-cert-vault: 0 40px 80px rgba(0, 0, 0, 0.45);
 
-  /* ── money-outcome semantics ONLY (never generic accents) ───────── */
-  --ok: #15803d;             /* settled / still held */
-  --ok-soft: #eef6f0;
-  --ok-border: #c3e3cd;
-  --err: #dc2626;            /* failed / refused */
-  --err-soft: #fdeeee;
-  --err-border: #f2cccc;
-  --warn: #b45309;           /* held, waiting, paused */
-  --warn-soft: #fbf1e6;
-  --warn-border: #ecdcb4;
-
-  /* ── the one metal on the registry: its chip, and nothing else ──── */
-  --gold: #9a6f1e;
-  --gold-soft: #fbf3e3;
-  --gold-border: #ecdcb8;
-
-  /* ── lines + elevation ──────────────────────────────────────────── */
-  --border: #e4dfd3;         /* a ruled line */
-  --border-strong: #cdc5b4;  /* a heavier rule */
-  --shadow-sm: 0 1px 2px rgba(20, 22, 28, 0.05);
-  --shadow-sheet: 0 1px 0 rgba(20, 22, 28, 0.04), 0 12px 28px -18px rgba(20, 22, 28, 0.22);
-  --shadow-float: 0 20px 48px -26px rgba(20, 22, 28, 0.3);
-  --scrim: rgba(247, 245, 239, 0.86);
-
-  /* ── inverse: the dark surfaces — the printer, the floor, the close ─ */
-  --ink-inverse: #f4f2ee;
-  --ink-inverse-muted: #b3b6bf;
-  --ink-inverse-faint: #7c808c;
-  --border-inverse: #2c2f38;
-  --surface-inverse: #14161c;
-  --surface-inverse-raised: #1f222b;
-  --accent-inverse: #9db0f7;      /* document blue, lifted for dark ground */
-  --ok-inverse: #5fcf85;          /* settled, on dark */
-  --err-inverse: #f27b7b;         /* failed / down, on dark */
-  --glow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 24px 60px -24px rgba(0, 0, 0, 0.7);
-
-  /* ── radii (6/10/16, + pill for status chips ONLY) ──────────────── */
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 16px;
-  --r-pill: 999px;
-
-  /* ── spacing — 8pt rhythm (4 is the half-step) ──────────────────── */
+  /* ── spacing ───────────────────────────────────────────────────── */
   --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
@@ -95,95 +76,116 @@
   --s-8: 64px;
   --s-9: 80px;
   --s-10: 96px;
-  --s-11: 128px;
-  --s-12: 160px;
 
-  /* ── measure ────────────────────────────────────────────────────── */
-  --measure: 720px;          /* the reading column */
-  --measure-wide: 1040px;    /* a two-column surface */
+  /* ── type scale ────────────────────────────────────────────────── */
+  --fs-display: clamp(2.5rem, 1.757rem + 3.048vw, 4.5rem);  /* 40px at 390, 72px at 1440 */
+  --lh-display: 1;
+  --tracking-display: -0.025em;
 
-  /* ── type scale — the single source ─────────────────────────────── */
-  --fs-display: clamp(2.4rem, 1.3rem + 4.4vw, 3.9rem);
-  --lh-display: 1.04;
-  --tracking-display: -0.028em;
+  --fs-h1: clamp(2.25rem, 2.018rem + 0.952vw, 2.875rem);    /* 36px at 390, 46px at 1440 */
+  --lh-h1: 1.05;
 
-  --fs-h1: clamp(1.9rem, 1.3rem + 2.4vw, 2.8rem);
-  --lh-h1: 1.08;
-  --tracking-h1: -0.022em;
+  --fs-h2: clamp(1.5rem, 1.407rem + 0.381vw, 1.75rem);      /* 24px at 390, 28px at 1440 */
+  --lh-h2: 1.15;
 
-  --fs-h2: clamp(1.4rem, 1.15rem + 1.2vw, 1.9rem);
-  --lh-h2: 1.18;
-  --tracking-h2: -0.014em;
+  --tracking-head: -0.02em;  /* every headline */
 
-  --fs-lead: clamp(1.08rem, 1rem + 0.45vw, 1.25rem);
-  --lh-lead: 1.5;
-  --tracking-lead: -0.006em;
+  --fs-lead: 1.03125rem;     /* 16.5px on canvas; the vault class (globals.css) raises it to 20px */
+  --lh-lead: 1.55;
 
-  --fs-body: 1rem;
+  --fs-body: 1rem;           /* 16px */
   --lh-body: 1.6;
-
-  --fs-small: 0.875rem;
-  --fs-caption: 0.8125rem;
-
-  --fs-mono: 0.8125rem;      /* data, addresses, hashes */
+  --fs-small: 0.875rem;      /* 14px */
+  --fs-caption: 0.8125rem;   /* 13px */
+  --fs-label: 0.9375rem;     /* 15px, a form label */
+  --fs-money: 1.125rem;      /* 18px, money typed into an input */
+  --fs-mono: 0.84375rem;     /* 13.5px, an address or a hash */
   --tracking-mono: 0.01em;
+  --tracking-caps: 0.14em;   /* engraved small capitals, certificates only */
 
-  /* the units: the largest thing on any page they appear on */
-  --fs-units: clamp(2.6rem, 1.4rem + 5vw, 4.6rem);
-  --fs-units-sm: clamp(1.6rem, 1.2rem + 1.6vw, 2.2rem);
-
-  /* ── motion — 3 durations, 2 easings ────────────────────────────── */
-  --dur-1: 160ms;  /* micro: hover, tap */
-  --dur-2: 320ms;  /* the one moment: the stub prints */
-  --dur-3: 640ms;
-  --dur-4: 1200ms; /* a scene: a number rolling to its value, a diagram playing */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: cubic-bezier(0.34, 1.42, 0.5, 1);
+  /* ── motion ────────────────────────────────────────────────────── */
+  --dur-1: 160ms;            /* hover, press */
+  --dur-note: 450ms;         /* a line of news appearing */
+  --dur-rise: 700ms;         /* certificate text rising in */
+  --dur-fade: 900ms;         /* the specimen watermark */
+  --dur-press: 650ms;        /* the seal pressing in */
+  --dur-wipe: 1.3s;          /* the engraving wiping in */
+  --ease-out: ease-out;
+  --ease-wipe: cubic-bezier(0.3, 0.6, 0.2, 1);
+  --ease-press: cubic-bezier(0.2, 0.8, 0.25, 1.15);
 }
 
-/* prefers-reduced-motion COLLAPSES everything: all motion rides these tokens. */
+/* Reduced motion shows every final state at once, with nothing moving. */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --dur-1: 0.01ms;
-    --dur-2: 0.01ms;
-    --dur-3: 0.01ms;
-    --dur-4: 0.01ms;
+    --dur-note: 0.01ms;
+    --dur-rise: 0.01ms;
+    --dur-fade: 0.01ms;
+    --dur-press: 0.01ms;
+    --dur-wipe: 0.01ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-/* ── BASE — the product's only global element rules ─────────────────── */
+/* ── the only global element rules ──────────────────────────────────── */
 
 html,
 body {
-  background: var(--bg);
+  background: var(--canvas);
   color: var(--ink);
 }
 
 html {
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
 }
 
 body {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* tabular numerals everywhere: amounts and hashes must align in a column */
-  font-feature-settings: "rlig" 1, "calt" 1, "tnum" 1;
-  font-variant-numeric: tabular-nums;
+  /* Lining, tabular figures on every number, so columns align and tickers never shift. */
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
-/* The Tailwind reset leaves border-color at currentColor; our hairline is the token. */
+/* Headlines are Bodoni Moda 500, tightened. */
+h1,
+h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: var(--tracking-head);
+}
+
+/* The reset leaves border-color at currentColor; a hairline on canvas is the rule. */
 * {
-  border-color: var(--border);
+  border-color: var(--rule);
+}
+
+/* Placeholders are hints, not values: full-strength muted, upright, never faint. */
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+  font-style: normal;
 }
 
 ::selection {
-  background: var(--ink);
-  color: var(--bg);
+  background: var(--vault);
+  color: var(--bond);
 }
 
-/* Visible focus, everywhere, in the accent. */
+/* Visible focus everywhere: vault on canvas; the vault class (globals.css) turns it foil. */
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-  border-radius: var(--r-sm);
+  outline: 2px solid var(--vault);
+  outline-offset: 2px;
 }

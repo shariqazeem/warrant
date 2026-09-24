@@ -1,122 +1,226 @@
 ---
 name: warrant-ui
-description: Warrant's design system, carried over from Scrip. Invoke before building or editing ANY user-facing surface — the front door, pay, runs, grants, receipts, the company page, the shell. Carries the token contract, the two materials, the stub at five sizes, the words, the page patterns, and the rules that keep every page one tone.
+description: Warrant's design system, security printing made modern. Invoke before building or editing ANY user-facing surface — the front page, issuing a grant, the certificate page, /me, payroll, the public record, the company page, receipts, the nav and footer, error pages. Carries the materials, the palette and type tokens, shape and motion, the words, the five signature objects (certificate, seal, vesting rule, specimen, payslip), the shared classes, every state, and the rules that keep every page one voice.
 ---
 
 # Warrant UI
 
-**There is no opening bell.** The world of the old exchange floor, reborn without hours. Two
-materials, assigned by surface:
+**Warrant looks like a vault and a stock certificate, made modern.** Deep green, cream bond
+paper, fine engraving and one oxblood seal. It shares nothing with Scrip: not its palette,
+its fonts, its words or its stub. If a surface would look at home on an exchange floor, it is
+wrong.
 
-- **Ink**, the dark ground, for the network: the front door's opening and close, the tape,
-  the marketing navigation. Paper-coloured text on ink, one accent, no glow, no gradients.
-- **Paper**, for every document: a receipt, a run, a grant, the company's page, the pay form.
-  White stubs on paper, ruled rows, a perforated edge.
+The one line it serves: **give your team stock that vests.** Company first. The certificate
+is the object people remember; everything else stays quiet so it can be loud.
 
-Dark is not a mode. It is where the crowd is. Spend the boldness in one place, the stub, and
-keep everything else quiet. A document, not a terminal.
+## Materials, assigned by surface
 
-## The words
+| Material | Where | Text on it |
+| --- | --- | --- |
+| **Vault** `--vault` | The nav, the hero, the footer. Bands inside it are `--vault-raised`, hairlines `--vault-line` | `--on-vault`, then `--on-vault-2`, then `--on-vault-3`. Links hover to `--on-vault-hover` |
+| **Canvas** `--canvas` | Every app page: issuing a grant, `/me`, payroll, records, receipts | `--ink`, secondary `--muted`. Dividers `--rule` |
+| **Bond** `--bond` with **engrave** `--engrave` | Certificates, and nothing else | `--engrave`, secondary `--muted-bond` |
 
-| In code | On every surface |
-| --- | --- |
-| a `Paid` event when drawn | a **stub**; it "prints" |
-| a batch | a **run** |
-| `GrantEscrow` | a **grant**, which **vests** |
-| the recipient's address | **their own wallet** |
-| the asset | a **stock position**, never "equity" or "shares" |
+- A vault band is the class `.wa-vault` (the older name `.wa-dark` is the same rule).
+- The vault meets the canvas along a plain 1px `--vault-line` rule. No torn or perforated
+  edges anywhere.
+- Inputs, chosen options and panels sit on `--surface` (white). An option not chosen sits on
+  `--field-bg`.
+- Bond is never a page background and never a card. If it is cream, it is a certificate.
 
-Never "token", never "yield", never "projected". Arithmetic on the past, labelled, is the
-limit. Say what the issuer can do on every asset row.
+## Palette
 
-## Non-negotiable rules
+Every value lives in `styles/tokens.css`. Never write a hex anywhere else.
 
-1. **`styles/tokens.css` is the only place a value is defined.** Colour, radius, shadow,
-   spacing, type size, duration. A per-surface stylesheet may alias (`--line: var(--border)`);
-   it must never redeclare a palette value. Never write a raw hex in a component.
-2. **No Tailwind utility classes, ever.** `globals.css` is `@import "tailwindcss"` for
-   preflight and nothing else. Write real CSS in a per-surface file, prefixed `wa-`.
-3. **Green and red mean money.** `--ok` is settled or delivered, `--err` is failed or refused.
-   Neither is decoration.
-4. **One accent**, document blue `--accent`, on every interactive and brand element. On ink
-   it is `--accent-inverse`.
-5. **Figures are mono with tabular numerals.** Amounts, units, addresses, hashes, dates.
-   **Units are the largest thing on any page they appear on.** Units before dollars.
-6. **Radii are 6 / 10 / 16.** `--r-pill` is for status chips only.
-7. **No emoji.** Lucide line icons, `size={14|16}`, `strokeWidth={2}`.
-8. **Never render a number the chain cannot confirm.** An empty feed says in words what will
-   fill it. Never a sample row, never a zero standing in for unknown.
-9. **Server-first.** React Server Components by default; `"use client"` only at interactive
-   leaves. A receipt page ships no client JavaScript except the copy button.
-10. **Motion is a scene entering, never decoration.** `<Reveal>` adds `is-in` when a scene is
-    reached, which is a scroll check and deliberately not an IntersectionObserver: an
-    observer never fires for a scene the reader jumped over, and a missed scene is invisible
-    content. Whatever is hidden by default must be revealed by something that cannot fail to
-    run. Text never fades up on its own. Hover changes colour, not position.
-11. **Sentence case everywhere.** No all-caps eyebrows, no accent-coloured word in a headline,
-    no arrows appended to buttons. Lines under eighty characters.
-12. **Per-row disclosure, never a banner.**
+| Token | Hex | Use |
+| --- | --- | --- |
+| `--vault` | #0B2A21 | Hero, nav, footer; primary buttons on canvas |
+| `--vault-raised` | #0F3327 | Bands on vault |
+| `--vault-line` | #24493B | Hairlines on vault |
+| `--vault-field` | #6E8C80 | Border of a secondary button on vault |
+| `--bond` | #F2ECDC | Certificates; primary buttons on vault |
+| `--canvas` | #EEF2EE | App page background |
+| `--engrave` | #173B2F | Lines and text on certificates |
+| `--ink` | #0F1A15 | Body text on canvas |
+| `--muted` | #45544C | Secondary text on canvas and surface; placeholders |
+| `--muted-bond` | #4A5E54 | Secondary text on bond |
+| `--on-vault` / `-2` / `-3` | #F2ECDC / #C9D3CC / #A9B8AF | Primary, secondary, tertiary text on vault |
+| `--on-vault-hover` | #FFFFFF | A link on vault, hovered |
+| `--rule` | #C5D0CA | Dividers on canvas |
+| `--field` | #9AABA2 | Borders of inputs and secondary buttons |
+| `--field-bg` | #F6F8F6 | An option not chosen |
+| `--surface` | #FFFFFF | Inputs, chosen options, panels |
+| `--seal` | #8C1D1D | The seal, the word "irrevocable", the seal button, the cliff marker |
+| `--foil` | #B38B3E | One hairline on a sealed certificate; icons and focus rings on vault |
+| `--settled` | #0F7A4F | Success, always with a check icon |
+| `--warn` | #9A5B00 | Waiting, stale, short of funds |
+| `--refused` | #B42318 | Failed, refused |
 
-## Token quick reference
+**Contrast.** Every text pair passes 4.5:1, or 3:1 at 24px and up. Checked: ink on canvas
+15.8, muted on canvas 7.1, muted-bond on bond 5.9, on-vault-3 on vault 7.4, bond on vault
+13.0, bond on seal 7.7, settled 4.7, warn 4.8 and refused 5.8 on canvas. **Settled, warn and
+refused never go on vault** (under 3:1 there). Check any colour you add before you add it.
 
-```
-surface   --bg #f7f5ef   --surface #fff   --border #e4dfd3   --border-strong #cdc5b4
-text      --ink #14161c  --ink-muted #5a5d66  --ink-faint #8b8e97
-brand     --accent #2b4acb  --accent-strong #1f3aa8  --accent-soft #e8edfb
-money     --ok #15803d  --err #dc2626  --warn #b45309
-ink side  --surface-inverse  --ink-inverse  --accent-inverse #9db0f7  --ok-inverse
-type      --fs-display/h1/h2/lead/body/small/caption/mono, --fs-units, --fs-units-sm
-space     --s-1..--s-12;  --measure 720px;  --measure-wide 1040px
-motion    --dur-1 160ms  --dur-2 320ms  --dur-3 640ms  --ease-out  --ease-spring
-```
+Colour means something: settled is success, refused is failure, warn is waiting, seal is
+permanence. None of them is decoration. There is no blue anywhere.
 
-## The stub, at five sizes
+## Type
 
-One object, everywhere. Nothing else on the site may look like a card; if it is not a stub it
-is a ruled row or a paragraph.
+| Family | Token | Use |
+| --- | --- | --- |
+| Bodoni Moda (variable weight and optical size, italic) | `--font-display` | Headlines, the wordmark, everything on a certificate |
+| Hanken Grotesk (400 to 700) | `--font-ui` | Every word of the interface |
+| JetBrains Mono (400, 500) | `--font-mono` | Addresses, hashes and live counters, and nothing else |
 
-1. **the tape row** — one line on the front door
-2. **the wall stub** — compact, in a run and on the company page
-3. **the register stub** — full rows, printing as a payment settles
-4. **the receipt** — the hero of `/receipt/[tx]`, print-like
-5. **the share card** — the `opengraph-image` on every public record
+- All three load through `next/font` in `app/layout.tsx`, self-hosted, so nothing shifts.
+- Headlines: Bodoni Moda 500, tracking `--tracking-head` (−0.02em). `h1` and `h2` get this
+  by default.
+- `body` sets `font-variant-numeric: lining-nums tabular-nums`: every number lines up.
+- Scale: `--fs-display` (72px at 1440), `--fs-h1` (46px), `--fs-h2` (28px), `--fs-lead`
+  (20px on vault, 16.5px on canvas, switched by the vault class), `--fs-body` 16px,
+  `--fs-small` 14px, `--fs-caption` 13px, `--fs-label` 15px, `--fs-money` 18px, `--fs-mono`
+  13.5px. Line heights `--lh-display`, `--lh-h1`, `--lh-h2`, `--lh-lead`, `--lh-body`.
+- **Units are the largest thing on any page they appear on.** On a certificate they are
+  Bodoni Moda 600; elsewhere use `.wa-units` (`--fs-display`) or `.wa-units-sm` (`--fs-h2`).
+- All caps only for engraved text on certificates and seals ("IRREVOCABLE"), with
+  `--tracking-caps`.
 
-A white sheet on paper with a perforated top edge, ruled rows, and the units at `--fs-units`.
+## Shape and motion
 
-## The mark
+- **Radius:** `--r-control` 6px for buttons, inputs and chips; `--r-panel` 8px for panels and
+  notices; `--r-cert` 3px for certificates. No pills.
+- **Shadow:** one, on certificates only. `--shadow-cert` on canvas, `--shadow-cert-vault` on
+  vault. No card shadows, no floating shadows, no glows, no gradient washes.
+- **One orchestrated moment per screen.** A certificate engraves in:
+  1. the pattern wipes in over `--dur-wipe` (1.3s, `--ease-wipe`);
+  2. the text rises in sequence (`--dur-rise`);
+  3. the seal lands last (`--dur-press`, `--ease-press`).
+- Hover changes colour, never position. `--dur-1` (160ms) for hover and press.
+- Numbers tick without moving the layout: tabular figures, fixed decimals, only the number
+  re-renders, paused when the tab is hidden.
+- Under `prefers-reduced-motion` every final state shows at once. `tokens.css` does this
+  globally; do not fight it.
 
-Warrant needs its own, and it must not be Scrip's stub glyph. Draw it in stroke on
-`currentColor` in the same line register as the Lucide icons beside it, so the rail, the nav
-and the receipt header all tint it from their own text colour. A warrant is a document that
-entitles the holder to something; a seal or a countersigned corner reads right.
+## Words
 
-## Page patterns
+- **Use:** certificate, grant, seal, vest, release, claim, payslip, your people.
+- **Retired, never on screen:** stub, prints, tape, floor, "which became", "get paid in
+  stocks", ownership as a pitch.
+- **Voice:** plain verbs, active voice, sentence case. Plain English for someone who has never
+  used crypto: no "permit", "calldata", "minOut" or "run id" on screen.
+- **Buttons say exactly what happens:** "Issue certificate for $500", "Seal it now",
+  "Claim 0.052 SPYx", "Grant stock". A blocked button names what is missing: "Add their
+  wallet address", "Enter a grant value", "Top up 12.40 USD₮0".
+- **Errors** say what happened and what to do next. They never apologise.
+- **The asset** is "a stock position" or "economic exposure", never "shareholder",
+  "equity ownership" or "shares". xStocks carry no votes.
+- **Avoid:** emoji; all-caps labels (except engraved certificate text); meta strings joined
+  with middle dots; "→" on buttons; rows of identical rounded cards; gradient washes.
 
-| Surface | Pattern |
-| --- | --- |
-| `/` | Ink opening: the headline and a real payment printing live. Then the tape. Then what a stock could not do before, as ruled rows. Then the paper tears off: honesty rows, then the public record. Ink close |
-| `/pay` | One form, one confirm, one receipt. Fields as ruled rows, the quote beside them, everything with a default folded away |
-| `/run` | The file becomes lines before anything is signed. One signature. Then the receipts print in sequence |
-| `/grants` | Open with a cliff and a duration; the schedule drawn as a bar. Revoke and close on the ones open |
-| `/receipt/[tx]` | The stub as the hero, then two sheets: what was paid, where it is anchored. Unshelled, print-like |
-| `/@company` | Paid in ownership since, people paid, the total, grants vesting, every payment as a row with its reason |
+## The five signature objects
+
+1. **The certificate** (`components/cert`). Landscape 760×468 on desktop, portrait 350×520 on
+   phones. Bond, engraved border and rosette from `guilloche()` seeded by chain id, escrow
+   address and grant id (memoised). "Certificate of grant", "No. 000042", "This certifies
+   that", the recipient, "is granted", the units and symbol, what it was bought for and at
+   what price, the real route, the schedule sentence, the vesting rule, granted by, and the
+   transaction. Prints as A4 landscape; the share image is the certificate.
+2. **The seal.** Unsealed: a dashed outline, "Revocable, until sealed". Sealed: oxblood with a
+   scalloped edge, the mark, "IRREVOCABLE" and the number. The press plays when the seal
+   transaction confirms, never before.
+3. **The vesting rule.** An engraved line with month ticks and an oxblood cliff marker. Vested
+   is hatched, released is solid. "Vested now" ticks every second at 8 to 10 decimals; before
+   the cliff it reads "Accruing… unlocks on {date}".
+4. **The specimen.** While a grant is being filled in, the certificate previews live under a
+   diagonal "Specimen" watermark, numbered 000000. It disappears only when the issue
+   transaction confirms.
+5. **The payslip** (`components/stub`, for payroll lines). Company to person, a two-part bar
+   for stock against USD₮0, the units in large type, the price, route and note, and a small
+   "Paid" stamp. A plain sheet on `--surface` with a 1px `--rule`, never a certificate.
+
+Nothing else is an object. If it is not one of these five, it is a ruled row or a paragraph.
+
+## The shared classes
+
+A class is defined in exactly one stylesheet. Surfaces may refine a class in context
+(`.wa-me .wa-actions`), never define it again.
+
+- `styles/globals.css`, loaded by the root layout on every page: the reset, then the
+  primitives any page can render.
+- `app/landing.css`: the page frame.
+- `components/site/site.css`: the nav, the skip link and the footer.
+- `components/pay/pay.css`: the form, loaded by every form component.
+- Everything else lives beside its component (`grants.css`, `stub.css`, `jump.css`…).
+
+| Class | Where | What it is |
+| --- | --- | --- |
+| `.wa-vault` (`.wa-dark`) | globals | A vault band: background, text, links, foil focus, the larger lead |
+| `.wa-btn` / `.wa-action` | globals | A secondary button: surface, 1px field border, ink, 44px |
+| `.wa-btn.is-primary` | globals | Vault with bond text on canvas; bond with vault text on vault |
+| `.wa-btn.is-seal` | globals | Oxblood with bond text: "Seal it now" |
+| `.wa-btn.is-quiet` | globals | Underlined words, no box: "Issue another" |
+| `.wa-btn.is-large`, `.is-block` | globals | 52px tall; full width and 56px tall |
+| `.wa-btn[disabled]` | globals | Blocked: surface, field border, muted text, still readable |
+| `.wa-actions` | globals | A row of buttons |
+| `.wa-linkish` | globals | A button that reads as an underlined link in a sentence |
+| `.wa-kicker` | globals | A small sentence-case label above a headline |
+| `.wa-units`, `.wa-units-sm` | globals | Units in Bodoni 600, at `--fs-display` or `--fs-h2` |
+| `.wa-mono` | globals | An address or a hash |
+| `.wa-fine`, `.wa-refusal` | globals | Small print; what stopped it, in refused |
+| `.wa-nothing` | globals | An honest empty state: a line in bold, then what will fill it |
+| `.wa-spin` | globals | The only spinner, inside a busy button |
+| `.wa-landing` | landing | The page wrapper: canvas, ink text |
+| `.wa-tear` | landing | The plain 1px vault-line rule where vault meets canvas |
+| `.wa-sec`, `.wa-sec.is-wide` | landing | A 720px reading column; the frame's full 1296px |
+| `.wa-display`, `.wa-h1`, `.wa-h2`, `.wa-lede` | landing | Hero headline, page headline, section headline, the lead |
+| `.wa-rule-row` (`.k`, `.v`) | landing | A ruled label and value |
+| `.wa-header`, `.wa-skip`, `.wa-nav*`, `.wa-site-foot` | site | Nav with skip link, footer |
+| `.wa-field`, `.wa-input`, `.wa-money` | pay | A labelled field, a 48px input, a money box |
+| `.wa-chip` | grants | Where a grant stands: sealed, revoked, closed |
+
+Inputs are 48px tall with a 1px `--field` border, `--r-control` and `--surface`; addresses in
+13.5px mono, money in 18px ui; labels 15px 600. Focus: 2px `--vault` outline on canvas,
+`--foil` on vault. Links inside running text are underlined; nav links and buttons are not.
+
+**Landmarks.** A page is the vault band with `<SiteNav />` (a `<header>` holding the skip
+link and the nav), the `.wa-tear` rule, `<main id="main">`, and the vault band with
+`<SiteFoot />` (a `<footer>`). Nothing sits outside a landmark.
 
 ## Every state, designed
 
+Every screen designs its loading, empty, error and success states.
+
 | State | What to do |
 | --- | --- |
-| Loading | `SkeletonPage` in the real layout. Never a spinner, never a bar that reads as a figure |
-| Empty | What will fill it, in words |
-| In flight | One toast, bottom left: building, waiting for your wallet, confirming, settled, not sent. The same words as the button. Settled links the object and leaves; a failure stays until dismissed |
-| Success | The object appearing. Never a green banner |
-| Error | What happened and the one action that might work |
-| Refused | A refusal is a receipt too. Name the rule that caused it |
+| Loading | The real layout with ruled skeleton rows. Never a spinner, never a bar the shape of a number |
+| Empty | What will fill it, in words: "No grants yet. When a team grants you stock, its certificate appears here, vesting." |
+| Waiting on a wallet | The button says "Confirm in your wallet"; one toast says the same words |
+| Submitted | "Engraving…" with the transaction link; `aria-live` on the status |
+| Success | The object appearing: the certificate engraving in, the seal pressing. Never a green banner. Settled text always carries a check icon |
+| Failed | What happened, the decoded reason, and "Try again". A wallet rejection is normal, not an error |
+| Refused | Name the rule that stopped it |
+
+## Rules that stay
+
+1. `styles/tokens.css` is the only place a value is defined. No hex, font name, radius or
+   shadow anywhere else.
+2. No Tailwind utility classes. `globals.css` is the reset only; real CSS lives in per-surface
+   files, prefixed `wa-`.
+3. **Never render a number the chain, a live OKX DEX quote or the user's own input cannot
+   confirm.** No sample values, no seeded grants, no invented stats. A worked example is
+   labelled as arithmetic.
+4. **Units are the largest thing on any page they appear on.**
+5. **Disclose what the issuer can do on every asset row**, per row, never as a banner.
+6. Plain verbs; buttons say exactly what happens, and the confirmation uses the same word.
+7. Server-first; `"use client"` only at interactive leaves.
+8. Touch targets at least 44px; a label on every input; keyboard reachable with visible focus.
+9. No emoji. Line icons at 14 to 30px, stroked, `--foil` on vault, `currentColor` elsewhere.
 
 ## Before you finish a surface
 
-- every colour is a token or an alias
-- units and hashes are mono and tabular, and units are the largest thing on the page
-- an empty state is honest and designed, not a spinner and not a sample
-- it holds at 375px, 768px and 1440px, and nothing runs under the mobile bar
-- keyboard focus is visible and uses `--accent`; AA contrast on both materials
-- every button says what happens, and the confirmation uses the same word
+- every colour, font, radius and shadow is a token; `grep "#" yourfile.css` finds nothing
+- the words pass the list above: no stub, prints, tape, floor, middle dots or arrows
+- units are the largest thing on the page, in tabular figures
+- loading, empty, error and success are designed, and no number is unconfirmed
+- it holds at 390px, 768px and 1440px with no sideways scroll
+- focus is visible, contrast passes on every material, motion stops under reduced motion

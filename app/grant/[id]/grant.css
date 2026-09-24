@@ -1,10 +1,10 @@
 /**
- * grant.css — a grant's public record. It wears the receipt's sheets (receipt.css) and the
- * grants page's bar and chips (grants.css); this adds only where it stands and its releases.
- * Aliases only; every value comes from styles/tokens.css.
+ * grant.css: a grant's public record. It wears the receipt's sheets (receipt.css) and the
+ * grants page's schedule and chips (grants.css); this adds where it stands and every
+ * release. Every value is a token.
  */
 
-/* ── where it stands: the chips, one sentence, the bar ─────────────── */
+/* ── where it stands: the chips, one sentence, the schedule ────────── */
 
 .wa-g-standing {
   margin-top: var(--s-6);
@@ -26,9 +26,9 @@
 /* ── every release, as a ruled row ─────────────────────────────────── */
 
 .wa-g-vests {
-  list-style: none;
   margin: 0;
   padding: 0;
+  list-style: none;
 }
 
 .wa-g-vest {
@@ -37,46 +37,46 @@
   gap: var(--s-1) var(--s-4);
   align-items: baseline;
   padding: var(--s-3) 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--rule);
   font-size: var(--fs-small);
 }
 
 .wa-g-vest-when {
-  color: var(--accent);
-  text-decoration: none;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
-.wa-g-vest-when:hover {
-  color: var(--accent-strong);
-}
-
-/* --ok: delivered. These units reached their own wallet. */
+/* Released: these units reached their own wallet. */
 .wa-g-vest-units {
   text-align: right;
-  color: var(--ok);
+  color: var(--settled);
 }
 
 .wa-g-vest-fee {
   font-size: var(--fs-caption);
-  color: var(--ink-faint);
+  color: var(--muted);
 }
 
 .wa-g-vest-tx {
   text-align: right;
   font-size: var(--fs-caption);
-  color: var(--ink-faint);
-  text-decoration: none;
+  color: var(--muted);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
   overflow-wrap: anywhere;
 }
 
 .wa-g-vest-tx:hover {
-  color: var(--accent);
+  color: var(--ink);
 }
 
-/* On a phone and on paper, a release reads top to bottom rather than in two columns. */
+/* On a phone and on paper, a release reads top to bottom. */
 @media (max-width: 480px) {
   .wa-g-vest {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .wa-g-vest-units,
@@ -87,7 +87,7 @@
 
 @media print {
   .wa-g-vest {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .wa-g-vest-units,

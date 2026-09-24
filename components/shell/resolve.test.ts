@@ -1,4 +1,5 @@
 import {describe, expect, it} from "vitest";
+import {DOORS} from "../site/doors";
 import {resolve} from "./resolve";
 
 const TX = `0x${"a".repeat(64)}`;
@@ -46,6 +47,31 @@ describe("what a typed string resolves to", () => {
 
   it("finds the doors by name", () => {
     expect(resolve("grants").some((d) => d.href === "/grants")).toBe(true);
-    expect(resolve("pay").some((d) => d.href === "/pay")).toBe(true);
+    expect(resolve("grant").some((d) => d.label === "Issue a grant")).toBe(true);
+    expect(resolve("payroll").some((d) => d.href === "/run")).toBe(true);
+    expect(resolve("record").some((d) => d.href === "/record")).toBe(true);
+    expect(resolve("recipients").some((d) => d.href === "/me")).toBe(true);
+  });
+
+  it("offers exactly the nav's doors, in the nav's order", () => {
+    expect(resolve("").map((d) => d.href)).toEqual(DOORS.map((d) => d.href));
+    expect(resolve("").map((d) => d.label)).toEqual([
+      "Issue a grant",
+      "Payroll",
+      "Public record",
+      "For recipients",
+    ]);
+  });
+
+  it("reads a certificate number as engraved, then still offers the run of that name", () => {
+    for (const typed of ["000042", "42", "No. 42", "no.42", "#42"]) {
+      const out = resolve(typed);
+      expect(out[0]!.kind).toBe("certificate");
+      expect(out[0]!.href).toBe("/g/42");
+      expect(out[0]!.label).toBe("Open certificate No. 000042");
+      expect(out.some((d) => d.kind === "run")).toBe(true);
+    }
+    expect(resolve("0").some((d) => d.kind === "certificate")).toBe(false);
+    expect(resolve("1234567").some((d) => d.kind === "certificate")).toBe(false);
   });
 });

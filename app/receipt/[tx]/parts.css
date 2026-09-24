@@ -1,6 +1,6 @@
 /**
- * parts.css — what the shared sheets add to receipt.css: an address that is short on screen
- * and whole on paper, where there is no hover to reveal it. Nothing else is declared here.
+ * parts.css: what the shared sheets add to receipt.css. An address is short on screen and
+ * whole on paper, where there is no hover to reveal it.
  */
 
 .wa-r-addr-full {

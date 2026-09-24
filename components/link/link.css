@@ -1,21 +1,22 @@
 /**
- * link.css — the top of a person's pay link: who is being paid, how they asked to be paid,
- * then the pay box. Paper, like every document. Aliases only; every value comes from
- * styles/tokens.css.
+ * link.css: the top of a person's pay link: who is being paid, how they asked to be paid,
+ * then the pay box. On canvas, like every document. Every value is a token.
  */
 
-/* A heading, not a figure: it stays under the units the pay box prints below it. */
+/* A heading, not a figure: it stays under the units the pay box shows below it. */
 .wa-link-h {
-  font-size: var(--fs-h2);
-  line-height: var(--lh-h2);
-  letter-spacing: var(--tracking-h2);
+  font-family: var(--font-display);
+  font-size: var(--fs-h1);
+  font-weight: 500;
+  line-height: var(--lh-h1);
+  letter-spacing: var(--tracking-head);
   overflow-wrap: anywhere;
 }
 
-/* The wallet in the heading is a figure: mono and tabular, at the heading's own size. */
+/* The wallet in the heading is an address: mono, a little smaller than the words. */
 .wa-link-who {
   font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
+  font-size: 0.8em;
   letter-spacing: 0;
 }
 
@@ -25,61 +26,52 @@
   align-items: center;
   gap: var(--s-2) var(--s-5);
   margin-top: var(--s-3);
-  font-size: var(--fs-caption);
+  font-size: var(--fs-small);
 }
 
-/* The copy buttons read as links in a sentence-sized row. The shelled pages style
- * .wa-action as a button; this page does not load that sheet. */
+/* The copy buttons read as links in a sentence-sized row. */
 .wa-link-tools a,
 .wa-link-tools .wa-action {
   display: inline-flex;
   align-items: center;
   gap: var(--s-1);
+  min-height: 44px;
   padding: 0;
-  border: none;
+  border: 0;
   background: none;
+  color: var(--ink);
   font: inherit;
-  color: var(--accent);
-  text-decoration: none;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
 .wa-link-tools a:hover,
 .wa-link-tools .wa-action:hover {
-  color: var(--accent-strong);
+  text-decoration-thickness: 2px;
 }
 
 /* Their choice, in one plain line. */
 .wa-link-split {
-  margin-top: var(--s-5);
   max-width: 54ch;
+  margin-top: var(--s-5);
   font-size: var(--fs-lead);
   line-height: var(--lh-lead);
-  letter-spacing: var(--tracking-lead);
   color: var(--ink);
 }
 
 /* The share is the figure in the sentence. */
 .wa-link-share {
-  font-family: var(--font-mono);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
+  font-weight: 700;
 }
 
 .wa-link-note {
   margin-top: var(--s-2);
   font-size: var(--fs-small);
   line-height: var(--lh-body);
-  color: var(--ink-faint);
-}
-
-.wa-link-note a {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-.wa-link-note a:hover {
-  color: var(--accent-strong);
+  color: var(--muted);
 }
 
 /* The pay box is the next thing under the heading, at every width. */

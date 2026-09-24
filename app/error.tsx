@@ -18,8 +18,8 @@ import "@/components/site/site.css";
  * money moved" would then be a lie that invites someone to pay twice. The chain is where a
  * payment happened or did not, so that is where it sends them to look.
  *
- * The frame is the ink bar with the wordmark and nothing else: the fewer parts an error page
- * has, the fewer can fail with it.
+ * The frame is the vault bar with the wordmark and nothing else: the fewer parts an error
+ * page has, the fewer can fail with it.
  */
 export default function ErrorPage({error, reset}: {error: Error & {digest?: string}; reset: () => void}) {
   const stale = isStaleBuild(error);
@@ -33,26 +33,29 @@ export default function ErrorPage({error, reset}: {error: Error & {digest?: stri
 
   return (
     <div className="wa-landing">
-      <div className="wa-dark">
-        <nav className="wa-nav">
-          <Link href="/" className="wa-nav-brand" aria-label="Warrant home">
-            <Wordmark size={22} />
-          </Link>
-        </nav>
+      <div className="wa-vault">
+        <header className="wa-header">
+          <nav className="wa-nav" aria-label="Main">
+            <Link href="/" className="wa-nav-brand" aria-label="Warrant, the front page">
+              <Wordmark size={28} />
+            </Link>
+          </nav>
+        </header>
       </div>
       <div className="wa-tear" aria-hidden />
 
-      <main className="wa-sec">
+      <main id="main" className="wa-sec">
         <p className="wa-kicker">Something went wrong</p>
-        <h1 className="wa-h2">This page could not be shown.</h1>
+        <h1 className="wa-h1">This page could not be shown.</h1>
         <p className="wa-lede">
           {stale
             ? "Warrant was updated while this page was open, so it asked for parts that have since changed. Reloading the page fixes it."
             : "It failed while it was being put together, most often because X Layer\u2019s public endpoint refused a read for a moment. Trying again usually works."}
         </p>
         <p className="wa-lede">
-          If you had just signed a payment or a grant, it settled or it did not on X Layer,
-          whatever this page says. Check your wallet&rsquo;s history before you send it again.
+          If you had just signed a grant or a payment, it went through or it did not on X
+          Layer, whatever this page says. Check your wallet&rsquo;s history before you send it
+          again.
         </p>
         <div className="wa-actions">
           <button
@@ -66,15 +69,19 @@ export default function ErrorPage({error, reset}: {error: Error & {digest?: stri
             Go to the front page
           </Link>
         </div>
-        {/* What broke, in one line a person can screenshot and send. */}
-        <p className="wa-kicker" style={{marginTop: "var(--s-6)"}}>
+        {/* What broke, in lines a person can screenshot and send. */}
+        <dl className="wa-error-ref">
           {error.digest ? (
-            <>
-              Reference <span className="wa-mono">{error.digest}</span> ·{" "}
-            </>
+            <div>
+              <dt>Reference</dt>
+              <dd className="wa-mono">{error.digest}</dd>
+            </div>
           ) : null}
-          <span className="wa-mono">{(error.message || String(error)).slice(0, 160)}</span>
-        </p>
+          <div>
+            <dt>What failed</dt>
+            <dd className="wa-mono">{(error.message || String(error)).slice(0, 160)}</dd>
+          </div>
+        </dl>
       </main>
     </div>
   );
