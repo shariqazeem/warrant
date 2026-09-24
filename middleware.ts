@@ -48,7 +48,7 @@ function visitor(req: NextRequest): string {
   return xff?.split(",").pop()?.trim() || "unknown";
 }
 
-const RECORD = /^\/(receipt|grant)\/|^\/run\/[^/]+|^\/(@|%40|0x)|\/opengraph-image|^\/api\/client-error/;
+const RECORD = /^\/(receipt|grant|g)\/|^\/run\/[^/]+|^\/(@|%40|0x)|\/opengraph-image|^\/api\/client-error/;
 
 export function middleware(req: NextRequest) {
   const isAction = req.method === "POST" && req.headers.has("next-action");

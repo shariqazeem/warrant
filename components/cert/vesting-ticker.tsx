@@ -123,15 +123,15 @@ export function TickerRow(p: TickerProps) {
   const at = useSecond(p.initialNow);
   const r = readout(p, at);
   return (
-    <div className="wa-rule-head">
-      <span className="wa-rule-l" aria-hidden>
+    <div className="wa-vest-head">
+      <span className="wa-vest-l" aria-hidden>
         {r.label}
-        {r.value !== null ? <> <span className="wa-rule-n">{r.value}</span></> : null}
+        {r.value !== null ? <> <span className="wa-vest-n">{r.value}</span></> : null}
       </span>
       {r.right ? (
-        <span className="wa-rule-r" aria-hidden>
+        <span className="wa-vest-r" aria-hidden>
           {r.right.k}
-          {r.right.v !== null ? <> <span className="wa-rule-n is-small">{r.right.v}</span></> : null}
+          {r.right.v !== null ? <> <span className="wa-vest-n is-small">{r.right.v}</span></> : null}
         </span>
       ) : null}
       <span className="wa-sr" aria-live="polite">
@@ -146,16 +146,16 @@ export function TickerStack(p: TickerProps & {unitsText: string}) {
   const at = useSecond(p.initialNow);
   const r = readout(p, at);
   return (
-    <div className="wa-rule-stack">
-      <span className="wa-rule-k" aria-hidden>
+    <div className="wa-vest-stack">
+      <span className="wa-vest-k" aria-hidden>
         {r.phase === "vesting" ? "Vested so far" : r.label}
       </span>
       {r.value !== null ? (
-        <span className="wa-rule-big" aria-hidden>
-          {r.value} <span className="wa-rule-sym">{p.symbol}</span>
+        <span className="wa-vest-big" aria-hidden>
+          {r.value} <span className="wa-vest-sym">{p.symbol}</span>
         </span>
       ) : null}
-      <span className="wa-rule-of" aria-hidden>
+      <span className="wa-vest-of" aria-hidden>
         {r.phase === "closed"
           ? `of ${p.unitsText} ${p.symbol}`
           : r.phase === "revoked"
@@ -178,16 +178,16 @@ export function TickerRows(p: TickerProps & {releasedUnits: bigint | null}) {
   const at = useSecond(p.initialNow);
   const ready = releasableUnits(p.terms, p.pool, at);
   return (
-    <dl className="wa-rule-rows">
+    <dl className="wa-vest-rows">
       {p.releasedUnits !== null ? (
         <div>
           <dt>Released to them</dt>
-          <dd className="wa-rule-n">{formatUnitsFixed(p.releasedUnits, p.decimals, 6)}</dd>
+          <dd className="wa-vest-n">{formatUnitsFixed(p.releasedUnits, p.decimals, 6)}</dd>
         </div>
       ) : null}
       <div>
         <dt>Ready to release</dt>
-        <dd className="wa-rule-n">{formatUnitsFixed(ready, p.decimals, 6)}</dd>
+        <dd className="wa-vest-n">{formatUnitsFixed(ready, p.decimals, 6)}</dd>
       </div>
     </dl>
   );

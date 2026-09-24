@@ -20,7 +20,10 @@
   --seal: #8c1d1d;
   --foil: #b38b3e;
   --settled: #0f7a4f;
-  --warn: #9a4a06;
+  --warn: #9a5b00;
+  --field-bg: #f6f8f6;
+  --vault-field: #6e8c80;
+  --on-vault-hover: #ffffff;
   --refused: #b42318;
   --surface: #ffffff;
   --font-display: "Bodoni Moda", "Bodoni 72", Didot, "Didot LT STD", "Libre Bodoni", serif;
@@ -385,7 +388,7 @@
 }
 
 /* ── THE VESTING RULE ─────────────────────────────────────────────────────────────────── */
-.wa-rule {
+.wa-vest {
   --r: 1px;
   --rule-ink: var(--engrave);
   --rule-muted: var(--muted);
@@ -395,25 +398,25 @@
   gap: calc(9 * var(--r));
   font-variant-numeric: tabular-nums;
 }
-.wa-rule.is-engrave {
+.wa-vest.is-engrave {
   --r: var(--u);
   --rule-ink: var(--engrave);
   --rule-muted: var(--muted-bond);
 }
-.wa-rule.is-canvas {
+.wa-vest.is-canvas {
   --rule-ink: var(--vault);
   --rule-muted: var(--muted);
 }
-.wa-rule.is-vault {
+.wa-vest.is-vault {
   --rule-ink: var(--on-vault);
   --rule-muted: var(--on-vault-2);
   --rule-line: var(--vault-line);
 }
-.wa-rule.is-stack {
+.wa-vest.is-stack {
   gap: calc(10 * var(--r));
 }
 
-.wa-rule-head {
+.wa-vest-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -422,7 +425,7 @@
   font-size: calc(13 * var(--r));
   color: var(--rule-muted);
 }
-.wa-rule-n {
+.wa-vest-n {
   font-family: var(--font-mono);
   font-weight: 500;
   font-size: calc(14 * var(--r));
@@ -430,31 +433,31 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.wa-rule-n.is-small {
+.wa-vest-n.is-small {
   font-weight: 400;
   font-size: calc(13 * var(--r));
 }
 
-.wa-rule-bar {
+.wa-vest-bar {
   position: relative;
   height: calc(14 * var(--r));
 }
-.wa-rule-bar > span {
+.wa-vest-bar > span {
   position: absolute;
   display: block;
 }
-.wa-rule-line {
+.wa-vest-line {
   left: 0;
   right: 0;
   top: calc(7 * var(--r));
   border-top: 1px solid var(--rule-ink);
 }
-.wa-rule-tick {
+.wa-vest-tick {
   top: calc(3 * var(--r));
   height: calc(9 * var(--r));
   border-left: 1px solid color-mix(in srgb, var(--rule-ink) 50%, transparent);
 }
-.wa-rule-vested {
+.wa-vest-vested {
   left: 0;
   top: calc(2 * var(--r));
   height: calc(10 * var(--r));
@@ -466,7 +469,7 @@
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
-.wa-rule-released {
+.wa-vest-released {
   left: 0;
   top: calc(5 * var(--r));
   height: calc(5 * var(--r));
@@ -474,19 +477,19 @@
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
-.wa-rule-cliff {
+.wa-vest-cliff {
   top: calc(-3 * var(--r));
   height: calc(20 * var(--r));
   border-left: 1.5px solid var(--seal);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .wa-rule-vested.is-growing {
-    animation-name: wa-rule-grow;
+  .wa-vest-vested.is-growing {
+    animation-name: wa-vest-grow;
     animation-timing-function: linear;
     animation-fill-mode: forwards;
   }
 }
-@keyframes wa-rule-grow {
+@keyframes wa-vest-grow {
   from {
     width: var(--wa-grow-from);
   }
@@ -495,42 +498,42 @@
   }
 }
 
-.wa-rule-labels {
+.wa-vest-labels {
   position: relative;
   height: calc(16 * var(--r));
   font-size: calc(12 * var(--r));
   color: var(--rule-muted);
   white-space: nowrap;
 }
-.wa-rule-labels > span {
+.wa-vest-labels > span {
   position: absolute;
   top: 0;
 }
-.wa-rule-start {
+.wa-vest-start {
   left: 0;
 }
-.wa-rule-end {
+.wa-vest-end {
   right: 0;
 }
-.wa-rule-cliff-label {
+.wa-vest-cliff-label {
   transform: translateX(-50%);
   color: var(--seal);
 }
-.wa-rule.is-vault .wa-rule-cliff-label {
+.wa-vest.is-vault .wa-vest-cliff-label {
   color: var(--on-vault);
 }
 
 /* the phone's readout */
-.wa-rule-stack {
+.wa-vest-stack {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.wa-rule-k {
+.wa-vest-k {
   font-size: 14px;
   color: var(--rule-muted);
 }
-.wa-rule-big {
+.wa-vest-big {
   font-family: var(--font-mono);
   font-size: 25px;
   font-weight: 500;
@@ -539,21 +542,21 @@
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
-.wa-rule-sym {
+.wa-vest-sym {
   font-family: var(--font-ui);
   font-size: 16px;
   font-weight: 600;
 }
-.wa-rule-of {
+.wa-vest-of {
   font-size: 14px;
   line-height: 1.5;
   color: var(--rule-muted);
 }
-.wa-rule-rows {
+.wa-vest-rows {
   margin: 6px 0 0;
   border-top: 1px solid var(--rule-line);
 }
-.wa-rule-rows > div {
+.wa-vest-rows > div {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -562,10 +565,10 @@
   border-bottom: 1px solid var(--rule-line);
   font-size: 15px;
 }
-.wa-rule-rows dt {
+.wa-vest-rows dt {
   color: var(--rule-muted);
 }
-.wa-rule-rows dd {
+.wa-vest-rows dd {
   margin: 0;
   font-size: 14.5px;
   font-weight: 400;
@@ -598,11 +601,11 @@
     inset: 0;
     background: var(--bond);
     transform-origin: right center;
-    animation: wa-cert-wipe var(--dur-wipe) cubic-bezier(0.3, 0.6, 0.2, 1) 0.25s both;
+    animation: wa-cert-wipe var(--dur-wipe) var(--ease-wipe, cubic-bezier(0.3, 0.6, 0.2, 1)) 0.25s both;
   }
   .wa-cert.is-engraving .wa-cert-rise {
     opacity: 0;
-    animation: wa-cert-rise 0.7s ease-out forwards;
+    animation: wa-cert-rise var(--dur-rise, 0.7s) ease-out forwards;
   }
   .wa-cert.is-engraving .is-d1 {
     animation-delay: 1s;
@@ -618,11 +621,11 @@
     animation: wa-cert-fade 0.9s ease-out 1.5s forwards;
   }
   .wa-cert.is-engraving .wa-cert-sealbox.is-landing .wa-seal-body {
-    animation: wa-seal-press var(--dur-press) cubic-bezier(0.2, 0.8, 0.25, 1.15) 1.75s both;
+    animation: wa-seal-press var(--dur-press) var(--ease-press, cubic-bezier(0.2, 0.8, 0.25, 1.15)) 1.75s both;
   }
   /* The seal transaction has just confirmed: press it now, with a ring. */
   .wa-seal.is-pressing .wa-seal-body {
-    animation: wa-seal-press var(--dur-press) cubic-bezier(0.2, 0.8, 0.25, 1.15) 0.1s both;
+    animation: wa-seal-press var(--dur-press) var(--ease-press, cubic-bezier(0.2, 0.8, 0.25, 1.15)) 0.1s both;
   }
   .wa-seal.is-pressing .wa-seal-ripple {
     animation: wa-seal-ripple 0.9s ease-out 0.4s both;

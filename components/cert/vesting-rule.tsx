@@ -124,13 +124,13 @@ export function VestingRule({
         `from ${startLabel} to ${endLabel}${cliffLabel ? `, cliff on ${cliffLabel}` : ""}.`;
 
   return (
-    <div className={`wa-rule is-${tone} is-${shape}${isShortGrant(duration) ? " is-short" : ""}`}>
+    <div className={`wa-vest is-${tone} is-${shape}${isShortGrant(duration) ? " is-short" : ""}`}>
       {shape === "row" ? (
         ticker ? (
           <TickerRow {...ticker} />
         ) : (
-          <div className="wa-rule-head">
-            <span className="wa-rule-l">
+          <div className="wa-vest-head">
+            <span className="wa-vest-l">
               {specimen ? "Vesting starts the moment it is issued." : `Vests every second until ${endLabel}.`}
             </span>
           </div>
@@ -138,34 +138,34 @@ export function VestingRule({
       ) : ticker ? (
         <TickerStack {...ticker} unitsText={unitsText(d)} />
       ) : (
-        <div className="wa-rule-stack">
-          <span className="wa-rule-k">
+        <div className="wa-vest-stack">
+          <span className="wa-vest-k">
             {specimen ? "Vesting starts the moment it is issued." : `Vests every second until ${endLabel}.`}
           </span>
         </div>
       )}
 
-      <div className="wa-rule-bar" role="img" aria-label={ariaBar}>
-        <span className="wa-rule-line" />
+      <div className="wa-vest-bar" role="img" aria-label={ariaBar}>
+        <span className="wa-vest-line" />
         {ticks.map((t) => (
-          <span key={t.toFixed(4)} className="wa-rule-tick" style={{left: pct(t)}} />
+          <span key={t.toFixed(4)} className="wa-vest-tick" style={{left: pct(t)}} />
         ))}
         <span
-          className={`wa-rule-vested${growing ? " is-growing" : ""}`}
+          className={`wa-vest-vested${growing ? " is-growing" : ""}`}
           style={{width: pct(vestedPct), ...growStyle}}
         />
-        <span className="wa-rule-released" style={{width: pct(releasedPct)}} />
-        {hasCliff ? <span className="wa-rule-cliff" style={{left: pct(cliffPct)}} /> : null}
+        <span className="wa-vest-released" style={{width: pct(releasedPct)}} />
+        {hasCliff ? <span className="wa-vest-cliff" style={{left: pct(cliffPct)}} /> : null}
       </div>
 
-      <div className="wa-rule-labels" aria-hidden>
-        <span className="wa-rule-start">{startLabel}</span>
+      <div className="wa-vest-labels" aria-hidden>
+        <span className="wa-vest-start">{startLabel}</span>
         {hasCliff ? (
-          <span className="wa-rule-cliff-label" style={{left: pct(Math.min(84, Math.max(16, cliffPct)))}}>
+          <span className="wa-vest-cliff-label" style={{left: pct(Math.min(84, Math.max(16, cliffPct)))}}>
             Cliff
           </span>
         ) : null}
-        <span className="wa-rule-end">{endLabel}</span>
+        <span className="wa-vest-end">{endLabel}</span>
       </div>
 
       {shape === "stack" && ticker ? <TickerRows {...ticker} releasedUnits={releasedUnits} /> : null}
