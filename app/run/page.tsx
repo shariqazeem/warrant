@@ -9,10 +9,16 @@ import "@/app/landing.css";
 
 export const metadata: Metadata = {
   title: "Payroll — Warrant",
-  description: "A file of names and amounts becomes lines, then one signature, then a receipt each.",
+  description:
+    "One signature pays your whole team, each in the split they chose, part stock and part " +
+    "USD₮0, with a payslip for every line. On X Layer.",
 };
 
-/** `/run` — the file becomes lines, then one signature, then the receipts print. */
+/**
+ * `/run` — PAYROLL. A list of who and how much becomes lines, then one signature pays every
+ * line in one transaction, each person in the split they chose, and every line gets its
+ * payslip.
+ */
 export default function RunPage() {
   const payroll = payrollAddress();
 
@@ -21,15 +27,16 @@ export default function RunPage() {
       <div className="wa-dark">
         <SiteNav />
       </div>
-      <div className="wa-tear" aria-hidden />
-
-      <main className="wa-sec is-wide">
+      <main id="main" className="wa-sec is-wide">
         <p className="wa-kicker">Payroll</p>
-        <h1 className="wa-h2">Pay your whole team at once.</h1>
+        <h1 className="wa-h2">One signature pays your whole team, each in the split they chose.</h1>
         <p className="wa-lede">
-          Paste or upload a list of who and how much. You pay in dollars; each person is paid
-          the way they chose — part in stock, all in stock, or none — in a single transaction,
-          with one signature, and each gets their own receipt.
+          Paste or upload who you pay and how much. Everyone who has chosen how they&rsquo;re paid
+          gets exactly that: part stock, all stock, or all USD₮0. For anyone who hasn&rsquo;t, you
+          decide once. It is one transaction, and every line gets its own payslip.
+        </p>
+        <p className="wa-fine">
+          Works for AI agents too: an agent&rsquo;s wallet is one more line, with its own payslip.
         </p>
 
         <div style={{marginTop: "var(--s-7)"}}>

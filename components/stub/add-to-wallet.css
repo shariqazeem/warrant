@@ -1,0 +1,40 @@
+/**
+ * add-to-wallet.css — "Show {SYM} in {wallet}" on a receipt: one button per wallet the browser
+ * announces, and the token address to copy. Tokens only.
+ */
+
+/* ── where the stock is: its address, and a button when a wallet is in the page ── */
+
+.wa-addwallet {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-5);
+}
+
+.wa-addwallet .wa-btn {
+  justify-self: start;
+}
+
+.wa-addwallet .wa-fine {
+  margin: 0;
+}
+
+.wa-addwallet-addr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+}
+
+.wa-addwallet-addr code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  overflow-wrap: anywhere;
+}
+
+.wa-addwallet-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}

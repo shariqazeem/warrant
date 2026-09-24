@@ -2,18 +2,21 @@ import type {Metadata} from "next";
 import Link from "next/link";
 import {notFound} from "next/navigation";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
+import {Payslip} from "@/components/stub/stub";
 import {EXPLORER_TX} from "@/lib/chain";
 import {readRun} from "@/lib/company";
 import {catchUp} from "@/lib/indexer";
 import {dateUTC, runLabel, short, unitsFromRaw, usdt} from "@/lib/format";
 import "@/app/landing.css";
 import "@/app/[company]/company.css";
+import "./run.css";
 
 /**
- * `/run/[id]` — ONE RUN'S PUBLIC RECORD.
+ * `/run/[id]` — ONE PAYROLL RUN'S PUBLIC RECORD.
  *
- * Everyone paid in one signature, in one place, each row linking to its own receipt. A
- * stranger's page: what a company shows when it says "we paid the contributors".
+ * Everyone paid in one signature, each as their own payslip, in one place. A stranger's page:
+ * what a company shows when it says "we paid the team". Every figure is from the Paid events
+ * of the run, summed exactly; units of two stocks are never added together.
  */
 export const revalidate = 15;
 
@@ -22,12 +25,12 @@ type Params = {params: Promise<{id: string}>};
 export async function generateMetadata({params}: Params): Promise<Metadata> {
   const {id} = await params;
   return {
-    title: `Run ${runLabel(decodeURIComponent(id))} — Warrant`,
-    description: "Everyone paid in one run, with the reason each was paid.",
+    title: `Payroll run ${runLabel(decodeURIComponent(id))} — Warrant`,
+    description: "Everyone paid in one payroll run, each with a payslip and the note they were paid for.",
   };
 }
 
-export default async function RunPage({params}: Params) {
+export default async function RunRecordPage({params}: Params) {
   const {id} = await params;
   const runId = decodeURIComponent(id);
 
@@ -37,6 +40,7 @@ export default async function RunPage({params}: Params) {
 
   const rows = found.value;
   const total = rows.reduce((sum, r) => sum + r.stableAmount, 0n);
+  const cash = rows.reduce((sum, r) => sum + r.cashAmount, 0n);
   // Summed per stock, never across them: units of two different stocks do not add up.
   const delivered = new Map<string, {units: bigint; symbol: string; decimals: number}>();
   for (const r of rows) {
@@ -48,78 +52,78 @@ export default async function RunPage({params}: Params) {
   }
   const transactions = [...new Set(rows.map((r) => r.txHash))];
   const people = new Set(rows.map((r) => r.recipient.toLowerCase())).size;
+  const payer = rows[0]?.payer;
 
   return (
     <div className="wa-landing">
       <div className="wa-dark">
         <SiteNav />
       </div>
-      <div className="wa-tear" aria-hidden />
 
-      <main className="wa-sec is-wide">
-        <p className="wa-kicker">Payroll batch</p>
+      <main id="main" className="wa-sec is-wide">
+        <p className="wa-kicker">Payroll run</p>
         <h1 className="wa-co-name">{runLabel(runId)}</h1>
 
         {rows.length === 0 ? (
           <div className="wa-nothing" style={{marginTop: "var(--s-7)"}}>
-            <strong>No payroll batch with that id.</strong>
-            Either nothing was ever paid under it, or it happened moments ago and is still
-            being read. The batch link on any receipt always works.
+            <strong>No payroll run with that id.</strong>
+            Either nothing was ever paid under it, or it was paid moments ago and is still being
+            read from X Layer. The link on any payslip always opens its own run.
           </div>
         ) : (
           <>
             <p className="wa-lede">
-              {people} {people === 1 ? "person" : "people"} paid{" "}
-              {rows[0]?.blockTime ? `on ${dateUTC(rows[0].blockTime)}` : ""}
+              {rows.length} {rows.length === 1 ? "payslip" : "payslips"} issued
+              {rows[0]?.blockTime ? ` on ${dateUTC(rows[0].blockTime)}` : ""}
+              {payer ? (
+                <>
+                  {" "}
+                  by <Link href={`/@${payer}`}>{short(payer)}</Link>
+                </>
+              ) : null}
               {transactions.length === 1 ? (
                 <>
-                  , with one signature.{" "}
-                  <Link href={EXPLORER_TX(transactions[0]!)}>The transaction on X Layer</Link>.
+                  , in one signature.{" "}
+                  <a href={EXPLORER_TX(transactions[0]!)}>See the transaction on X Layer</a>.
                 </>
               ) : (
                 <>, in {transactions.length} transactions.</>
               )}
             </p>
 
-            <section className="wa-co-figures">
+            <section className="wa-co-figures" aria-label="The run in figures">
               <div>
                 <p className="k">Paid</p>
                 <p className="wa-units-sm">{usdt(total)}</p>
               </div>
               {[...delivered.entries()].map(([asset, d]) => (
                 <div key={asset}>
-                  <p className="k">Delivered</p>
+                  <p className="k">Received as {d.symbol}</p>
                   <p className="wa-units-sm">
                     {unitsFromRaw(d.units, d.decimals)} <span className="wa-co-sym">{d.symbol}</span>
                   </p>
                 </div>
               ))}
+              {cash > 0n ? (
+                <div>
+                  <p className="k">Received as USD₮0</p>
+                  <p className="wa-units-sm">{usdt(cash)}</p>
+                </div>
+              ) : null}
               <div>
                 <p className="k">People</p>
                 <p className="wa-units-sm">{people}</p>
               </div>
             </section>
 
-            <section className="wa-co-section">
-              <p className="wa-kicker">Everyone in this batch</p>
-              <ol className="wa-co-rows">
+            <section className="wa-co-section" aria-labelledby="run-payslips">
+              <h2 id="run-payslips" className="wa-kicker">
+                Every payslip in this run
+              </h2>
+              <ol className="wa-run-payslips">
                 {rows.map((r) => (
-                  <li className="wa-co-row" key={`${r.txHash}-${r.logIndex}`}>
-                    <Link href={`/receipt/${r.txHash}`} className="wa-co-when">
-                      receipt
-                    </Link>
-                    <span className="wa-co-who wa-mono">{short(r.recipient)}</span>
-                    <span className="wa-co-why">
-                      {r.reason ?? <em>reason not stored here</em>}
-                    </span>
-                    <span className="wa-co-paid wa-mono">{usdt(r.stableAmount)}</span>
-                    <span className="wa-co-got wa-mono">
-                      {r.assetAmount > 0n
-                        ? `${unitsFromRaw(r.assetAmount, r.assetDecimals)} ${r.assetSymbol}` +
-                          (r.cashAmount > 0n ? ` + ${usdt(r.cashAmount)}` : "")
-                        : `all in USDT`}
-                    </span>
-                    <span className="wa-co-run" />
+                  <li key={`${r.txHash}-${r.logIndex}`}>
+                    <Payslip receipt={r} href={`/receipt/${r.txHash}`} compact />
                   </li>
                 ))}
               </ol>

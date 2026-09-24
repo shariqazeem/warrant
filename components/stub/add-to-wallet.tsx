@@ -3,6 +3,7 @@
 import {useEffect, useState} from "react";
 import {CopyText} from "@/components/app/copy-text";
 import {xLayer} from "@/lib/chain";
+import "./add-to-wallet.css";
 
 /**
  * "WHERE IS IT?" — the first thing a person paid in stock asks.

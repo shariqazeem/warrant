@@ -1,0 +1,287 @@
+/**
+ * me.css — YOUR GRANTS AND PAY, at 390px first. A vault header with the one sentence that
+ * matters, the certificates rising out of it onto canvas, then payslips and the choice.
+ * Token names only.
+ */
+
+.wa-yours {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+}
+
+.wa-yours-top {
+  background: var(--vault);
+  color: var(--on-vault);
+}
+
+.wa-yours-main {
+  display: block;
+}
+
+/* ── the vault header ─────────────────────────────────────────────────── */
+
+.wa-yours-head {
+  background: var(--vault);
+  color: var(--on-vault);
+  padding: 20px 20px 40px;
+}
+
+.wa-yours-head.has-cert {
+  padding-bottom: 150px;
+}
+
+.wa-yours-head-inner {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wa-yours-h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(38px, 1.8rem + 2vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--on-vault);
+}
+
+.wa-yours-lede {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--on-vault-2);
+  max-width: 36em;
+}
+
+.wa-yours-mono {
+  font-family: var(--font-mono);
+  font-size: 0.94em;
+  font-variant-numeric: tabular-nums;
+}
+
+.wa-yours-connected {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--on-vault-3);
+}
+
+.wa-yours-head .wa-yours-linkish {
+  color: var(--on-vault);
+}
+
+.wa-yours-head :focus-visible {
+  outline: 2px solid var(--foil);
+  outline-offset: 3px;
+}
+
+/* ── the body, on canvas ──────────────────────────────────────────────── */
+
+.wa-yours-body {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 28px 20px 72px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.wa-yours-head.has-cert + .wa-yours-body {
+  margin-top: -126px;
+}
+
+.wa-yours-grants {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.wa-yours-grant {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+.wa-yours-grant > * {
+  max-width: 100%;
+}
+
+.wa-yours-grant-facts {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wa-yours-standing {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.wa-yours-standing strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.wa-yours-note {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.wa-yours-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 22px;
+  border-radius: var(--r-control);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.wa-yours-btn.is-vault {
+  background: var(--vault);
+  color: var(--on-vault);
+  border: 1px solid var(--vault);
+}
+
+.wa-yours-btn.is-vault:hover {
+  background: var(--vault-raised);
+}
+
+.wa-yours-linkish {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  min-height: 24px;
+}
+
+.wa-yours-section {
+  border-top: 1px solid var(--rule);
+  padding-top: 24px;
+}
+
+.wa-yours-h2 {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-h2);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.wa-yours-empty,
+.wa-yours-fine,
+.wa-yours-held {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.wa-yours-fine a,
+.wa-yours-held a,
+.wa-yours-empty a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.wa-yours-payslips {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* The choice, folded like the design's accordion, open on request. */
+.wa-yours-choose > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 50px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.wa-yours-choose > summary::-webkit-details-marker {
+  display: none;
+}
+
+.wa-yours-choose > summary::after {
+  content: "+";
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.wa-yours-choose[open] > summary::after {
+  content: "\2212";
+}
+
+.wa-yours-choose-lede {
+  margin: 8px 0 20px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 40em;
+}
+
+/* Skeletons while the chain is read: shapes, never numbers. */
+.wa-yours-skel {
+  display: block;
+  height: 18px;
+  border-radius: var(--r-control);
+  background: var(--rule);
+}
+
+.wa-yours-skel.is-cert {
+  width: 350px;
+  max-width: 100%;
+  height: 520px;
+  align-self: center;
+  border-radius: var(--r-cert);
+}
+
+.wa-yours-skel.is-short {
+  width: 60%;
+}
+
+@media (min-width: 900px) {
+  .wa-yours-head {
+    padding: 48px 32px 56px;
+  }
+
+  .wa-yours-head.has-cert {
+    padding-bottom: 160px;
+  }
+
+  .wa-yours-body {
+    padding: 36px 32px 96px;
+  }
+}
