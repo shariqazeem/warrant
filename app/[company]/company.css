@@ -13,6 +13,14 @@
   overflow-wrap: anywhere;
 }
 
+/* A wallet's page is headed by its address: mono, smaller, so all 42 characters fit. */
+.wa-co-name.wa-mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-h2);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
 /* The one line that invites the owner of this wallet to make it a pay link. */
 .wa-co-invite {
   max-width: 62ch;
