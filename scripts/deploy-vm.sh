@@ -79,6 +79,10 @@ if [ -d .next-prev/static ]; then cp -Rn .next-prev/static/. .next/static/ 2>/de
 pm2 restart warrant --update-env </dev/null >/dev/null 2>&1
 # The indexer runs from source, so new indexer code needs a restart too.
 pm2 restart warrant-indexer --update-env </dev/null >/dev/null 2>&1 || true
+# So does the keeper (docs/keeper.md). Where it is not installed, this does nothing. Its key
+# lives in .env.keeper, which the sync never touches; keep it readable by its owner only.
+if [ -f .env.keeper ]; then chmod 600 .env.keeper; fi
+pm2 restart warrant-keeper --update-env </dev/null >/dev/null 2>&1 || true
 sleep 5
 for p in "" pay run grants; do
   printf "  /%-7s %s\n" "$p" "$(curl -s -o /dev/null --max-time 60 -w '%{http_code}' "http://127.0.0.1:3000/$p")"
