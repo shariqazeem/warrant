@@ -1,5 +1,8 @@
-/* The "What is SPYx?" note. Its own stylesheet, so it renders the same on every page that
- * shows a stock — the front page, the company page, /me — not only where pay.css loads. */
+/**
+ * asset-note.css: the "What is SPYx?" note, beside every stock it describes: per row, never
+ * a banner. Its own sheet, so it renders the same on every page that shows a stock.
+ */
+
 .wa-assetnote {
   display: flex;
   flex-direction: column;
@@ -9,19 +12,12 @@
 
 .wa-assetnote .wa-linkish {
   align-self: flex-start;
-  border: none;
-  background: none;
-  padding: 0;
-  cursor: pointer;
-  color: var(--accent);
-  font: inherit;
-  font-size: var(--fs-caption);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .wa-assetnote-body {
-  color: var(--ink-muted);
+  max-width: 60ch;
   line-height: var(--lh-body);
-  max-width: 56ch;
+  color: var(--muted);
 }

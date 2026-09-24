@@ -1,6 +1,6 @@
 /**
- * run.css — a file becoming lines. Ruled rows, never a grid of cards.
- * Aliases only; every value comes from styles/tokens.css.
+ * run.css: payroll. A file of people becoming lines, then one signature. Ruled rows, never
+ * a grid of cards. Every value is a token.
  */
 
 .wa-run {
@@ -12,41 +12,48 @@
 /* ── the file ──────────────────────────────────────────────────────── */
 
 .wa-drop {
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--r-md);
   padding: var(--s-4);
-  transition: border-color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out);
+  border: 1px solid var(--field);
+  border-radius: var(--r-panel);
+  background: var(--surface);
+  transition:
+    border-color var(--dur-1) var(--ease-out),
+    background-color var(--dur-1) var(--ease-out);
 }
 
+.wa-drop:focus-within {
+  outline: 2px solid var(--vault);
+  outline-offset: 2px;
+  border-color: var(--vault);
+}
+
+/* A file held over the box: the box says it will take it. */
 .wa-drop.is-over {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: var(--vault);
+  background: var(--field-bg);
 }
 
 .wa-drop-text {
   width: 100%;
-  border: none;
+  padding: 0;
+  border: 0;
   background: transparent;
   color: var(--ink);
   font-family: var(--font-mono);
   font-size: var(--fs-mono);
   line-height: 1.7;
   resize: vertical;
-  padding: 0;
 }
 
-.wa-drop-text:focus {
+.wa-drop-text:focus,
+.wa-drop-text:focus-visible {
   outline: none;
 }
 
 /* Locked while its prices load or it is being paid: still readable, visibly not editable. */
 .wa-drop-text:disabled {
-  color: var(--ink-muted);
+  color: var(--muted);
   cursor: not-allowed;
-}
-
-.wa-drop-text::placeholder {
-  color: var(--ink-faint);
 }
 
 .wa-drop-act {
@@ -56,39 +63,39 @@
   gap: var(--s-3);
   margin-top: var(--s-4);
   padding-top: var(--s-4);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--rule);
 }
 
 .wa-drop-hint {
+  max-width: 48ch;
   font-size: var(--fs-caption);
-  color: var(--ink-faint);
   line-height: var(--lh-body);
-  max-width: 44ch;
+  color: var(--muted);
 }
 
-/* ── the lines ─────────────────────────────────────────────────────── */
+/* ── the lines: one person each ────────────────────────────────────── */
 
 .wa-lines {
-  list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--border);
+  list-style: none;
+  border-top: 1px solid var(--rule);
 }
 
 .wa-line {
   display: grid;
-  /* number · who · why · amount · their choice · what they get */
+  /* number, who, why, amount, their choice, what they get */
   grid-template-columns: 2rem 9rem minmax(0, 1fr) 6rem 9rem 12rem;
   gap: var(--s-4);
   align-items: baseline;
   padding: var(--s-3) 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--rule);
   font-size: var(--fs-small);
 }
 
 .wa-line-n {
-  color: var(--ink-faint);
   font-size: var(--fs-caption);
+  color: var(--muted);
 }
 
 .wa-line-who {
@@ -96,13 +103,13 @@
 }
 
 .wa-line-why {
-  color: var(--ink-muted);
+  color: var(--muted);
   overflow-wrap: anywhere;
 }
 
 .wa-line-why em {
-  color: var(--ink-faint);
   font-style: normal;
+  color: var(--muted);
 }
 
 .wa-line-amt {
@@ -110,39 +117,41 @@
   color: var(--ink);
 }
 
+/* What they get: the stock, in settled, because it is what arrives. */
 .wa-line-gets {
   text-align: right;
-  color: var(--ok);
+  font-weight: 600;
+  color: var(--settled);
 }
 
 /* Whose split the line follows: the person's own choice, or "not chosen". */
 .wa-line-choice {
-  color: var(--ink-muted);
   font-size: var(--fs-caption);
+  color: var(--muted);
 }
 
-/* A line that will not pay is shown IN PLACE, with the rule it broke. */
+/* A line that will not pay is shown in place, with the rule it broke. */
 .wa-line.is-bad {
   grid-template-columns: 2rem 9rem minmax(0, 1fr);
 }
 
 .wa-line.is-bad .wa-line-who {
-  color: var(--err);
+  color: var(--refused);
   overflow-wrap: anywhere;
 }
 
 .wa-line-refusal {
-  grid-column: 1 / -1;
   display: flex;
   align-items: flex-start;
   gap: var(--s-2);
-  color: var(--err);
+  grid-column: 1 / -1;
   font-size: var(--fs-caption);
   line-height: var(--lh-body);
+  color: var(--refused);
 }
 
 .wa-line-refusal svg {
-  flex: 0 0 auto;
+  flex: none;
   margin-top: 2px;
 }
 
@@ -151,16 +160,16 @@
 .wa-run-sum {
   font-size: var(--fs-small);
   line-height: var(--lh-body);
-  color: var(--ink-muted);
+  color: var(--muted);
 }
 
 .wa-run-sum strong {
+  font-weight: 600;
   color: var(--ink);
-  font-weight: 500;
 }
 
 .wa-run-sum .is-bad {
-  color: var(--err);
+  color: var(--refused);
 }
 
 .wa-run-out {
@@ -168,13 +177,13 @@
 }
 
 .wa-run-out strong {
-  color: var(--ok);
+  color: var(--settled);
 }
 
 .wa-run-impact {
   margin-top: var(--s-1);
   font-size: var(--fs-caption);
-  color: var(--ink-faint);
+  color: var(--muted);
 }
 
 /* ── narrow ────────────────────────────────────────────────────────── */
