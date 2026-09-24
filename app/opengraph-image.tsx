@@ -3,6 +3,8 @@ import {readOpenedGrants} from "@/lib/company";
 import {humanDuration} from "@/lib/schedule";
 import {short, unitsFromRaw, usdt} from "@/lib/format";
 import {OG, OG_SIZE, OG_TYPE} from "@/lib/og-theme";
+import {ogOptions} from "@/lib/og-fonts";
+import {DISPLAY, UI} from "@/components/cert/cert-card";
 
 /**
  * THE FRONT PAGE'S CARD: a certificate on bond paper, what a link to warrant.world unfurls
@@ -40,7 +42,8 @@ export default async function Image() {
           display: "flex",
           background: CARD.vault,
           padding: 28,
-          fontFamily: "serif",
+          fontFamily: DISPLAY,
+          fontWeight: 500,
         }}
       >
         <div
@@ -84,7 +87,7 @@ export default async function Image() {
                   </svg>
                   <div style={{display: "flex", fontSize: 36, marginLeft: 14, letterSpacing: -0.5}}>Warrant</div>
                 </div>
-                <div style={{display: "flex", fontSize: 24, color: CARD.mutedBond, fontFamily: "sans-serif"}}>
+                <div style={{display: "flex", fontSize: 24, color: CARD.mutedBond, fontFamily: UI, fontWeight: 400}}>
                   warrant.world
                 </div>
               </div>
@@ -117,7 +120,8 @@ export default async function Image() {
                     marginTop: 24,
                     lineHeight: 1.4,
                     color: CARD.mutedBond,
-                    fontFamily: "sans-serif",
+                    fontFamily: UI,
+                    fontWeight: 400,
                     maxWidth: 1000,
                   }}
                 >
@@ -137,7 +141,8 @@ export default async function Image() {
                   borderTop: `1px solid ${CARD.engrave}`,
                   paddingTop: 18,
                   fontSize: 22,
-                  fontFamily: "sans-serif",
+                  fontFamily: UI,
+                  fontWeight: 400,
                   color: CARD.mutedBond,
                 }}
               >
@@ -149,6 +154,6 @@ export default async function Image() {
         </div>
       </div>
     ),
-    size,
+    await ogOptions(size),
   );
 }

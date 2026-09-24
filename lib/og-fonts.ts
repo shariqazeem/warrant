@@ -57,6 +57,16 @@ async function load(): Promise<OgFont[]> {
   );
 }
 
+/**
+ * A card's ImageResponse options: its size, with the faces when they loaded. Every text a
+ * card draws names one of the three families; with faces handed to Satori, a family it does
+ * not know falls back to the first face, which is Bodoni.
+ */
+export async function ogOptions<S extends {width: number; height: number}>(size: S): Promise<S & {fonts?: OgFont[]}> {
+  const fonts = await ogFonts();
+  return fonts.length > 0 ? {...size, fonts} : {...size};
+}
+
 /** The faces, or none: a card never fails because the fonts would not load. */
 export async function ogFonts(): Promise<OgFont[]> {
   if (!loading) {

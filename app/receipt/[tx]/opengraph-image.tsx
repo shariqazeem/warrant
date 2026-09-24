@@ -6,6 +6,8 @@ import {humanDuration} from "@/lib/schedule";
 import {reasonFor} from "@/lib/db";
 import {settledUnitPrice, short, unitsFromRaw, usdt} from "@/lib/format";
 import {OG, OG_SIZE, OG_TYPE} from "@/lib/og-theme";
+import {ogOptions} from "@/lib/og-fonts";
+import {DISPLAY, UI} from "@/components/cert/cert-card";
 
 /**
  * THE SHARE CARD — the stub at its fifth size.
@@ -18,7 +20,7 @@ import {OG, OG_SIZE, OG_TYPE} from "@/lib/og-theme";
  * words rather than inventing a payment.
  */
 export const runtime = "nodejs";
-export const alt = "A payment in ownership, with the reason it was made";
+export const alt = "A payslip on X Layer: what was paid, to whom, in which stock, and why";
 export const size = OG_SIZE;
 export const contentType = OG_TYPE;
 
@@ -33,7 +35,7 @@ function Card({children}: {children: React.ReactNode}) {
         display: "flex",
         background: PAPER,
         padding: 48,
-        fontFamily: "sans-serif",
+        fontFamily: UI,
       }}
     >
       {children}
@@ -51,13 +53,13 @@ export default async function Image({params}: {params: {tx: string}}) {
           <div style={{display: "flex", flexDirection: "column", justifyContent: "center"}}>
             <div style={{fontSize: 40, color: INK}}>Not a transaction</div>
             <div style={{fontSize: 24, color: MUTED, marginTop: 16}}>
-              A stub is anchored to one, and its address is the hash of the transaction that
+              A payslip is anchored to one, and its address is the hash of the transaction that
               settled it.
             </div>
           </div>
         </Card>
       ),
-      size,
+      await ogOptions(size),
     );
   }
 
@@ -68,7 +70,7 @@ export default async function Image({params}: {params: {tx: string}}) {
     // card must agree with the page it stands for.
     const granted = await readGrantMoments(tx as `0x${string}`);
     if (granted.ok && granted.value.length > 0) {
-      return new ImageResponse(<GrantCard g={granted.value[0]!} many={granted.value.length} tx={tx} />, size);
+      return new ImageResponse(<GrantCard g={granted.value[0]!} many={granted.value.length} tx={tx} />, await ogOptions(size));
     }
     return new ImageResponse(
       (
@@ -81,7 +83,7 @@ export default async function Image({params}: {params: {tx: string}}) {
           </div>
         </Card>
       ),
-      size,
+      await ogOptions(size),
     );
   }
 
@@ -142,7 +144,7 @@ export default async function Image({params}: {params: {tx: string}}) {
 
           {/* The units are the largest thing on any surface they appear on. */}
           <div style={{display: "flex", alignItems: "baseline"}}>
-            <div style={{display: "flex", fontSize: 104, color: INK, letterSpacing: -4}}>
+            <div style={{display: "flex", fontFamily: DISPLAY, fontWeight: 600, fontSize: 104, color: INK, letterSpacing: -3}}>
               {dollarsOnly ? (Number(r.cashAmount) / 1e6).toFixed(2) : unitsFromRaw(r.assetAmount, decimals)}
             </div>
             <div style={{display: "flex", fontSize: 34, color: MUTED, marginLeft: 18}}>
@@ -174,12 +176,12 @@ export default async function Image({params}: {params: {tx: string}}) {
           ) : null}
 
           <div style={{display: "flex", fontSize: 18, color: FAINT, marginTop: 18}}>
-            {(many > 1 ? `${many} people paid in this transaction \u00b7 ` : "") + short(tx)}
+            {many > 1 ? `${many} people paid in transaction ${short(tx)}` : short(tx)}
           </div>
         </div>
       </Card>
     ),
-    size,
+    await ogOptions(size),
   );
 }
 /**
@@ -238,10 +240,10 @@ function GrantCard({g, many, tx}: {g: GrantReceipt; many: number; tx: string}) {
           <div style={{display: "flex"}}>Warrant</div>
         </div>
         <div style={{display: "flex", fontSize: 30, color: MUTED, marginTop: 32}}>{lead}</div>
-        <div style={{display: "flex", fontSize: 96, color: INK, letterSpacing: -4, marginTop: 6}}>{units}</div>
+        <div style={{display: "flex", fontFamily: DISPLAY, fontWeight: 600, fontSize: 96, color: INK, letterSpacing: -3, marginTop: 6}}>{units}</div>
         <div style={{display: "flex", fontSize: 24, color: MUTED, marginTop: 16}}>{tail}</div>
         <div style={{display: "flex", fontSize: 18, color: FAINT, marginTop: 28}}>
-          {(many > 1 ? `${many} grant moments in this transaction \u00b7 ` : "") + short(tx)}
+          {many > 1 ? `${many} grant moments in transaction ${short(tx)}` : short(tx)}
         </div>
       </div>
     </Card>

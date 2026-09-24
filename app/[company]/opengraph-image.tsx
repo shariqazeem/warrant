@@ -4,6 +4,8 @@ import {linkFacts, type LinkFacts} from "@/components/link/read-link";
 import type {StoredChoice} from "@/lib/choice";
 import {readCompany} from "@/lib/company";
 import {OG, OG_SIZE, OG_TYPE} from "@/lib/og-theme";
+import {ogOptions} from "@/lib/og-fonts";
+import {DISPLAY, UI} from "@/components/cert/cert-card";
 import {dateUTC, short, unitsFromRaw, usdt} from "@/lib/format";
 import {siteUrl} from "@/lib/site";
 
@@ -18,7 +20,7 @@ import {siteUrl} from "@/lib/site";
  * payments they have received. No amount and no price.
  *
  * A COMPANY'S CARD, for everyone else: what a company shows when it says "we pay our people
- * in ownership". Every figure is a sum over rows the indexer copied from the chain. A company
+ * in stock". Every figure is a sum over rows the indexer copied from the chain. A company
  * that has paid nobody gets a card that says so rather than a card with zeroes on it,
  * because a zero here would read as a claim.
  */
@@ -31,7 +33,7 @@ function Figure({k, v}: {k: string; v: string}) {
   return (
     <div style={{display: "flex", flexDirection: "column", marginRight: 48}}>
       <div style={{display: "flex", fontSize: 19, color: OG.faint}}>{k}</div>
-      <div style={{display: "flex", fontSize: 50, color: OG.ink, marginTop: 8, letterSpacing: -2}}>
+      <div style={{display: "flex", fontFamily: DISPLAY, fontWeight: 600, fontSize: 50, color: OG.ink, marginTop: 8, letterSpacing: -1}}>
         {v}
       </div>
     </div>
@@ -58,7 +60,8 @@ function PayLinkCard({address, choice, timesPaid}: {address: string; choice: Sto
     timesPaid > 0 ? `${timesPaid} ${timesPaid === 1 ? "payment" : "payments"} received through Warrant` : null,
   ]
     .filter((f): f is string => f !== null)
-    .join(" \u00b7 ");
+    .map((f) => `${f}.`)
+    .join(" ");
 
   return (
     <div
@@ -68,7 +71,7 @@ function PayLinkCard({address, choice, timesPaid}: {address: string; choice: Sto
         display: "flex",
         background: OG.paper,
         padding: 48,
-        fontFamily: "sans-serif",
+        fontFamily: UI,
       }}
     >
       <div
@@ -78,7 +81,7 @@ function PayLinkCard({address, choice, timesPaid}: {address: string; choice: Sto
           flexDirection: "column",
           background: OG.sheet,
           border: `1px solid ${OG.line}`,
-          borderRadius: 16,
+          borderRadius: 8,
           padding: 44,
         }}
       >
@@ -87,7 +90,7 @@ function PayLinkCard({address, choice, timesPaid}: {address: string; choice: Sto
           <div style={{display: "flex"}}>Warrant</div>
         </div>
 
-        <div style={{display: "flex", fontSize: 76, color: OG.ink, marginTop: 40, letterSpacing: -3, lineHeight: 1}}>
+        <div style={{display: "flex", fontFamily: DISPLAY, fontWeight: 500, fontSize: 76, color: OG.ink, marginTop: 40, letterSpacing: -2, lineHeight: 1}}>
           {payHeading(address)}
         </div>
 
@@ -123,7 +126,7 @@ export default async function Image({params}: {params: {company: string}}) {
   if (person?.kind === "pay-link") {
     return new ImageResponse(
       <PayLinkCard address={address} choice={person.choice} timesPaid={person.timesPaid} />,
-      size,
+      await ogOptions(size),
     );
   }
 
@@ -144,7 +147,7 @@ export default async function Image({params}: {params: {company: string}}) {
           display: "flex",
           background: OG.paper,
           padding: 48,
-          fontFamily: "sans-serif",
+          fontFamily: UI,
         }}
       >
         <div
@@ -154,7 +157,7 @@ export default async function Image({params}: {params: {company: string}}) {
             flexDirection: "column",
             background: OG.sheet,
             border: `1px solid ${OG.line}`,
-            borderRadius: 16,
+            borderRadius: 8,
             padding: 44,
           }}
         >
@@ -171,8 +174,8 @@ export default async function Image({params}: {params: {company: string}}) {
             <div style={{display: "flex", flexDirection: "column"}}>
               <div style={{display: "flex", fontSize: 40, color: OG.ink, marginTop: 20, lineHeight: 1.2}}>
                 {c.since === null
-                  ? "Pays its people in ownership."
-                  : `Paying people in ownership since ${dateUTC(c.since)}.`}
+                  ? "Pays its people in stock."
+                  : `Paying people in stock since ${dateUTC(c.since)}.`}
               </div>
 
               <div style={{display: "flex", marginTop: 40}}>
@@ -190,17 +193,17 @@ export default async function Image({params}: {params: {company: string}}) {
               </div>
 
               <div style={{display: "flex", fontSize: 20, color: OG.faint, marginTop: 40}}>
-                {"Every payment carries the reason it was made \u00b7 X Layer"}
+                {"Every payment carries the reason it was made, on X Layer."}
               </div>
             </div>
           ) : (
             <div style={{display: "flex", fontSize: 32, color: OG.muted, marginTop: 28, lineHeight: 1.3}}>
-              This address has not paid anyone in ownership through Warrant yet.
+              This wallet has not granted stock or run payroll through Warrant yet.
             </div>
           )}
         </div>
       </div>
     ),
-    size,
+    await ogOptions(size),
   );
 }
