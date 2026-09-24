@@ -11,7 +11,7 @@ import {AssetNote} from "@/components/pay/asset-note";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {EXPLORER_ADDRESS, EXPLORER_TX} from "@/lib/chain";
 import {bps, stampUTC} from "@/lib/format";
-import {parseGrantId} from "@/lib/grants";
+import {parseGrantId, findGrant} from "@/lib/grants";
 import {recordTransaction} from "@/lib/indexer";
 import {formatUnitsFixed, sharesToUnits, vestingPhase} from "@/lib/vesting";
 import {forgetCertificate, readCertificate, type CertificateRecord} from "./read";
@@ -43,6 +43,10 @@ export async function generateMetadata({params}: Props): Promise<Metadata> {
   const n = parseGrantId(id);
   if (n === null) return {title: "Not a certificate — Warrant"};
   const no = String(n).padStart(6, "0");
+  // A number with no grant behind it yet says so, rather than naming a certificate that
+  // does not exist. A read that fails keeps the certificate's title: the page says the rest.
+  const found = await findGrant(n).catch(() => null);
+  if (found?.ok && found.value === null) return {title: `No grant No. ${no} yet — Warrant`};
   return {
     title: `Certificate of grant No. ${no} — Warrant`,
     description:

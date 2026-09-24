@@ -317,3 +317,16 @@
 .wa-dark .wa-nothing strong {
   color: var(--on-vault);
 }
+
+/* Text for screen readers only: a page's heading where the design shows it as an object. */
+.wa-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

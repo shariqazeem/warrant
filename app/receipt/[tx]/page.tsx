@@ -37,7 +37,7 @@ type Params = {params: Promise<{tx: string}>};
 export async function generateMetadata({params}: Params): Promise<Metadata> {
   const {tx} = await params;
   return {
-    title: `Stub ${short(tx)} — Warrant`,
+    title: `Payslip ${short(tx)} — Warrant`,
     description: "A payslip on X Layer: what was paid, to whom, in what, and why.",
   };
 }
@@ -263,11 +263,14 @@ export default async function ReceiptPage({params}: Params) {
   }
 
   return (
-    <main className="wa-receipt">
+    <main className="wa-receipt" id="main">
+      <h1 className="wa-sr-only">
+        {found.value.length > 1 ? `${found.value.length} payslips` : "Payslip"} for transaction {short(tx)}
+      </h1>
       {found.value.length > 1 ? (
         <p className="wa-r-many">
           {found.value.length} people were paid in this one transaction. Here is each
-          receipt.
+          payslip.
         </p>
       ) : null}
       {found.value.map((r) => {
