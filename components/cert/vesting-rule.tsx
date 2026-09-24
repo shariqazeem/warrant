@@ -1,6 +1,6 @@
 import type {CSSProperties} from "react";
 import {vestedShares, vestingPhase} from "@/lib/vesting";
-import {poolState, unitsText, vestingTerms, whenLabel, isShortGrant} from "./cert-text";
+import {poolState, unitsText, vestingTerms, whenLabel, isShortGrant, onOrAt} from "./cert-text";
 import type {CertificateData} from "./types";
 import {TickerRow, TickerRows, TickerStack, type TickerProps} from "./vesting-ticker";
 
@@ -119,9 +119,9 @@ export function VestingRule({
 
   const ariaBar =
     phase === null
-      ? `The schedule: from ${startLabel} to ${endLabel}${cliffLabel ? `, with a cliff on ${cliffLabel}` : ", with no cliff"}.`
+      ? `The schedule: from ${startLabel} to ${endLabel}${cliffLabel ? `, with a cliff ${onOrAt(cliffLabel)}` : ", with no cliff"}.`
       : `${Math.floor(vestedPct)}% vested and ${Math.floor(releasedPct)}% released of the grant, ` +
-        `from ${startLabel} to ${endLabel}${cliffLabel ? `, cliff on ${cliffLabel}` : ""}.`;
+        `from ${startLabel} to ${endLabel}${cliffLabel ? `, cliff ${onOrAt(cliffLabel)}` : ""}.`;
 
   return (
     <div className={`wa-vest is-${tone} is-${shape}${isShortGrant(duration) ? " is-short" : ""}`}>
@@ -160,8 +160,10 @@ export function VestingRule({
 
       <div className="wa-vest-labels" aria-hidden>
         <span className="wa-vest-start">{startLabel}</span>
-        {hasCliff ? (
-          <span className="wa-vest-cliff-label" style={{left: pct(Math.min(84, Math.max(16, cliffPct)))}}>
+        {/* The word sits under its marker, or not at all: near either end it would print over
+            a date, and the certificate's own sentence already names the cliff. */}
+        {hasCliff && cliffPct >= 24 && cliffPct <= 76 ? (
+          <span className="wa-vest-cliff-label" style={{left: pct(cliffPct)}}>
             Cliff
           </span>
         ) : null}

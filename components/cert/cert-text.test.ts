@@ -97,7 +97,7 @@ describe("line two: the schedule, in every state", () => {
   it("tells a short grant in hours and clock times", () => {
     expect(scheduleLine({...base, cliffSeconds: 0, durationSeconds: 7200})).toBe("Vests every second over 2 hours, with no cliff.");
     expect(scheduleLine({...base, cliffSeconds: 1800, durationSeconds: 7200})).toBe(
-      "Vests every second over 2 hours. Nothing unlocks before the cliff on 12:30 UTC.",
+      "Vests every second over 2 hours. Nothing unlocks before the cliff at 12:30 UTC.",
     );
     expect(whenLabel(START, 7200)).toBe("12:00 UTC");
     expect(whenLabel(START, 730 * DAY)).toBe("24 Sep 2026");

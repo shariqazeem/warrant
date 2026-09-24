@@ -5,7 +5,7 @@ import {Certificate} from "@/components/cert/certificate";
 import {CertActionsLazy} from "@/components/cert/cert-actions-lazy";
 import {CertShare, PlayedOnce} from "@/components/cert/cert-share";
 import {RefreshWhilePending} from "@/components/cert/refresh";
-import {lengthWords, routeLine, shortAddress, whenLabel} from "@/components/cert/cert-text";
+import {lengthWords, routeLine, shortAddress, whenLabel, onOrAt} from "@/components/cert/cert-text";
 import {VestingRule} from "@/components/cert/vesting-rule";
 import {AssetNote} from "@/components/pay/asset-note";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
@@ -86,9 +86,9 @@ function standing(r: CertificateRecord, now: number): {head: string; sub: string
     case "vested":
       return {head: "Fully vested.", sub: `${base} All of it is theirs.`};
     case "not-started":
-      return {head: `Vesting starts on ${whenLabel(d.start, d.durationSeconds)}.`, sub: base};
+      return {head: `Vesting starts ${onOrAt(whenLabel(d.start, d.durationSeconds))}.`, sub: base};
     case "accruing":
-      return {head: `Accruing until the cliff on ${whenLabel(d.start + d.cliffSeconds, d.durationSeconds)}.`, sub: base};
+      return {head: `Accruing until the cliff ${onOrAt(whenLabel(d.start + d.cliffSeconds, d.durationSeconds))}.`, sub: base};
     default:
       return {head: "Vesting every second.", sub: base};
   }

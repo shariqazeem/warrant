@@ -11,6 +11,7 @@
  *
  * A screen reader hears the value once a minute, not once a second.
  */
+import {onOrAt} from "./cert-text";
 import {
   accruedUnitsAt,
   formatUnitsFixed,
@@ -67,7 +68,7 @@ function readout(p: TickerProps, at: number): Readout {
       return {
         label: `Vesting starts ${p.startLabel}`,
         value: null,
-        right: p.cliffLabel ? {k: `Unlocks on ${p.cliffLabel}`, v: null} : null,
+        right: p.cliffLabel ? {k: `Unlocks ${onOrAt(p.cliffLabel)}`, v: null} : null,
         spoken: `Vesting starts ${p.startLabel}.`,
         ready,
         phase,
@@ -77,8 +78,8 @@ function readout(p: TickerProps, at: number): Readout {
       return {
         label: "Accruing…",
         value: fmt(accrued, 8),
-        right: p.cliffLabel ? {k: `Unlocks on ${p.cliffLabel}`, v: null} : null,
-        spoken: `Accruing ${fmt(accrued, 6)} ${p.symbol}; unlocks on ${p.cliffLabel ?? p.startLabel}.`,
+        right: p.cliffLabel ? {k: `Unlocks ${onOrAt(p.cliffLabel)}`, v: null} : null,
+        spoken: `Accruing ${fmt(accrued, 6)} ${p.symbol}; unlocks ${onOrAt(p.cliffLabel ?? p.startLabel)}.`,
         ready,
         phase,
       };

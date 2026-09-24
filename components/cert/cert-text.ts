@@ -94,6 +94,11 @@ export function routeLine(route: readonly string[]): string | null {
   return hops.length >= 2 ? hops.join(" → ") : null;
 }
 
+/** "on 24 Mar 2027" for a date, "at 17:57 UTC" for a time of day: the preposition a label takes. */
+export function onOrAt(label: string): string {
+  return /\d{1,2}:\d{2}/.test(label) ? `at ${label}` : `on ${label}`;
+}
+
 /**
  * LINE TWO: the schedule, or what happened to it.
  * "Vests every second over 2 years. Nothing unlocks before the cliff on 24 Mar 2027."
@@ -111,7 +116,7 @@ export function scheduleLine(
   const length = lengthWords(d.durationSeconds);
   if (d.cliffSeconds > 0 && d.cliffSeconds < d.durationSeconds) {
     const cliff = whenLabel(d.start + d.cliffSeconds, d.durationSeconds);
-    return `Vests every second over ${length}. Nothing unlocks before the cliff on ${cliff}.`;
+    return `Vests every second over ${length}. Nothing unlocks before the cliff ${onOrAt(cliff)}.`;
   }
   return `Vests every second over ${length}, with no cliff.`;
 }

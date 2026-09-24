@@ -18,6 +18,15 @@
         "NEXT_DIST_DIR=.next-check NEXT_TELEMETRY_DISABLED=1 npx next start -p 3100"
       ],
       "port": 3100
+    },
+    {
+      "name": "warrant-fork",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "NEXT_PUBLIC_XLAYER_RPC=http://127.0.0.1:8547 XLAYER_RPC_FALLBACK=http://127.0.0.1:8547 WARRANT_DB_PATH=var/fork.db SITE_URL=http://localhost:3200 NEXT_DIST_DIR=.next-fork NEXT_TELEMETRY_DISABLED=1 npx next start -p 3200"
+      ],
+      "port": 3200
     }
   ]
 }
