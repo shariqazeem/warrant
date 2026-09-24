@@ -1,5 +1,10 @@
 # What to build, in what order
 
+> **Superseded.** This is the plan of 19 September, kept for the history. The build brief of
+> 24 September supersedes it: Warrant is company-first ("Give your team stock that vests"),
+> grants and their certificates are the product, and payroll comes second. `CLAUDE.md` is the
+> current description, and `docs/state-check.md` checks it against the code and the chain.
+
 > Read `CLAUDE.md` first. This file is the build order and the scope guards. The single
 > biggest risk in this project is not difficulty, it is breadth.
 
@@ -22,7 +27,6 @@ Build toward this and nothing else. Three to five minutes, no slides.
    reason written on it, the transaction it is anchored to. Hand the phone to a judge.
 5. **The company's public page.** Paid in ownership since, eight people, the total, one grant
    vesting.
-6. **One sentence to close** about the same rail paying agents that earn through x402.
 
 If a feature does not appear in those six beats, it does not get built this week.
 
