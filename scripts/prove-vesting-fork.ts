@@ -172,7 +172,7 @@ async function main() {
 
   /** Compare every view at the current block, and vestedUnitsAt at the given moments. */
   const compareAt = async (moment: string, extra: Array<[string, number]> = []) => {
-    const blockNumber = await client.getBlockNumber();
+    const blockNumber = await client.getBlockNumber({cacheTime: 0});
     const {t, pool, at} = await read(blockNumber);
     const view = (fn: "releasableUnits" | "heldUnits") =>
       client.readContract({address: ESCROW, abi: grantEscrowAbi, functionName: fn, args: [id], blockNumber});
@@ -228,7 +228,7 @@ async function main() {
 
   // A cancel, predicted before it is sent, at the second it will land.
   const landAt = start + TERM / 2 + 120;
-  const before = await read(await client.getBlockNumber());
+  const before = await read(await client.getBlockNumber({cacheTime: 0}));
   const predicted = revokePreview(before.t, before.pool, landAt);
   await client.setNextBlockTimestamp({timestamp: BigInt(landAt)});
   const revokeHash = await client.writeContract({address: ESCROW, abi: grantEscrowAbi, functionName: "revoke", args: [id], account: payer, chain: null});
