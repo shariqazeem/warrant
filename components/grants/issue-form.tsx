@@ -26,6 +26,7 @@ import {readChoices, type ChoiceView} from "@/app/pay/actions";
 import {syncFromChain} from "@/app/sync/actions";
 import {Certificate, type CertificateData} from "@/components/cert/certificate";
 import {AssetNote} from "@/components/pay/asset-note";
+import {useTxToast} from "@/components/toast/use-tx-toast";
 import {WalletPanel} from "@/components/wallet/wallet-panel";
 import {useWallet} from "@/components/wallet/use-wallet";
 import {ASSETS, assetByAddress, defaultAsset} from "@/lib/assets";
@@ -94,7 +95,10 @@ type Custom = {lengthText: string; lengthUnit: ScheduleUnit; cliffText: string; 
 function Ago({at}: {at: number}) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1_000);
+    // Paused while the tab is hidden; it catches up the moment it is looked at again.
+    const t = setInterval(() => {
+      if (!document.hidden) setNow(Date.now());
+    }, 1_000);
     return () => clearInterval(t);
   }, []);
   const seconds = Math.max(0, (now - at) / 1000);
@@ -281,6 +285,27 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
     useMemo(() => ({symbol: asset?.symbol ?? "units", decimals: asset?.decimals ?? 18}), [asset?.symbol, asset?.decimals]),
   );
   const [requoting, setRequoting] = useState(false);
+
+  // One toast, in the same words as the button, while the wallet has the grant.
+  useTxToast(
+    phase.kind === "checking"
+      ? "building"
+      : phase.kind === "waiting"
+        ? "signing"
+        : phase.kind === "approving" || phase.kind === "submitted"
+          ? "confirming"
+          : phase.kind === "issued"
+            ? "done"
+            : phase.kind === "failed"
+              ? "failed"
+              : "idle",
+    "Issue the certificate",
+    {
+      href: phase.kind === "issued" && phase.id !== null ? `/g/${phase.id}` : undefined,
+      detail: phase.kind === "failed" ? phase.why : undefined,
+    },
+  );
+
   const walletBusy =
     phase.kind === "checking" ||
     phase.kind === "waiting" ||

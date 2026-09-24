@@ -16,7 +16,8 @@ export default function Loading() {
       <div className="wa-dark">
         <SiteNav />
       </div>
-      <main aria-busy="true">
+      <div className="wa-tear" aria-hidden />
+      <main id="main" aria-busy="true">
         <div className="wa-issue">
           <header className="wa-issue-head">
             <h1>Issue a grant</h1>

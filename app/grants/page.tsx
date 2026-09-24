@@ -3,6 +3,7 @@ import {Suspense} from "react";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {WalletProvider} from "@/components/wallet/provider";
 import {Guard} from "@/components/app/guard";
+import {Toasts} from "@/components/toast/toasts";
 import {IssueForm} from "@/components/grants/issue-form";
 import {GrantList, type ShelfRow} from "@/components/grants/grant-list";
 import {escrowAddress, grantStanding, readGrantShelf, shelfHeading} from "@/lib/grants";
@@ -86,7 +87,8 @@ export default function GrantsPage() {
         <SiteNav />
       </div>
 
-      <main>
+      <div className="wa-tear" aria-hidden />
+      <main id="main">
         {escrow.ok ? (
           <Guard where="grants">
             <WalletProvider>
@@ -94,6 +96,7 @@ export default function GrantsPage() {
               <Suspense fallback={<ShelfLoading />}>
                 <Shelf />
               </Suspense>
+              <Toasts />
             </WalletProvider>
           </Guard>
         ) : (

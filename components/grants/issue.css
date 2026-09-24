@@ -13,7 +13,7 @@
   --on-vault-3: #a9b8af;
   --rule: #c5d0ca;
   --field: #9aaba2;
-  --field-bg: #ffffff;
+  --field-bg: #f6f8f6;
   --seal: #8c1d1d;
   --foil: #b38b3e;
   --settled: #0f7a4f;
@@ -67,7 +67,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: 46px;
+  font-size: var(--fs-h1, 46px);
   line-height: 1.05;
   letter-spacing: -0.02em;
   color: var(--ink);
@@ -75,7 +75,7 @@
 
 .wa-issue-head p {
   margin: 0;
-  font-size: 16.5px;
+  font-size: var(--fs-lead, 16.5px);
   line-height: 1.55;
   color: var(--muted);
   max-width: 34em;
@@ -119,7 +119,7 @@
 }
 
 .wa-issue-label {
-  font-size: 15px;
+  font-size: var(--fs-label, 15px);
   font-weight: 600;
   color: var(--ink);
   padding: 0;
@@ -151,10 +151,10 @@
   padding: 0 14px;
   border: 1px solid var(--field);
   border-radius: var(--r-control);
-  background: var(--field-bg);
+  background: var(--surface);
   color: var(--ink);
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: var(--fs-label, 15px);
   min-width: 0;
   width: 100%;
 }
@@ -169,7 +169,7 @@
 .wa-issue-input::placeholder,
 .wa-issue-money input::placeholder {
   color: var(--muted);
-  opacity: 0.85;
+
 }
 
 .wa-issue-input[aria-invalid="true"],
@@ -205,7 +205,7 @@
   padding: 0 14px;
   border: 1px solid var(--field);
   border-radius: var(--r-control);
-  background: var(--field-bg);
+  background: var(--surface);
 }
 
 .wa-issue-money.is-short {
@@ -230,7 +230,7 @@
   outline: none;
   background: transparent;
   font-family: var(--font-ui);
-  font-size: 18px;
+  font-size: var(--fs-money, 18px);
   font-variant-numeric: lining-nums tabular-nums;
   color: var(--ink);
 }
@@ -270,7 +270,7 @@
 .wa-issue-preset,
 .wa-issue-radio {
   border: 1px solid color-mix(in srgb, var(--field) 40%, var(--rule));
-  background: color-mix(in srgb, var(--field-bg) 55%, var(--canvas));
+  background: var(--field-bg);
   color: var(--ink);
   border-radius: var(--r-control);
   font-family: var(--font-ui);
@@ -281,7 +281,7 @@
 .wa-issue-preset[aria-pressed="true"],
 .wa-issue-radio:has(input:checked) {
   border: 1.5px solid var(--vault);
-  background: var(--field-bg);
+  background: var(--surface);
 }
 
 .wa-issue-chip {
@@ -297,7 +297,7 @@
 
 .wa-issue-chip .sym,
 .wa-issue-stockrow .sym {
-  font-size: 15px;
+  font-size: var(--fs-label, 15px);
   font-weight: 600;
 }
 
@@ -327,7 +327,7 @@
   padding: var(--s-3);
   border: 1px solid var(--rule);
   border-radius: var(--r-panel);
-  background: color-mix(in srgb, var(--field-bg) 40%, var(--canvas));
+  background: var(--field-bg);
 }
 
 .wa-issue-stocklist {
@@ -401,7 +401,7 @@
 }
 
 .wa-issue-preset .label {
-  font-size: 15px;
+  font-size: var(--fs-label, 15px);
   font-weight: 600;
 }
 
@@ -435,7 +435,7 @@
   padding: 14px;
   border: 1px solid var(--rule);
   border-radius: var(--r-panel);
-  background: color-mix(in srgb, var(--field-bg) 40%, var(--canvas));
+  background: var(--field-bg);
 }
 
 .wa-issue-span {
@@ -489,7 +489,7 @@
 }
 
 .wa-issue-radio .title {
-  font-size: 15px;
+  font-size: var(--fs-label, 15px);
   font-weight: 600;
 }
 
@@ -518,7 +518,7 @@
   background: transparent;
   color: var(--ink);
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: var(--fs-label, 15px);
   font-weight: 600;
   text-align: left;
   cursor: pointer;
@@ -547,7 +547,7 @@
   box-sizing: border-box;
   border: 1px solid var(--rule);
   border-radius: var(--r-control);
-  background: var(--field-bg);
+  background: var(--surface);
   font-size: 14px;
   line-height: 1.5;
   color: var(--ink);
@@ -589,7 +589,7 @@
 .wa-issue-btn.is-blocked,
 .wa-issue-btn:disabled {
   border: 1px solid var(--field);
-  background: var(--field-bg);
+  background: var(--surface);
   color: var(--muted);
   cursor: not-allowed;
 }
@@ -710,7 +710,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: 28px;
+  font-size: var(--fs-h2, 28px);
   letter-spacing: -0.02em;
 }
 
@@ -747,7 +747,7 @@
 }
 
 .wa-issue-row:hover {
-  background: color-mix(in srgb, var(--field-bg) 60%, var(--canvas));
+  background: var(--field-bg);
 }
 
 .wa-issue-row .no {
@@ -779,7 +779,7 @@
   display: flex;
   align-items: center;
   cursor: pointer;
-  font-size: 15px;
+  font-size: var(--fs-label, 15px);
   font-weight: 600;
 }
 
