@@ -1,15 +1,14 @@
 import type {Metadata} from "next";
 import {notFound} from "next/navigation";
-import {Guard} from "@/components/app/guard";
 import {CopyText} from "@/components/app/copy-text";
 import {Certificate} from "@/components/cert/certificate";
-import {CertActions, CertShare, PlayedOnce} from "@/components/cert/cert-actions";
+import {CertActionsLazy} from "@/components/cert/cert-actions-lazy";
+import {CertShare, PlayedOnce} from "@/components/cert/cert-share";
 import {RefreshWhilePending} from "@/components/cert/refresh";
 import {lengthWords, routeLine, shortAddress, whenLabel} from "@/components/cert/cert-text";
 import {VestingRule} from "@/components/cert/vesting-rule";
 import {AssetNote} from "@/components/pay/asset-note";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
-import {WalletProvider} from "@/components/wallet/provider";
 import {EXPLORER_ADDRESS, EXPLORER_TX} from "@/lib/chain";
 import {bps, stampUTC} from "@/lib/format";
 import {parseGrantId} from "@/lib/grants";
@@ -396,35 +395,31 @@ export default async function CertificatePage({params, searchParams}: Props) {
             <div className="wa-cp-rule">
               <VestingRule data={d} tone="canvas" layout="stack" now={now} releasedUnits={r.opening ? released : null} />
             </div>
-            <Guard where="certificate">
-              <WalletProvider>
-                <CertActions
-                  id={id}
-                  escrow={r.escrow}
-                  grantor={r.grant.payer}
-                  recipient={r.grant.beneficiary}
-                  asset={{address: d.asset.address, symbol: d.asset.symbol, decimals: d.asset.decimals}}
-                  terms={{
-                    shares: r.grant.shares,
-                    sharesReleased: r.grant.sharesReleased,
-                    start: r.grant.start,
-                    cliffSeconds: r.grant.cliffSeconds,
-                    durationSeconds: r.grant.durationSeconds,
-                    revoked: r.grant.revoked,
-                    frozenVestedShares: r.grant.frozenVestedShares,
-                  }}
-                  pool={{poolShares: d.poolShares ?? 0n, escrowBalance: d.escrowBalance ?? 0n}}
-                  tipBps={d.tipBps}
-                  sealed={d.sealed}
-                  revoked={d.revoked}
-                  closed={d.closed}
-                  releasedUnits={released}
-                  keeper={{alive: r.keeper.alive, lastReleaseAt: r.keeper.lastReleaseAt}}
-                  initialNow={now}
-                  callSeal={one(sp.seal) === "1"}
-                />
-              </WalletProvider>
-            </Guard>
+            <CertActionsLazy
+              id={id}
+              escrow={r.escrow}
+              grantor={r.grant.payer}
+              recipient={r.grant.beneficiary}
+              asset={{address: d.asset.address, symbol: d.asset.symbol, decimals: d.asset.decimals}}
+              terms={{
+                shares: r.grant.shares,
+                sharesReleased: r.grant.sharesReleased,
+                start: r.grant.start,
+                cliffSeconds: r.grant.cliffSeconds,
+                durationSeconds: r.grant.durationSeconds,
+                revoked: r.grant.revoked,
+                frozenVestedShares: r.grant.frozenVestedShares,
+              }}
+              pool={{poolShares: d.poolShares ?? 0n, escrowBalance: d.escrowBalance ?? 0n}}
+              tipBps={d.tipBps}
+              sealed={d.sealed}
+              revoked={d.revoked}
+              closed={d.closed}
+              releasedUnits={released}
+              keeper={{alive: r.keeper.alive, lastReleaseAt: r.keeper.lastReleaseAt}}
+              initialNow={now}
+              callSeal={one(sp.seal) === "1"}
+            />
             <CertShare id={id} />
           </div>
 

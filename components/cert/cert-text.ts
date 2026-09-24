@@ -5,8 +5,8 @@
  * each state's wording is checked (components/cert/cert-text.test.ts). Every number in these
  * sentences is a field of the data; nothing is estimated here.
  */
-import {dateUTC} from "@/lib/format";
-import {formatUnitsFixed, type PoolState, type VestingTerms} from "@/lib/vesting";
+import {dateUTC} from "../../lib/format";
+import {formatUnitsFixed, type PoolState, type VestingTerms} from "../../lib/vesting";
 import type {CertificateData} from "./types";
 
 const DAY = 86_400;

@@ -287,3 +287,8 @@
     aspect-ratio: 350 / 520;
   }
 }
+
+/* the connect row's place while the wallet code loads */
+.wa-cx-wait {
+  height: 44px;
+}
