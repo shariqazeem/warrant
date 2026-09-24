@@ -19,8 +19,12 @@
 # on the VM, and every deploy would reinstall the world.
 set -euo pipefail
 
-KEY="${WARRANT_VM_KEY:-$HOME/Downloads/ssh-key-2025-10-14.key}"
-HOST="${WARRANT_VM_HOST:-ubuntu@141.148.215.239}"
+# Where the VM is, and the key that reaches it, live in .env.deploy (gitignored), never here:
+#   WARRANT_VM_HOST=ubuntu@<address>
+#   WARRANT_VM_KEY=<path to the SSH key>
+[ -f "$(dirname "$0")/../.env.deploy" ] && . "$(dirname "$0")/../.env.deploy"
+KEY="${WARRANT_VM_KEY:?set WARRANT_VM_KEY in .env.deploy}"
+HOST="${WARRANT_VM_HOST:?set WARRANT_VM_HOST in .env.deploy}"
 SSH="ssh -i $KEY -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=4"
 
 cd "$(dirname "$0")/.."
@@ -28,6 +32,7 @@ cd "$(dirname "$0")/.."
 echo "→ syncing"
 rsync -az --delete -e "$SSH" \
   --exclude node_modules --exclude .next --exclude var --exclude .env.local --exclude .git \
+  --exclude .env.deploy --exclude .env.keeper \
   --exclude from-scrip --exclude contracts/out --exclude contracts/cache --exclude contracts/lib \
   --exclude tsconfig.tsbuildinfo --exclude .DS_Store --exclude deploy.log --exclude .lock-hash \
   --exclude .next-build --exclude .next-prev --exclude .next-check --exclude .build.log --exclude .claude/worktrees \

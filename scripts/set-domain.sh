@@ -12,9 +12,13 @@
 set -euo pipefail
 
 DOMAIN="${1:?usage: scripts/set-domain.sh <domain>}"
-KEY="${WARRANT_VM_KEY:-$HOME/Downloads/ssh-key-2025-10-14.key}"
-HOST="${WARRANT_VM_HOST:-ubuntu@141.148.215.239}"
-IP="141.148.215.239"
+# Where the VM is, and the key that reaches it, live in .env.deploy (gitignored), never here:
+#   WARRANT_VM_HOST=ubuntu@<address>
+#   WARRANT_VM_KEY=<path to the SSH key>
+[ -f "$(dirname "$0")/../.env.deploy" ] && . "$(dirname "$0")/../.env.deploy"
+KEY="${WARRANT_VM_KEY:?set WARRANT_VM_KEY in .env.deploy}"
+HOST="${WARRANT_VM_HOST:?set WARRANT_VM_HOST in .env.deploy}"
+IP="${WARRANT_VM_IP:?set WARRANT_VM_IP in .env.deploy}"
 SSH="ssh -i $KEY -o ConnectTimeout=20"
 
 echo "→ checking DNS for $DOMAIN"
@@ -34,7 +38,7 @@ sudo tee /etc/caddy/Caddyfile >/dev/null <<EOF
 # Warrant. The sslip.io address stays so older links keep working.
 # The previous Brief config is at /etc/caddy/Caddyfile.brief.bak.
 
-${DOMAIN}, www.${DOMAIN}, 141-148-215-239.sslip.io {
+${DOMAIN}, www.${DOMAIN}, ${WARRANT_VM_SSLIP:-} {
     log {
         output stdout
         format console

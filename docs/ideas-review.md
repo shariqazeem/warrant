@@ -251,7 +251,7 @@ Singapore. They are in priority order.
 
 ## Part 5 — What a new session needs to know
 
-- The Scrip repository is at `/Users/macbookair/projects/webgold`. Its state document is
+- The Scrip repository is separate from this one. Its state document is
   `docs/state-of-scrip.md`, the plan it reports on is `docs/SCRIP-COMPANY-PLAN.md`, and the
   design system is `.claude/skills/scrip-ui/SKILL.md`.
 - What carries over to an OKX build: the design system, the stub at five sizes, the receipt

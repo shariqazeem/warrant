@@ -98,25 +98,3 @@ and reviews, staked Evaluators, dispute resolution, escrow and pay-per-call sett
 
 **Read that last sentence before proposing anything in the agent space.** It is why Agent
 Forge was rejected.
-
----
-
-## Logistics that decide whether Singapore happens
-
-Finalists are told between 28 and 30 September. The finale is 7 October. That is seven to
-nine days, on a Pakistani passport.
-
-- Singapore requires a visa. Fee S$30. ICA states processing within three working days
-  excluding the day of submission, though agents commonly quote three to ten.
-- Documents: Form 14A, a recent passport photo, the passport biodata page with at least six
-  months validity from the date of entry, and **Form V39A, the Letter of Introduction, where
-  applicable**.
-- **Form V39A needs a local contact in Singapore**: a citizen or PR, 21 or over, with a
-  Singpass account. This is the part that fails silently if left late.
-
-Do this in the build week, not after selection: email OKX Dev Day and ask whether they can
-act as local contact or issue a letter of introduction for international finalists. Assemble
-the documents now. Identify an authorised visa agent in Lahore and learn their turnaround.
-
-Remote teams are still judged and can still win. Build as though travelling, and do not let
-the visa question take an hour from the build.

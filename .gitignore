@@ -15,3 +15,7 @@ tsconfig.tsbuildinfo
 
 # agents' scratch checkouts
 .claude/worktrees/
+
+# deploy target and the keeper's key stay local
+.env.deploy
+.env.keeper

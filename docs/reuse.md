@@ -1,12 +1,14 @@
 # What ports from Scrip, and what does not
 
-> Everything under `from-scrip/` was copied from `/Users/macbookair/projects/webgold` on
+> Everything under `from-scrip/` was copied from the Scrip repository on
 > 19 September 2026. It is a reference library, not a running app. Copy a file into place
 > when you need it, do not wire the whole folder in at once.
 >
 > Scrip is the same author's other project. Reusing your own design system and your own
 > helpers is normal and allowed. What matters for judging is that the work in *this*
 > repository happened inside the build window, so commit as you go.
+
+> **24 September 2026:** the reference copy in `from-scrip/` was removed from the tree. It was never imported by the app; it remains readable in the history before that commit.
 
 ---
 

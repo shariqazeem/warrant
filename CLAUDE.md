@@ -3,8 +3,7 @@
 > The build for **OKX Dev Day 2026**. Submission closes **25 September 2026, 23:59 UTC**.
 > Finalists are told by 30 September; the live finale is 7 October in Singapore.
 >
-> This directory is for Warrant only. **Scrip lives at `/Users/macbookair/projects/webgold`
-> and is a different submission, for a different hackathon, on a different chain.** Do not
+> This directory is for Warrant only. **Scrip is a different submission, for a different hackathon, on a different chain.** Do not
 > edit Scrip from here.
 >
 > Read this file, then `docs/plan.md`, then `docs/chain.md`. Before touching any surface,
@@ -146,13 +145,3 @@ forge test
 npm run keeper
 npm run preflight     # what a deploy costs and what is missing, read from the chain
 ```
-
-## 9. The week
-
-Scrip's mainnet deploy comes first and is not negotiable. Warrant gets the days that are
-left, not the days Scrip needs. If Warrant ends up weaker for it, that is the correct
-trade: Stocklana's pool is larger and Scrip is nearly finished.
-
-The one thing that decides both: **other people's money on it before submission.** Pay real
-bounties to real people on X Layer mainnet, even three dollars each. Twenty receipts
-belonging to twenty strangers beats any amount of polish.
