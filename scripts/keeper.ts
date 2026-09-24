@@ -46,6 +46,7 @@ import {privateKeyToAccount, type PrivateKeyAccount} from "viem/accounts";
 import {EXPLORER_TX, transport, xLayer} from "../lib/chain";
 import {loadEnv} from "../lib/env";
 import {escrowAddress, readGrantShelf, type Grant} from "../lib/grants";
+import {releaseGap, releaseNow} from "../lib/keeper-cadence";
 import {
   EMPTY_KEEPER_FILE,
   KEEPER_FILE,
@@ -241,6 +242,12 @@ function describeDue(g: Grant): string {
   );
 }
 
+/**
+ * When this process last sent a release for each grant (unix seconds). The chain keeps no
+ * such time, so it lives here; after a restart, whatever is due goes on the first pass.
+ */
+const lastSentAt = new Map<number, number>();
+
 async function releaseDue(s: Settings, account: PrivateKeyAccount | null): Promise<Outcome<PassFacts>> {
   const escrow = escrowAddress();
   if (!escrow.ok) return held(`${escrow.why} (NEXT_PUBLIC_GRANT_ESCROW_ADDRESS is not set.)`);
@@ -274,8 +281,23 @@ async function releaseDue(s: Settings, account: PrivateKeyAccount | null): Promi
     return ok(facts);
   }
 
-  log(`${due.length} of ${count} grants have something due:`);
-  for (const g of due) console.log(describeDue(g));
+  // Each grant is released about 48 times over its schedule, not on every pass
+  // (lib/keeper-cadence.ts): the gas is the keeper's, and a release pays out everything vested
+  // so far whenever it comes.
+  const passAt = nowS();
+  const ready = due.filter((g) => releaseNow(g, passAt, lastSentAt.get(g.id)));
+  const waiting = due.length - ready.length;
+  log(
+    `${due.length} of ${count} grants have something due` +
+      (waiting > 0 ? `; ${waiting} wait for their next release, ${ready.length} go now` : "") +
+      (ready.length > 0 ? ":" : "."),
+  );
+  for (const g of ready) console.log(describeDue(g));
+  for (const g of due.filter((x) => !ready.includes(x))) {
+    const next = (lastSentAt.get(g.id) ?? passAt) + releaseGap(g.durationSeconds);
+    console.log(`  grant ${String(g.id).padStart(3)}  next release in about ${Math.max(0, next - passAt)} s`);
+  }
+  if (ready.length === 0) return ok(facts);
 
   if (!s.send) {
     console.log(`\n  DRY RUN. Nothing was sent. Add --send to release it.\n`);
@@ -293,7 +315,7 @@ async function releaseDue(s: Settings, account: PrivateKeyAccount | null): Promi
   }
 
   const wallet = createWalletClient({account, chain: xLayer, transport: transport()});
-  for (const g of due) {
+  for (const g of ready) {
     const call = {
       address: escrow.value as Address,
       abi: grantEscrowAbi,
@@ -337,6 +359,7 @@ async function releaseDue(s: Settings, account: PrivateKeyAccount | null): Promi
         continue;
       }
       const {unitsToBeneficiary, unitsToCaller} = vested.args;
+      lastSentAt.set(g.id, passAt);
       facts.released.push({
         grantId: g.id,
         tx: hash,

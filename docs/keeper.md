@@ -1,8 +1,15 @@
 # The keeper: install, check, alert, rotate
 
-The keeper releases what is due on every open grant, about once a minute, and earns the grant's
-small tip for doing it. It is a convenience, not a dependency: `vest` is permissionless, so
-anyone can release their own grant, for no tip, whether or not the keeper runs.
+The keeper releases what is due on every open grant and earns the grant's small tip for doing
+it. It is a convenience, not a dependency: `vest` is permissionless, so anyone can release their
+own grant, for no tip, whether or not the keeper runs.
+
+It looks every minute but releases each grant about 48 times over its schedule, never closer
+than two minutes and never further apart than a day, plus once more the moment a grant ends or
+is cancelled (`lib/keeper-cadence.ts`). A release pays out everything vested so far whenever it
+comes, so the cadence changes only how much gas the keeper spends: about 48 releases for a short
+grant and at most one a day for a long one. At X Layer's gas price of 24 September (0.02 gwei)
+a release cost under 0.000005 OKB, so a dollar of OKB pays for well over a thousand.
 
 It is `scripts/keeper.ts`, run by pm2 as its own process, `warrant-keeper`, from
 `scripts/keeper-ecosystem.config.cjs` (`--send --watch --every=60`).
