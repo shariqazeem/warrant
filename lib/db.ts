@@ -267,3 +267,9 @@ export function readChoiceAt(person: string, unixSeconds: number): StoredChoice 
     .get(person.toLowerCase(), unixSeconds) as ChoiceRow | undefined;
   return row ? toStoredChoice(row) : null;
 }
+
+/**
+ * The route a transaction's swap took, token by token, as the OKX quote named it — for
+ * example ["USD₮0", "USDG", "wSPYx", "SPYx"] — or null when none was recorded.
+ */
+export function routeFor(_tx: string): string[] | null { return null } // STUB — lane C owns
