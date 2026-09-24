@@ -45,14 +45,38 @@ export type CertificateRecord = {
 };
 
 const TTL_MS = 10_000;
-const kept = new Map<number, {at: number; value: Promise<Outcome<CertificateRecord | null>>}>();
+/** After a wallet acts on a grant, its page reads the chain on every render for this long. */
+const FRESH_MS = 20_000;
 
-/** Drop a grant's kept read, so the next render reads the chain again. */
+type Kept = {at: number; value: Promise<Outcome<CertificateRecord | null>>};
+
+/**
+ * ONE CACHE PER PROCESS, NOT PER MODULE COPY. Next bundles a server action and the page that
+ * renders after it into separate module instances, so a Map at module scope was two Maps:
+ * `forgetCertificate` in the action emptied its own, and the page went on serving the read
+ * from before the seal for up to ten seconds, which the client took as final: the seal never
+ * pressed until a reload. On `globalThis`, every copy shares the one cache.
+ */
+const shared = globalThis as typeof globalThis & {
+  __warrantCertificates?: {kept: Map<number, Kept>; freshUntil: Map<number, number>};
+};
+const {kept, freshUntil} = (shared.__warrantCertificates ??= {kept: new Map(), freshUntil: new Map()});
+
+/**
+ * Drop a grant's kept read, and read it fresh for the next twenty seconds: a wallet has just
+ * changed it, and the RPC node this server asks may be a block behind the one the wallet used.
+ */
 export function forgetCertificate(id: number): void {
   kept.delete(id);
+  freshUntil.set(id, Date.now() + FRESH_MS);
 }
 
 export function readCertificate(id: number): Promise<Outcome<CertificateRecord | null>> {
+  const until = freshUntil.get(id);
+  if (until !== undefined) {
+    if (Date.now() < until) return read(id);
+    freshUntil.delete(id);
+  }
   const hit = kept.get(id);
   if (hit && Date.now() - hit.at < TTL_MS) return hit.value;
   const value = read(id).then((r) => {

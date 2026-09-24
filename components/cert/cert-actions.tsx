@@ -162,6 +162,9 @@ export function CertActions(p: CertActionsProps) {
     } else {
       router.refresh();
     }
+    // Once more a few seconds on: the server's RPC node can be a block behind the wallet's,
+    // and the page reads the chain fresh for a while after an action (app/g/[id]/read.ts).
+    setTimeout(() => router.refresh(), 4000);
   }
 
   async function showInWallet() {
