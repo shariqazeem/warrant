@@ -10,6 +10,36 @@
   overflow-wrap: anywhere;
 }
 
+/* The one line that invites the owner of a page that is not a pay link yet to make it one. */
+.wa-co-invite {
+  margin-top: var(--s-3);
+  max-width: 62ch;
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  color: var(--ink-muted);
+}
+
+.wa-co-invite a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.wa-co-invite a:hover {
+  color: var(--accent-strong);
+}
+
+/* On a pay link, what the same wallet has paid others: a section under its own label, so
+ * its figures sit under that label rather than a page-sized gap away. */
+.wa-co-also-since {
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  color: var(--ink-muted);
+}
+
+.wa-co-also .wa-co-figures {
+  margin-top: var(--s-4);
+}
+
 /* ── the figures. Units are the largest thing on the page. ─────────── */
 
 .wa-co-figures {
