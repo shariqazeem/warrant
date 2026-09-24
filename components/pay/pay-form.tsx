@@ -5,7 +5,8 @@ import {useCallback, useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
 import {buildPayment, type BuiltPayment, readChoices, type ChoiceView} from "@/app/pay/actions";
 import {syncFromChain} from "@/app/sync/actions";
-import {ASSETS, defaultAsset} from "@/lib/assets";
+import {choiceLine} from "@/components/link/pay-link";
+import {ASSETS, assetByAddress, defaultAsset} from "@/lib/assets";
 import {STABLE} from "@/lib/chain";
 import {parseMoney} from "@/lib/csv";
 import {held, type Outcome} from "@/lib/outcome";
@@ -33,22 +34,31 @@ import {zeroAddress} from "viem";
  * the price impact and the minimum all come from the aggregator's own answer, and the
  * minimum is enforced by the contract: below it the payment is cancelled and no USDT
  * leaves the payer's wallet.
+ *
+ * WITH `to`, THE RECIPIENT IS FIXED: a person's pay link (`/@0x…`) or `/pay?to=0x…`. The
+ * form shows who is being paid instead of asking, and there is no field that could send the
+ * payment anywhere else. Everything else — the quote, the blockers, the permit or the
+ * approval, the receipt — is the same form.
  */
-/** A signed choice in plain words, the way a payer reads it beside the address. */
-function choiceSentence(c: ChoiceView): string {
-  if (c.stockBps === 0 || !c.asset) return "All in dollars (USDT), no stock.";
-  const pct = `${Number((c.stockBps / 100).toFixed(2))}%`;
-  const name = ASSETS.find((a) => a.address.toLowerCase() === c.asset!.toLowerCase())?.name ?? c.symbol ?? "stock";
-  return c.stockBps === 10_000
-    ? `All of each payment into ${name} (${c.symbol}).`
-    : `${pct} of each payment into ${name} (${c.symbol}), the rest in dollars.`;
-}
 
-export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
+/** A recipient the page has already settled: the person whose pay link this is. */
+export type FixedRecipient = {
+  /** Their wallet. The page checks it (lib/payment.ts, checkAddress) before fixing it,
+   *  because the payer cannot correct it here. */
+  address: `0x${string}`;
+  /** Their signed choice as the page read it, so the form opens on it rather than on the
+   *  stock picker. null: they have none. Left out: looked up, as for a typed address. */
+  choice?: ChoiceView | null;
+};
+
+export function PayForm({payroll, to}: {payroll: `0x${string}` | undefined; to?: FixedRecipient}) {
   const router = useRouter();
   const wallet = useWallet();
 
-  const [recipient, setRecipient] = useState("");
+  const [typed, setTyped] = useState("");
+  // A fixed recipient is read from the prop on every render, never from state: nothing the
+  // payer does on this form can point the payment at another wallet.
+  const recipient = to ? to.address : typed;
   const [amount, setAmount] = useState("");
   const [asset, setAsset] = useState(defaultAsset().address);
   const [reason, setReason] = useState("");
@@ -61,16 +71,23 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
   const [quoteLost, setQuoteLost] = useState(false);
   const [quoting, setQuoting] = useState(false);
   const [refreshAt, setRefreshAt] = useState(0);
-  /** The person's signed choice: undefined until looked up, null when they have none. */
-  const [their, setTheir] = useState<ChoiceView | null | undefined>(undefined);
+  /** The person's signed choice: undefined until looked up, null when they have none. A page
+   *  that fixed the recipient may already have read it. */
+  const [their, setTheir] = useState<ChoiceView | null | undefined>(to?.choice);
   const [, setTick] = useState(0);
 
   const {pay, phase, why, note, reset} = usePay(payroll);
 
   const chosen = ASSETS.find((a) => a.address === asset) ?? defaultAsset();
+  // The stock they chose, when Warrant still lists it. A choice naming one since taken off the
+  // list says so in its words (choiceLine), and has no note to open.
+  const theirStock = their?.asset ? assetByAddress(their.asset) : undefined;
 
   // WHO DECIDES THE SPLIT. Look up the person as soon as the address is whole: if they have
   // signed a choice, it is what they get, and the stock picker below is not the payer's to use.
+  // Asked again even when the page read it, since a page can be seconds old — but a lookup
+  // that fails is not an answer, so it never replaces the page's reading with "no choice".
+  const pageRead = to?.choice !== undefined;
   useEffect(() => {
     if (!/^0x[0-9a-fA-F]{40}$/.test(recipient)) {
       setTheir(undefined);
@@ -82,12 +99,12 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
         if (live) setTheir(m[recipient.toLowerCase()] ?? null);
       })
       .catch(() => {
-        if (live) setTheir(null);
+        if (live && !pageRead) setTheir(null);
       });
     return () => {
       live = false;
     };
-  }, [recipient]);
+  }, [recipient, pageRead]);
   // Read the way a file's amounts are read: a comma only between thousands, so "2,50" is
   // refused rather than becoming $250.
   const amountRead = amount.trim() === "" ? null : parseMoney(amount);
@@ -244,10 +261,11 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
           : (blocker ?? `Pay ${usdt(total)}`);
 
   // What this payment actually buys: their choice when they made one, the picker otherwise.
+  // Before a price arrives, a known choice already names the stock.
   const bought =
     quote && quote.asset !== zeroAddress
       ? (ASSETS.find((a) => a.address.toLowerCase() === quote.asset.toLowerCase()) ?? chosen)
-      : chosen;
+      : (theirStock ?? chosen);
 
   const price =
     quote && quote.expectedOut !== "0"
@@ -269,20 +287,30 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
       >
         <WalletPanel need={quote ? total : undefined} />
 
-        <label className="wa-field">
-          <span className="k">Their wallet</span>
-          <span className="wa-field-v">
-            <input
-              className="wa-input wa-mono"
-              value={recipient}
-              disabled={locked}
-              onChange={(e) => setRecipient(e.target.value.trim())}
-              placeholder="0x… their X Layer address"
-              spellCheck={false}
-              autoComplete="off"
-            />
-          </span>
-        </label>
+        {to ? (
+          // Fixed by the page: who is being paid, shown in full rather than asked for.
+          <div className="wa-field">
+            <span className="k">Their wallet</span>
+            <span className="wa-field-v">
+              <span className="wa-fixed-to wa-mono">{to.address}</span>
+            </span>
+          </div>
+        ) : (
+          <label className="wa-field">
+            <span className="k">Their wallet</span>
+            <span className="wa-field-v">
+              <input
+                className="wa-input wa-mono"
+                value={typed}
+                disabled={locked}
+                onChange={(e) => setTyped(e.target.value.trim())}
+                placeholder="0x… their X Layer address"
+                spellCheck={false}
+                autoComplete="off"
+              />
+            </span>
+          </label>
+        )}
 
         <label className="wa-field">
           <span className="k">Amount</span>
@@ -304,17 +332,12 @@ export function PayForm({payroll}: {payroll: `0x${string}` | undefined}) {
           <div className="wa-field">
             <span className="k">They chose</span>
             <span className="wa-field-v">
-              <span className="wa-their-choice">{choiceSentence(their)}</span>
+              <span className="wa-their-choice">{choiceLine(their)}</span>
               <span className="wa-field-help">
                 Signed by them on {dateUTC(their.issuedAt)}. Every payment to them follows it, so
                 there is nothing for you to pick.
               </span>
-              {their.asset ? (
-                <AssetNote
-                  symbol={their.symbol ?? ""}
-                  name={ASSETS.find((a) => a.address.toLowerCase() === their.asset!.toLowerCase())?.name ?? ""}
-                />
-              ) : null}
+              {theirStock ? <AssetNote symbol={theirStock.symbol} name={theirStock.name} /> : null}
             </span>
           </div>
         ) : (

@@ -401,6 +401,36 @@ select.wa-input {
 }
 
 
+/* A recipient the page fixed (a pay link, or /pay?to=): the whole address, shown where the
+ * field would be. It wraps rather than running past the edge at 375px. */
+.wa-fixed-to {
+  color: var(--ink);
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+
+/* /pay?to=0x…: who the link fixed, and the way out of it. */
+.wa-pay-to {
+  margin-top: var(--s-4);
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  color: var(--ink-muted);
+  max-width: 62ch;
+}
+
+.wa-pay-to a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.wa-pay-to a:hover {
+  color: var(--accent-strong);
+}
+
+.wa-pay-to.is-refused {
+  color: var(--err);
+}
+
 /* Their signed choice, where a payer would otherwise pick a stock. */
 .wa-their-choice {
   display: block;
