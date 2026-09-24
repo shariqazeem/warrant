@@ -997,7 +997,7 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
 
         {/* 8. Pay from, and the button */}
         <div className="wa-issue-act">
-          <WalletPanel need={base > 0n ? base : undefined} />
+          <WalletPanel need={base > 0n ? base : undefined} okbShort={okbShort === null || okbShort > 0n} purpose="issue this grant" />
           <button
             type="submit"
             className={`wa-issue-btn${buttonEnabled ? "" : " is-blocked"}`}

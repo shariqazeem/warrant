@@ -440,7 +440,7 @@ export function ChoiceForm() {
             {phase === "failed" && why ? <p className="wa-refusal">{why}</p> : null}
 
             {phase === "wrong-chain" ? (
-              <div className="wa-wallet is-warn">
+              <div className="wa-wallet is-short">
                 <p className="wa-wallet-note">
                   Your wallet will only sign for the network it is set to, and this choice is
                   for X Layer. Switch it to X Layer — switching is free and sends nothing —

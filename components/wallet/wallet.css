@@ -14,7 +14,7 @@
 }
 
 /* Short of something (the network, OKB, USD₮0): the edge says so, the words say what. */
-.wa-wallet.is-warn {
+.wa-wallet.is-short {
   border-color: var(--warn);
   border-left-width: 4px;
 }
@@ -40,13 +40,11 @@
 }
 
 .wa-wallet-bal {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
   margin-inline-start: auto;
   font-size: var(--fs-small);
-  color: var(--muted);
-}
-
-.wa-wallet-sep {
-  margin: 0 var(--s-2);
   color: var(--muted);
 }
 
@@ -97,6 +95,96 @@
 
 .wa-wallet-note.is-err {
   color: var(--refused);
+}
+
+/* Top up from OKX: the need in one line, the steps folded under it. */
+.wa-topup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.wa-topup .wa-wallet-note b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.wa-topup-how {
+  border-top: 1px solid var(--rule);
+}
+
+.wa-topup-how > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  min-height: 44px;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+  transition: color var(--dur-1) var(--ease-out);
+}
+
+.wa-topup-how > summary::-webkit-details-marker {
+  display: none;
+}
+
+.wa-topup-how > summary:hover {
+  color: var(--vault);
+}
+
+.wa-topup-how > summary span {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.wa-topup-how[open] .wa-topup-chev {
+  transform: rotate(180deg);
+}
+
+.wa-topup-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding-bottom: var(--s-2);
+}
+
+.wa-topup-addr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.wa-topup-addr code {
+  font-size: var(--fs-mono);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.wa-topup-steps {
+  margin: 0;
+  padding-inline-start: var(--s-5);
+  list-style: decimal outside;
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  color: var(--ink);
+}
+
+.wa-topup-steps li + li {
+  margin-top: var(--s-2);
+}
+
+.wa-topup-steps li::marker {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.wa-topup-steps b {
+  font-weight: 600;
 }
 
 /* "QR or app" beside OKX Wallet: says how it will connect before anyone clicks. */

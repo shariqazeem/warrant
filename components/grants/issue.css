@@ -211,15 +211,15 @@
   color: var(--muted);
 }
 
-.is-refused {
+.wa-issue .is-refused {
   color: var(--refused);
 }
 
-.is-warn {
+.wa-issue .is-warn {
   color: var(--warn);
 }
 
-.is-waiting {
+.wa-issue .is-waiting {
   color: var(--muted);
 }
 

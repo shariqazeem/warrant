@@ -8,6 +8,8 @@ import {OKX_CONNECT_ID} from "./okx-connect";
 import {connectWords, switchWords} from "./wallet-words";
 import {OTHER_STABLE, STABLE, xLayer} from "@/lib/chain";
 import {short, usdt as fmtUsdt} from "@/lib/format";
+import {STABLE_NAME} from "@/lib/grant-terms";
+import {TopUp} from "./top-up";
 import {useWallet} from "./use-wallet";
 import "./wallet.css";
 
@@ -28,7 +30,18 @@ function rank(id: string, name: string): number {
   return 3;
 }
 
-export function WalletPanel({need}: {need?: bigint}) {
+export function WalletPanel({
+  need,
+  okbShort,
+  purpose = "pay",
+}: {
+  /** What the action costs in USD₮0 base units, once it is known. */
+  need?: bigint;
+  /** Whether the OKB balance is short of this action's fee; by default, only when it is zero. */
+  okbShort?: boolean;
+  /** Finishes "before you can …" in the top-up helper: "issue this grant". */
+  purpose?: string;
+}) {
   const w = useWallet();
   const {connect, connectors, isPending, error, variables} = useConnect();
   const {disconnect} = useDisconnect();
@@ -99,7 +112,7 @@ export function WalletPanel({need}: {need?: bigint}) {
 
   if (w.status === "wrong-chain") {
     return (
-      <div className="wa-wallet is-warn">
+      <div className="wa-wallet is-short">
         <p className="wa-wallet-title">
           <AlertCircle size={16} strokeWidth={2} aria-hidden /> Your wallet is on another network
         </p>
@@ -124,49 +137,40 @@ export function WalletPanel({need}: {need?: bigint}) {
     );
   }
 
-  const shortOf = need !== undefined && w.usdt !== undefined && w.usdt < need;
-  const empty = w.usdt === 0n;
+  // What the wallet still needs, read from the chain: null while the wallet is empty and the
+  // cost is not known yet, 0n once it holds enough (or holds some and nothing is priced).
+  const usdMissing: bigint | null =
+    w.usdt === undefined ? 0n : need !== undefined ? (w.usdt < need ? need - w.usdt : 0n) : w.usdt === 0n ? null : 0n;
+  const lowOkb = okbShort ?? w.noGas;
+  const older = w.usdt === 0n && w.otherUsdt !== undefined && w.otherUsdt > 0n;
+  const warn = lowOkb || usdMissing === null || usdMissing > 0n;
 
   return (
-    <div className={`wa-wallet${shortOf || empty || w.noGas ? " is-warn" : ""}`}>
+    <div className={`wa-wallet${warn ? " is-short" : ""}`}>
       <div className="wa-wallet-row">
         <span className="wa-wallet-title">
           <Check size={16} strokeWidth={2} aria-hidden className="wa-wallet-ok" />
           {w.walletName ?? "Wallet"} <span className="wa-mono">{short(w.address!)}</span>
         </span>
         <span className="wa-wallet-bal wa-mono">
-          {w.usdt === undefined ? "…" : fmtUsdt(w.usdt)} USDT
-          <span className="wa-wallet-sep">·</span>
-          {w.okb === undefined ? "…" : Number(formatEther(w.okb)).toFixed(4)} OKB
+          <span>
+            {w.usdt === undefined ? "…" : fmtUsdt(w.usdt)} {STABLE_NAME}
+          </span>
+          <span>{w.okb === undefined ? "…" : Number(formatEther(w.okb)).toFixed(4)} OKB</span>
         </span>
         <button type="button" className="wa-linkish" onClick={() => disconnect()}>
           Disconnect
         </button>
       </div>
-      {empty && w.otherUsdt !== undefined && w.otherUsdt > 0n ? (
+      {older ? (
         <p className="wa-wallet-note">
-          This wallet holds {fmtUsdt(w.otherUsdt)} of {OTHER_STABLE.label} on X Layer (
+          This wallet holds {fmtUsdt(w.otherUsdt!)} of {OTHER_STABLE.label} on X Layer (
           <span className="wa-mono">{short(OTHER_STABLE.address)}</span>). Warrant pays with
           USD₮0 (<span className="wa-mono">{short(STABLE.address)}</span>), the USDT most
           wallets now hold. Swap it to USD₮0 in your wallet first; it costs a fraction of a cent.
         </p>
-      ) : empty ? (
-        <p className="wa-wallet-note">
-          This wallet has no USDT on X Layer, so there is nothing to pay with yet. Send USDT
-          (USD₮0) on the X Layer network to <span className="wa-mono">{short(w.address!)}</span>.
-        </p>
-      ) : shortOf ? (
-        <p className="wa-wallet-note">
-          This payment needs {fmtUsdt(need!)} USDT and the wallet holds {fmtUsdt(w.usdt!)}.
-        </p>
       ) : null}
-      {w.noGas ? (
-        <p className="wa-wallet-note">
-          This wallet has no OKB on X Layer, and every transaction pays its network fee in
-          OKB. A little is enough — send OKB on the X Layer network to{" "}
-          <span className="wa-mono">{short(w.address!)}</span>.
-        </p>
-      ) : null}
+      {warn ? <TopUp address={w.address!} usdMissing={usdMissing} okbShort={lowOkb} purpose={purpose} /> : null}
     </div>
   );
 }

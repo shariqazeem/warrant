@@ -13,6 +13,7 @@ import {held, type Outcome} from "@/lib/outcome";
 import {QUOTE_LOST, freshness, quoteAge} from "@/lib/quote-age";
 import {WalletPanel} from "@/components/wallet/wallet-panel";
 import {NEEDS_OKB, useWallet} from "@/components/wallet/use-wallet";
+import {ceilCents, STABLE_NAME} from "@/lib/grant-terms";
 import {syncFromChain} from "@/app/sync/actions";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {usePay} from "@/components/pay/use-pay";
@@ -445,7 +446,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
       */}
       {parsed.good.length > 0 ? (
         <div className="wa-pay-act">
-          <WalletPanel need={current ? parsed.total : undefined} />
+          <WalletPanel need={current ? parsed.total : undefined} purpose="pay these people" />
 
           {(() => {
             // THE BUTTON ALWAYS SAYS WHAT IT WILL DO, OR WHAT IS STOPPING IT.
@@ -477,7 +478,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
                     : age === "stale"
                       ? "Prices are out of date — refresh them"
                       : wallet.usdt !== undefined && wallet.usdt < parsed.total
-                        ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
+                        ? `Top up ${ceilCents(parsed.total - wallet.usdt)} ${STABLE_NAME}`
                         : null;
 
             return (
@@ -497,7 +498,7 @@ export function RunBuilder({payroll}: {payroll: `0x${string}` | undefined}) {
                       : phase === "building"
                         ? "Preparing…"
                         : (blocker ??
-                          `Pay ${parsed.good.length} ${parsed.good.length === 1 ? "person" : "people"} · ${usdt(parsed.total)}`)}
+                          `Pay ${usdt(parsed.total)} to ${parsed.good.length} ${parsed.good.length === 1 ? "person" : "people"}`)}
               </button>
             );
           })()}

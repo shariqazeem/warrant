@@ -23,7 +23,7 @@ export type WalletStatus = "disconnected" | "connecting" | "wrong-chain" | "read
  * — a payment, a grant, a release — pays its network fee in OKB, so without any the
  * wallet can sign and the chain will still refuse it.
  */
-export const NEEDS_OKB = "You need a little OKB on X Layer for the network fee";
+export const NEEDS_OKB = "Top up a little OKB for the network fee";
 
 export function useWallet() {
   const {address, isConnected, isConnecting, isReconnecting, chainId, connector} = useAccount();

@@ -17,6 +17,7 @@ import {singlePayRunId} from "@/lib/run-id";
 import {QUOTE_FRESH_MS, QUOTE_LOST, freshness, quoteAge} from "@/lib/quote-age";
 import {WalletPanel} from "@/components/wallet/wallet-panel";
 import {NEEDS_OKB, useWallet} from "@/components/wallet/use-wallet";
+import {ceilCents, STABLE_NAME} from "@/lib/grant-terms";
 import {useTxToast} from "@/components/toast/use-tx-toast";
 import {AssetNote} from "./asset-note";
 import {usePay} from "./use-pay";
@@ -249,7 +250,7 @@ export function PayForm({payroll, to}: {payroll: `0x${string}` | undefined; to?:
                     : age === "stale"
                       ? "Price is out of date — refresh it"
                       : wallet.usdt !== undefined && wallet.usdt < total
-                        ? `Not enough USDT — you have ${usdt(wallet.usdt)}`
+                        ? `Top up ${ceilCents(total - wallet.usdt)} ${STABLE_NAME}`
                         : null;
 
   const label = paid
@@ -287,7 +288,7 @@ export function PayForm({payroll, to}: {payroll: `0x${string}` | undefined; to?:
           if (!blocker && !locked) void send();
         }}
       >
-        <WalletPanel need={quote ? total : undefined} />
+        <WalletPanel need={quote ? total : undefined} purpose="make this payment" />
 
         {to ? (
           // Fixed by the page: who is being paid, shown in full rather than asked for.
