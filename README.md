@@ -156,6 +156,13 @@ npm run prove-run      # five people, five different splits, one signature, one 
 npm run prove-grant    # a grant opens, vests on schedule, pays the release fee and empties
 ```
 
+**The pages themselves, in a real browser.** [`scripts/fork-e2e.mjs`](scripts/fork-e2e.mjs)
+runs the site against the same fork with a test wallet that announces itself the way OKX
+Wallet does and signs with fork-only keys, so every page runs as it does for a person: it
+issues a grant from `/grants` (one permit signature, one transaction, on the certificate as
+it engraves in), seals it, has the recipient claim, cancels another, and pays three people
+from `/run` in one signature. Its header has the setup.
+
 ## Architecture
 
 ```
