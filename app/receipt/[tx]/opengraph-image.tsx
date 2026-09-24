@@ -142,12 +142,13 @@ export default async function Image({params}: {params: {tx: string}}) {
             {dollarsOnly ? `${usdt(r.stableAmount)} paid, all in USD\u20ae0` : `${short(r.payer)} paid ${usdt(r.stableAmount)}`}
           </div>
 
-          {/* The units are the largest thing on any surface they appear on. */}
-          <div style={{display: "flex", alignItems: "baseline"}}>
-            <div style={{display: "flex", fontFamily: DISPLAY, fontWeight: 600, fontSize: 104, color: INK, letterSpacing: -3}}>
+          {/* The units are the largest thing on any surface they appear on. Line height 1 on
+              both, as on the certificate card: Satori places a taller line's baseline wrong. */}
+          <div style={{display: "flex", alignItems: "baseline", marginTop: 14}}>
+            <div style={{display: "flex", fontFamily: DISPLAY, fontWeight: 600, fontSize: 104, lineHeight: 1, color: INK, letterSpacing: -3}}>
               {dollarsOnly ? (Number(r.cashAmount) / 1e6).toFixed(2) : unitsFromRaw(r.assetAmount, decimals)}
             </div>
-            <div style={{display: "flex", fontFamily: DISPLAY, fontWeight: 500, fontSize: 40, color: MUTED, marginLeft: 18}}>
+            <div style={{display: "flex", fontFamily: DISPLAY, fontWeight: 500, fontSize: 40, lineHeight: 1, color: MUTED, marginLeft: 18}}>
               {symbol}
             </div>
           </div>
