@@ -12,6 +12,7 @@
  *           0.01 OKB on the fork, and claims
  *   cancel  issue a revocable grant, then cancel the unvested part
  *   run     pay three people from /run in one signature and land on their payslips
+ *   pay     pay one person from /pay and land on the payslip, note and all
  *
  * Setup, once (Playwright is not a dependency of the app):
  *   npm i --no-save playwright && npx playwright install chromium
@@ -237,13 +238,35 @@ async function runFlow(browser) {
   await payer.ctx.close();
 }
 
+async function payFlow(browser) {
+  const person = privateKeyToAccount(keccak256(stringToHex("warrant fork pay person"))).address;
+  const payer = await openAs(browser, PAYER, "payer");
+  const {page} = payer;
+  await page.goto(`${base}/pay`, {waitUntil: "load", timeout: 120_000});
+  await connect(page);
+  await page.fill('.wa-pay-form input[placeholder^="0x"]', person);
+  await page.fill(".wa-pay-form input.is-amount", "3");
+  await page.fill('.wa-pay-form input[placeholder^="e.g."]', "Fork test payment");
+  const submit = page.locator('.wa-pay-act button[type="submit"]');
+  for (let i = 0; i < 40 && !(await submit.isEnabled()); i++) await page.waitForTimeout(1500);
+  check(/^Pay \$3/.test((await submit.innerText()).trim()), `the button says what it will do: "${(await submit.innerText()).trim()}"`);
+  await page.screenshot({path: `${out}/1-form.png`});
+  await submit.click();
+  await page.waitForURL(/\/receipt\//, {timeout: 180_000});
+  await bodyHas(page, /Fork test payment/);
+  check(payer.calls.filter((m) => m === "eth_sendTransaction").length === 1, "one person paid in one transaction, with the note on the payslip");
+  await page.screenshot({path: `${out}/2-payslip.png`});
+  await payer.ctx.close();
+}
+
 const browser = await chromium.launch();
 const started = Date.now();
 try {
   if (flow === "grant") await grantFlow(browser);
   else if (flow === "cancel") await cancelFlow(browser);
   else if (flow === "run") await runFlow(browser);
-  else throw new Error(`No flow "${flow}": use grant, cancel or run`);
+  else if (flow === "pay") await payFlow(browser);
+  else throw new Error(`No flow "${flow}": use grant, cancel, run or pay`);
 } catch (e) {
   failures++;
   log(`FAIL ${String(e).split("\n")[0]}`);
