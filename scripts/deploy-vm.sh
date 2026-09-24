@@ -87,6 +87,9 @@ sleep 5
 for p in "" pay run grants; do
   printf "  /%-7s %s\n" "$p" "$(curl -s -o /dev/null --max-time 60 -w '%{http_code}' "http://127.0.0.1:3000/$p")"
 done
+# Share cards fetch their faces once per process (lib/og-fonts.ts); draw one now so the first
+# link pasted after a deploy unfurls in a second instead of ten.
+printf "  %-8s %s\n" "card" "$(curl -s -o /dev/null --max-time 60 -w '%{http_code}' "http://127.0.0.1:3000/opengraph-image")"
 exit 0
 REMOTE
 
