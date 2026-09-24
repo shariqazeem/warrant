@@ -30,8 +30,8 @@ export function PaidToWallet({paid, hasChoice}: {paid: Outcome<PaidTo>; hasChoic
       <section className="wa-co-section wa-paid">
         <p className="wa-kicker">Paid to this wallet</p>
         <p className="wa-paid-none">
-          Nobody has paid this wallet through Warrant yet. When someone does, each payment
-          appears here with its note and a receipt anyone can open.
+          Nobody has paid this wallet through Warrant yet. When a company does, each payslip
+          appears here with its note, and anyone can open it.
         </p>
       </section>
     );
@@ -69,11 +69,11 @@ export function PaidToWallet({paid, hasChoice}: {paid: Outcome<PaidTo>; hasChoic
 
       <p className="wa-paid-intro">
         {p.since !== null ? <>First paid on {dateUTC(p.since)}. </> : null}
-        Newest first. Each date opens its receipt; the address is who paid.
+        Newest first. Each date opens its payslip; the address is who paid.
         {hasChoice ? null : (
           <>
             {" "}
-            Is this your wallet? <Link href="/me">Choose how much of your pay becomes stock</Link>.
+            Is this your wallet? <Link href="/me">See your grants and pay</Link>.
           </>
         )}
       </p>

@@ -34,7 +34,7 @@ import "@/components/grants/grants.css";
 import "./company.css";
 
 /**
- * `/@0x…` — A WALLET'S PUBLIC PAGE. A PAY LINK, OR A PAYROLL RECORD.
+ * `/@0x…` — A WALLET'S PUBLIC PAGE. A PERSON'S PAY LINK, OR A COMPANY'S GRANTS AND PAYROLL.
  *
  * Someone who has signed how they want to be paid, or who has been paid through Warrant
  * before, gets a pay link: "Pay 0x…", their choice in one line, and the pay box, before
@@ -63,8 +63,8 @@ export async function generateMetadata({params}: Params): Promise<Metadata> {
   const {company} = await params;
   const address = normalise(company);
   const record: Metadata = {
-    title: `${short(address)} — paid in ownership — Warrant`,
-    description: "Every payment this company has made, with the reason it was made.",
+    title: `${short(address)}'s grants and payroll — Warrant`,
+    description: "Every grant and every payslip this company has issued on X Layer, each with its reason.",
   };
   if (!ADDRESS.test(address)) return record;
   try {
@@ -143,9 +143,9 @@ export default async function WalletPage({params}: Params) {
 
         {hasPaid ? (
           <section className="wa-co-section wa-co-also">
-            <p className="wa-kicker">This wallet also pays people</p>
+            <p className="wa-kicker">This wallet also grants and pays people</p>
             <p className="wa-co-also-since">
-              {since ?? "Its payments and grants, each with its reason."}
+              {since ?? "Its grants and payslips, each with its reason."}
             </p>
             <CompanyRecord c={c} live={live} now={now} />
           </section>
@@ -156,15 +156,20 @@ export default async function WalletPage({params}: Params) {
 
   return (
     <Frame>
-      <p className="wa-kicker">Company payroll record</p>
-      <h1 className="wa-co-name wa-mono">{address}</h1>
+      <p className="wa-kicker">Grants and payroll</p>
+      <h1 className="wa-co-name">
+        <span className="wa-mono">{short(address)}</span>&rsquo;s grants and payroll
+      </h1>
       <p className="wa-lede">
-        {since ?? "This wallet has not paid anyone through Warrant yet."}{" "}
-        <Link href={EXPLORER_ADDRESS(address)}>See it on X Layer</Link>.
+        {since ?? "This wallet has not granted stock or run payroll through Warrant yet."}{" "}
+        <a href={EXPLORER_ADDRESS(address)}>
+          See <span className="wa-mono">{address}</span> on X Layer
+        </a>
+        .
       </p>
       <p className="wa-co-invite">
-        Is this your wallet? <Link href="/me">Choose how much of your pay becomes stock</Link>,
-        and this page becomes a link anyone can pay you with.
+        Is this your company&rsquo;s wallet? <Link href="/grants">Grant stock</Link> or{" "}
+        <Link href="/run">run payroll</Link> from it, and every grant and payslip appears here.
       </p>
 
       {hasPaid ? (
@@ -172,8 +177,8 @@ export default async function WalletPage({params}: Params) {
       ) : (
         <div className="wa-nothing" style={{marginTop: "var(--s-7)"}}>
           <strong>Nothing to show yet.</strong>
-          When this company pays someone, the payment appears here with its note and a
-          receipt anyone can open. Only real payments are ever shown.
+          When this wallet grants stock or runs payroll, each grant and payslip appears here
+          with its reason. Only what is on X Layer is ever shown.
         </div>
       )}
 
@@ -189,8 +194,9 @@ function Frame({children}: {children: ReactNode}) {
       <div className="wa-dark">
         <SiteNav />
       </div>
-      <div className="wa-tear" aria-hidden />
-      <main className="wa-sec is-wide">{children}</main>
+      <main id="main" className="wa-sec is-wide">
+        {children}
+      </main>
       <div className="wa-dark">
         <SiteFoot />
       </div>
@@ -216,7 +222,7 @@ function CompanyRecord({c, live, now}: {c: Company; live: Map<number, Grant>; no
           <p className="wa-units-sm">{c.paymentCount}</p>
         </div>
         <div>
-          <p className="k">Payroll batches</p>
+          <p className="k">Payroll runs</p>
           <p className="wa-units-sm">{c.runCount}</p>
         </div>
         <div>
@@ -269,14 +275,14 @@ function CompanyRecord({c, live, now}: {c: Company; live: Map<number, Grant>; no
               : now_.state === "closed"
                 ? "Fully released"
                 : now_.revoked
-                  ? "Cancelled — what had vested stays theirs"
+                  ? "Cancelled: what had vested stays theirs"
                   : now_.isSealed
-                    ? "Vesting · irrevocable"
-                    : "Vesting";
+                    ? "Vesting, sealed"
+                    : "Vesting, revocable until sealed";
             return (
               <article className="wa-grant" key={g.id}>
                 <div className="wa-grant-head">
-                  <Link href={`/grant/${g.id}`} className="wa-grant-who wa-mono">
+                  <Link href={`/g/${g.id}`} className="wa-grant-who wa-mono">
                     {short(g.beneficiary)}
                   </Link>
                   <span className="wa-grant-units">
@@ -312,14 +318,14 @@ function CompanyRecord({c, live, now}: {c: Company; live: Map<number, Grant>; no
           })}
           <p className="wa-co-note">
             The terms are from the day each grant opened; its state is read from the contract
-            now. Each grant&rsquo;s full record, with every release, is on its own page.
+            now. Each grant&rsquo;s certificate, with every release, is on its own page.
           </p>
         </section>
       ) : null}
 
       {c.receipts.length > 0 ? (
         <section className="wa-co-section">
-          <p className="wa-kicker">Every payment, with its note</p>
+          <p className="wa-kicker">Every payslip, with its note</p>
           <ol className="wa-co-rows">
             {c.receipts.map((r) => (
               <li className="wa-co-row" key={`${r.txHash}-${r.logIndex}`}>
