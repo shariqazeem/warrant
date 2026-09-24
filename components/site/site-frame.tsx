@@ -21,7 +21,8 @@ export {DOORS};
 
 export function SiteNav() {
   return (
-    <header className="wa-header">
+    // The band carries its own vault, so a page that forgets the wrapper still reads.
+    <header className="wa-header wa-vault">
       <a className="wa-skip" href="#main">
         Skip to content
       </a>
@@ -43,7 +44,7 @@ export function SiteNav() {
 
 export function SiteFoot() {
   return (
-    <footer className="wa-site-foot">
+    <footer className="wa-site-foot wa-vault">
       <div className="wa-foot-row">
         <Link href="/" className="wa-foot-brand" aria-label="Warrant, the front page">
           <Wordmark size={24} />
