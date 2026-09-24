@@ -29,6 +29,7 @@ tips it earns. If the key leaked, the loss is that dollar and the tips.
 | `KEEPER_HEALTH_PORT` | no | Default `3101`. Bound to 127.0.0.1, never to the internet |
 | `KEEPER_TELEGRAM_TOKEN` | no | A bot token from @BotFather. Unset means no alerts, silently |
 | `KEEPER_TELEGRAM_CHAT` | no | The chat the alerts go to |
+| `KEEPER_HEARTBEAT_URL` | no | Pinged after every healthy pass. A dead keeper cannot send its own alert; a healthchecks.io check on this URL alerts when the pings stop (`docs/monitoring.md`) |
 
 The keeper reads `.env.keeper` first (another file if `KEEPER_ENV_FILE` names one), then
 `.env.local` for anything the first leaves unset. A variable already set in the shell wins over

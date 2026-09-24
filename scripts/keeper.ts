@@ -22,6 +22,8 @@
  *   KEEPER_MIN_OKB                     below this balance it stops sending and says so
  *   KEEPER_HEALTH_PORT                 /health, bound to 127.0.0.1 only (default 3101)
  *   KEEPER_TELEGRAM_TOKEN, KEEPER_TELEGRAM_CHAT   alerts; skipped silently when unset
+ *   KEEPER_HEARTBEAT_URL               pinged after every healthy pass (healthchecks.io);
+ *                                      the outside checker alerts when the pings stop
  *
  * After every pass it writes var/keeper.json (lib/keeper-status.ts), which the site reads to
  * say whether grants are being released automatically. Full steps: docs/keeper.md.
@@ -183,6 +185,22 @@ async function tell(text: string): Promise<boolean> {
   } catch {
     warn("Telegram could not be reached; the alert was not sent.");
     return true;
+  }
+}
+
+/**
+ * A DEAD MAN'S SWITCH. A keeper that has died cannot send its own alert, so when
+ * KEEPER_HEARTBEAT_URL is set (a healthchecks.io ping URL, say) every healthy pass pings it,
+ * and the outside checker alerts when the pings stop. The URL is a secret of sorts and is
+ * never logged. Unset means no heartbeat, silently.
+ */
+async function heartbeat(): Promise<void> {
+  const url = process.env.KEEPER_HEARTBEAT_URL?.trim();
+  if (!url) return;
+  try {
+    await fetch(url, {signal: AbortSignal.timeout(10_000)});
+  } catch {
+    warn("The heartbeat could not be sent. The outside checker will say so if it keeps failing.");
   }
 }
 
@@ -384,6 +402,8 @@ async function pass(k: Keeper): Promise<boolean> {
     k.s.send && next.address !== null && next.balanceWei !== null && BigInt(next.balanceWei) < k.s.minWei;
   const kind = alertDue({failuresInARow: k.failuresInARow, balanceLow, lastAlertAt: k.lastAlertAt, now: at});
   if (kind && (await tell(alertText(kind, next, k.s, k.failuresInARow)))) k.lastAlertAt = at;
+  const health = healthVerdict(next, {now: at, intervalSeconds: k.s.every, minBalanceWei: k.s.minWei, send: k.s.send});
+  if (health.ok) await heartbeat();
   return clean;
 }
 
