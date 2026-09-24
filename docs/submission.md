@@ -102,4 +102,4 @@ Since then the design has been replaced and the product serves companies.
 
 ## Team
 
-{The founder's name, role and contact, as he wants them shown.}
+{The founder's name, role and contact, as the founder wants them shown.}
