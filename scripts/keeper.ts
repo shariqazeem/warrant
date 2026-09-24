@@ -59,9 +59,12 @@ import {held, ok, shortReason, type Outcome} from "../lib/outcome";
 import {grantEscrowAbi} from "../lib/payroll-abi";
 
 /**
- * Below this the keeper stops sending. A release costs about 0.000003 OKB of gas on X Layer
- * (a vest is ~150k gas at 0.02 gwei, measured 24 Sep 2026), so 0.002 OKB is hundreds of
- * releases of margin while staying under a one-dollar float at any OKB price above $500.
+ * Below this the keeper stops sending, and alerts. X Layer's gas price was 0.02 gwei on
+ * 24 Sep 2026, so a vest of a couple of hundred thousand gas costs under 0.000005 OKB, and
+ * 0.002 OKB is hundreds of releases of margin. It is also well under the one-dollar float
+ * the keeper is meant to hold (at about $118 an OKB that dollar is about 0.0085 OKB), so a
+ * freshly funded keeper sends. A minimum of 0.05 would be about $6, and a $1 keeper would
+ * never send at all.
  */
 const DEFAULT_MIN_OKB = "0.002";
 const DEFAULT_HEALTH_PORT = 3101;
