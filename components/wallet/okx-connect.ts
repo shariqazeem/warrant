@@ -19,6 +19,7 @@
 import {createConnector} from "@wagmi/core";
 import {getAddress, numberToHex, type Address} from "viem";
 import {xLayer} from "@/lib/chain";
+import {OKX_CLOSED} from "./wallet-words";
 
 const CHAIN = `eip155:${xLayer.id}`;
 const RPC = xLayer.rpcUrls.default.http[0]!;
@@ -158,7 +159,7 @@ function watchModalClose() {
 }
 
 /** The sentence shown when someone closes the QR window without scanning it. */
-export const OKX_CLOSED = "You closed the OKX window before connecting.";
+export {OKX_CLOSED};
 
 const OKX_ICON =
   "data:image/svg+xml;utf8," +

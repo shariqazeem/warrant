@@ -22,6 +22,8 @@ import {
 import {bps, short, stampUTC} from "@/lib/format";
 import {held, type Outcome} from "@/lib/outcome";
 import {ChoiceWallet} from "./choice-wallet";
+import {STALE_PAGE, isStaleBuild} from "@/components/app/report";
+import {switchWords} from "@/components/wallet/wallet-words";
 import "@/components/pay/pay.css";
 import "./choice.css";
 import {CopyText} from "@/components/app/copy-text";
@@ -89,7 +91,10 @@ export function ChoiceForm() {
     if (!address) return;
     let live = true;
     readChoice(address)
-      .catch((): Outcome<never> => held("Your current choice could not be read: the connection dropped."))
+      .catch(
+        (err): Outcome<never> =>
+          held(isStaleBuild(err) ? STALE_PAGE : "Your current choice could not be read: the connection dropped."),
+      )
       .then((r) => {
         if (!live) return;
         if (r.ok) {
@@ -184,8 +189,12 @@ export function ChoiceForm() {
     let saved: Outcome<StoredChoice>;
     try {
       saved = await saveChoice(message, signature);
-    } catch {
-      saved = held("The connection dropped before your choice was saved. Nothing changed; sign again.");
+    } catch (err) {
+      saved = held(
+        isStaleBuild(err)
+          ? `${STALE_PAGE} Your choice was not saved.`
+          : "The connection dropped before your choice was saved. Nothing changed; sign again.",
+      );
     }
     if (mine !== attemptSeq.current) return;
     if (saved.ok) {
@@ -461,7 +470,7 @@ export function ChoiceForm() {
               </p>
             ) : null}
             {switchError && (phase === "wrong-chain" || offNetwork) ? (
-              <p className="wa-refusal">{switchWords(switchError.message)}</p>
+              <p className="wa-refusal">{switchWords(switchError)}</p>
             ) : null}
 
             {editing && current ? (
@@ -552,11 +561,6 @@ function readSignError(err: unknown): {kind: "rejected" | "chain" | "other"; tex
   if (/already pending/i.test(text)) return {kind: "other", text: "Your wallet already has a request open. Check it."};
   const first = (said[0] ?? "no reason given").split("\n")[0]!.slice(0, 200);
   return {kind: "other", text: `Your wallet did not sign (${first}). Nothing changed.`};
-}
-
-function switchWords(message: string): string {
-  if (/rejected|denied/i.test(message)) return "The switch was dismissed in your wallet.";
-  return message.split("\n")[0] ?? message;
 }
 
 

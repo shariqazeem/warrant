@@ -4,7 +4,8 @@ import {AlertCircle, Check, Wallet} from "lucide-react";
 import {useMemo} from "react";
 import {formatEther} from "viem";
 import {useConnect, useDisconnect, useSwitchChain} from "wagmi";
-import {OKX_CLOSED, OKX_CONNECT_ID} from "./okx-connect";
+import {OKX_CONNECT_ID} from "./okx-connect";
+import {connectWords, switchWords} from "./wallet-words";
 import {OTHER_STABLE, STABLE, xLayer} from "@/lib/chain";
 import {short, usdt as fmtUsdt} from "@/lib/format";
 import {useWallet} from "./use-wallet";
@@ -91,7 +92,7 @@ export function WalletPanel({need}: {need?: bigint}) {
             })}
           </div>
         )}
-        {error ? <p className="wa-wallet-note is-err">{readable(error.message)}</p> : null}
+        {error ? <p className="wa-wallet-note is-err">{connectWords(error)}</p> : null}
       </div>
     );
   }
@@ -118,7 +119,7 @@ export function WalletPanel({need}: {need?: bigint}) {
             Use a different wallet
           </button>
         </div>
-        {switchError ? <p className="wa-wallet-note is-err">{readable(switchError.message)}</p> : null}
+        {switchError ? <p className="wa-wallet-note is-err">{switchWords(switchError)}</p> : null}
       </div>
     );
   }
@@ -170,10 +171,3 @@ export function WalletPanel({need}: {need?: bigint}) {
   );
 }
 
-/** A wallet's own error, reduced to the sentence that matters. */
-function readable(message: string): string {
-  if (message.includes(OKX_CLOSED)) return `${OKX_CLOSED} Press OKX Wallet to show the code again.`;
-  if (/rejected|denied/i.test(message)) return "The request was dismissed in your wallet.";
-  if (/already pending/i.test(message)) return "Your wallet already has a request open. Check it.";
-  return message.split("\n")[0] ?? message;
-}

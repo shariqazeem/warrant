@@ -3,7 +3,8 @@
 import {Check, Wallet} from "lucide-react";
 import {useMemo} from "react";
 import {useAccount, useConnect, useDisconnect} from "wagmi";
-import {OKX_CLOSED, OKX_CONNECT_ID} from "@/components/wallet/okx-connect";
+import {OKX_CONNECT_ID} from "@/components/wallet/okx-connect";
+import {connectWords} from "@/components/wallet/wallet-words";
 import {short} from "@/lib/format";
 import "@/components/wallet/wallet.css";
 
@@ -106,15 +107,7 @@ export function ChoiceWallet() {
         Connecting shows this page your wallet&rsquo;s address and nothing else. Nothing is sent
         and nothing is charged.
       </p>
-      {error ? <p className="wa-wallet-note is-err">{readable(error.message)}</p> : null}
+      {error ? <p className="wa-wallet-note is-err">{connectWords(error)}</p> : null}
     </div>
   );
-}
-
-/** A wallet's own error, reduced to the sentence that matters. The same words WalletPanel uses. */
-function readable(message: string): string {
-  if (message.includes(OKX_CLOSED)) return `${OKX_CLOSED} Press OKX Wallet to show the code again.`;
-  if (/rejected|denied/i.test(message)) return "The request was dismissed in your wallet.";
-  if (/already pending/i.test(message)) return "Your wallet already has a request open. Check it.";
-  return message.split("\n")[0] ?? message;
 }
