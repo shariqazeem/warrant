@@ -142,32 +142,49 @@ Nothing else is an object. If it is not one of these five, it is a ruled row or 
 
 ## The shared classes
 
-The frame lives in `app/landing.css`; each surface has its own stylesheet beside its
-component, and a class is defined in exactly one file.
+A class is defined in exactly one stylesheet. Surfaces may refine a class in context
+(`.wa-me .wa-actions`), never define it again.
 
-| Class | What it is |
-| --- | --- |
-| `.wa-landing` | The page wrapper: canvas, ink text |
-| `.wa-vault` (`.wa-dark`) | A vault band: nav, hero, footer |
-| `.wa-nav`, `.wa-nav-link`, `.wa-nav-brand` | The nav (`components/site`) |
-| `.wa-sec`, `.wa-sec.is-wide` | A section: a 720px reading column, or 1296px wide |
-| `.wa-kicker` | A small sentence-case label above a headline |
-| `.wa-display`, `.wa-h2`, `.wa-lede` | The hero headline, a section headline, the lead |
-| `.wa-btn` | A secondary button: surface, 1px field border, ink |
-| `.wa-btn.is-primary` | Vault with bond text on canvas; bond with vault text on vault |
-| `.wa-btn.is-seal` | Oxblood with bond text: "Seal it now" |
-| `.wa-btn.is-quiet` | Underlined text, no box: "Issue another" |
-| `.wa-btn.is-large`, `.wa-btn.is-block` | 52px tall; full width and 56px tall |
-| `.wa-actions` | A row of buttons |
-| `.wa-rule-row` (`.k`, `.v`) | A ruled label and value |
-| `.wa-units`, `.wa-units-sm`, `.wa-mono` | Units large; units small; an address or hash |
-| `.wa-nothing` | An honest empty state: a line in bold, then what will fill it |
-| `.wa-field`, `.wa-input`, `.wa-money` | A form field, a 48px input, a money input (`components/pay/pay.css`) |
-| `.wa-site-foot` | The footer, on vault |
+- `styles/globals.css`, loaded by the root layout on every page: the reset, then the
+  primitives any page can render.
+- `app/landing.css`: the page frame.
+- `components/site/site.css`: the nav, the skip link and the footer.
+- `components/pay/pay.css`: the form, loaded by every form component.
+- Everything else lives beside its component (`grants.css`, `stub.css`, `jump.css`…).
+
+| Class | Where | What it is |
+| --- | --- | --- |
+| `.wa-vault` (`.wa-dark`) | globals | A vault band: background, text, links, foil focus, the larger lead |
+| `.wa-btn` / `.wa-action` | globals | A secondary button: surface, 1px field border, ink, 44px |
+| `.wa-btn.is-primary` | globals | Vault with bond text on canvas; bond with vault text on vault |
+| `.wa-btn.is-seal` | globals | Oxblood with bond text: "Seal it now" |
+| `.wa-btn.is-quiet` | globals | Underlined words, no box: "Issue another" |
+| `.wa-btn.is-large`, `.is-block` | globals | 52px tall; full width and 56px tall |
+| `.wa-btn[disabled]` | globals | Blocked: surface, field border, muted text, still readable |
+| `.wa-actions` | globals | A row of buttons |
+| `.wa-linkish` | globals | A button that reads as an underlined link in a sentence |
+| `.wa-kicker` | globals | A small sentence-case label above a headline |
+| `.wa-units`, `.wa-units-sm` | globals | Units in Bodoni 600, at `--fs-display` or `--fs-h2` |
+| `.wa-mono` | globals | An address or a hash |
+| `.wa-fine`, `.wa-refusal` | globals | Small print; what stopped it, in refused |
+| `.wa-nothing` | globals | An honest empty state: a line in bold, then what will fill it |
+| `.wa-spin` | globals | The only spinner, inside a busy button |
+| `.wa-landing` | landing | The page wrapper: canvas, ink text |
+| `.wa-tear` | landing | The plain 1px vault-line rule where vault meets canvas |
+| `.wa-sec`, `.wa-sec.is-wide` | landing | A 720px reading column; the frame's full 1296px |
+| `.wa-display`, `.wa-h1`, `.wa-h2`, `.wa-lede` | landing | Hero headline, page headline, section headline, the lead |
+| `.wa-rule-row` (`.k`, `.v`) | landing | A ruled label and value |
+| `.wa-header`, `.wa-skip`, `.wa-nav*`, `.wa-site-foot` | site | Nav with skip link, footer |
+| `.wa-field`, `.wa-input`, `.wa-money` | pay | A labelled field, a 48px input, a money box |
+| `.wa-chip` | grants | Where a grant stands: sealed, revoked, closed |
 
 Inputs are 48px tall with a 1px `--field` border, `--r-control` and `--surface`; addresses in
 13.5px mono, money in 18px ui; labels 15px 600. Focus: 2px `--vault` outline on canvas,
-`--foil` on vault.
+`--foil` on vault. Links inside running text are underlined; nav links and buttons are not.
+
+**Landmarks.** A page is the vault band with `<SiteNav />` (a `<header>` holding the skip
+link and the nav), the `.wa-tear` rule, `<main id="main">`, and the vault band with
+`<SiteFoot />` (a `<footer>`). Nothing sits outside a landmark.
 
 ## Every state, designed
 
