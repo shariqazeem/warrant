@@ -314,6 +314,24 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
     phase.kind === "issued";
   const busy = walletBusy || requoting;
 
+  // A refusal or a closed request was about the terms that were on screen then. Once the
+  // terms change, it no longer describes anything, so it goes.
+  const phaseKind = phase.kind;
+  useEffect(() => {
+    if (phaseKind === "failed" || phaseKind === "rejected") reset();
+    // Only a change of terms clears it, not the refusal arriving.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [req?.sig]);
+
+  /** After a grant whose id could not be read: clear the form for the next one. */
+  const issueAnother = () => {
+    reset();
+    setRecipientText("");
+    setAmountText("");
+    setNoteInput("");
+    setStartInput("");
+  };
+
   useEffect(() => {
     const sig = req?.sig ?? null;
     if (!sig || !reqRef.current) {
@@ -712,7 +730,7 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
               />
               <span className="unit">{STABLE_NAME}</span>
             </div>
-            <div id="issue-amount-help" className="wa-issue-help" aria-live="polite">
+            <div id="issue-amount-help" className="wa-issue-help">
               {amountWhy ? (
                 <p className="is-refused">{amountWhy}</p>
               ) : amountUsd === null ? (
@@ -987,7 +1005,7 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
           >
             {buttonLabel}
           </button>
-          <Status phase={phase} base={base} onRetry={() => void doIssue()} requoting={requoting} />
+          <Status phase={phase} base={base} onRetry={() => void doIssue()} onAnother={issueAnother} requoting={requoting} />
           <p className="wa-issue-fine">
             {oneSignature
               ? "One signature approves the USDT and issues the grant."
@@ -1000,7 +1018,7 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
 
       {/* The specimen, and what it rests on */}
       <div className="wa-issue-aside">
-        <div className="wa-issue-cert" aria-label="Specimen certificate, updating as you fill in the form">
+        <section className="wa-issue-cert" aria-label="Specimen certificate, updating as you fill in the form">
           <div className="wa-issue-cert-land">
             <Fit width={760} height={468}>
               <Certificate data={specimen} variant="landscape" specimen seedExtra={seedExtra} sealPending={after === "seal"} />
@@ -1011,9 +1029,9 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
               <Certificate data={specimen} variant="portrait" specimen seedExtra={seedExtra} sealPending={after === "seal"} />
             </Fit>
           </div>
-        </div>
+        </section>
 
-        <dl className="wa-issue-summary" aria-live="polite">
+        <dl className="wa-issue-summary">
           <div>
             <dt>Quote</dt>
             <dd>
@@ -1070,11 +1088,13 @@ function Status({
   phase,
   base,
   onRetry,
+  onAnother,
   requoting,
 }: {
   phase: IssuePhase;
   base: bigint;
   onRetry: () => void;
+  onAnother: () => void;
   requoting: boolean;
 }) {
   const link = (hash: `0x${string}`, text = "See it on OKLink") => (
@@ -1110,7 +1130,12 @@ function Status({
         phase.id !== null ? (
           <>Issued on X Layer. Opening certificate No. {String(phase.id).padStart(6, "0")}… {link(phase.hash)}</>
         ) : (
-          <>Issued on X Layer. {link(phase.hash)} Its certificate appears under Your grants below in a moment.</>
+          <>
+            Issued on X Layer. {link(phase.hash)} Its certificate appears under Your grants below in a moment.{" "}
+            <button type="button" className="wa-issue-link" onClick={onAnother}>
+              Issue another
+            </button>
+          </>
         );
       break;
     case "rejected":
