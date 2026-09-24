@@ -21,20 +21,22 @@ import {
 } from "@/lib/choice";
 import {bps, short, stampUTC} from "@/lib/format";
 import {held, type Outcome} from "@/lib/outcome";
-import {ChoiceWallet} from "./choice-wallet";
 import {STALE_PAGE, isStaleBuild, reportError} from "@/components/app/report";
 import {switchWords} from "@/components/wallet/wallet-words";
 import "@/components/pay/pay.css";
 import "./choice.css";
-import {CopyText} from "@/components/app/copy-text";
 
 /**
- * HOW YOU GET PAID — the person being paid chooses, once.
+ * CHOOSE HOW YOU'RE PAID NEXT TIME — the person being paid chooses, once.
  *
  * How much of each payment becomes stock, and which stock. It is signed, not sent: an
- * EIP-712 signature moves nothing and costs no network fee, and every company that pays
- * this wallet through Warrant follows it. The form checks the choice with the same rules
- * the server uses before it asks the wallet, so nobody signs something that will be refused.
+ * EIP-712 signature moves nothing and costs no network fee. Every payslip a company pays this
+ * wallet through Warrant follows it, and a company granting this wallet stock sees it. The
+ * form checks the choice with the same rules the server uses before it asks the wallet, so
+ * nobody signs something that will be refused.
+ *
+ * It lives on /me under the wallet the page has already connected, so it shows no wallet
+ * panel of its own.
  *
  * No figure here is a price or a projection. The one worked example is arithmetic on $100
  * and says so.
@@ -243,12 +245,9 @@ export function ChoiceForm() {
   if (status !== "connected" || !address) {
     return (
       <div className="wa-me">
-        <Steps at={1} />
-        <ChoiceWallet />
         <p className="wa-me-lead-note">
-          Connect the wallet you want to be paid to. Next you choose how much of each payment
-          becomes stock and sign it — which is free, and moves nothing — and then you get your
-          link.
+          Connect the wallet you&rsquo;re paid to, then choose how much of each payment becomes
+          stock and sign it. Signing is free and moves nothing.
         </p>
       </div>
     );
@@ -257,9 +256,9 @@ export function ChoiceForm() {
   if (reading) {
     return (
       <div className="wa-me">
-        <Steps at={address ? 2 : 1} />
-        <ChoiceWallet />
-        <p className="wa-me-reading">Reading your current choice…</p>
+        <p className="wa-me-reading" role="status">
+          Reading your current choice…
+        </p>
       </div>
     );
   }
@@ -271,9 +270,11 @@ export function ChoiceForm() {
     const stock = current.stockBps > 0 ? assetByAddress(current.asset) : undefined;
     return (
       <div className="wa-me">
-        <Steps at={3} />
-        <ChoiceWallet />
-        <YourLink address={address!} justSaved={justSaved} />
+        {justSaved ? (
+          <p className="wa-me-saved" role="status">
+            Saved. Your next payslip follows it.
+          </p>
+        ) : null}
         <section className="wa-me-current" aria-live="polite">
           <p className="wa-kicker">Your choice</p>
           <p className="wa-me-now">
@@ -287,12 +288,13 @@ export function ChoiceForm() {
           ) : null}
           <div className="wa-actions">
             <button type="button" className="wa-btn" onClick={startChange}>
-              Change your split
+              Change how you&rsquo;re paid
             </button>
           </div>
           <p className="wa-fine wa-me-fine">
-            Your public page shows this choice with its signature, so anyone — a company
-            paying you included — can check it came from your wallet.
+            <Link href={`/@${address}`}>Your public page</Link> shows this choice with its
+            signature, so anyone, a company paying you included, can check it came from your
+            wallet.
           </p>
         </section>
       </div>
@@ -315,8 +317,6 @@ export function ChoiceForm() {
 
   return (
     <div className="wa-me">
-      <Steps at={2} />
-      <ChoiceWallet />
       {loadWhy ? (
         <p className="wa-me-reading">
           {loadWhy} You can still sign a new choice; it replaces any older one.
@@ -569,60 +569,4 @@ function readSignError(err: unknown): {kind: "rejected" | "chain" | "other"; tex
   const specific = said.find((s) => !GENERIC.test(s.trim())) ?? said[0] ?? "no reason given";
   const first = specific.split("\n")[0]!.slice(0, 200);
   return {kind: "other", text: `Your wallet did not sign (${first}). Nothing changed.`, said: said.join(" | ").slice(0, 900)};
-}
-
-
-/** Three steps, and where you are: connect, choose, share. */
-function Steps({at}: {at: 1 | 2 | 3}) {
-  const steps = ["Connect your wallet", "Choose your split", "Share your link"];
-  return (
-    <ol className="wa-steps" aria-label="Getting your link">
-      {steps.map((s, i) => (
-        <li key={s} className={i + 1 === at ? "is-on" : i + 1 < at ? "is-done" : ""} aria-current={i + 1 === at ? "step" : undefined}>
-          <span className="n">{i + 1}</span> {s}
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-/**
- * YOUR LINK — WHAT THIS PAGE IS FOR. Whoever pays through it gets the split you signed:
- * a client, an employer, a friend, from any wallet on X Layer.
- */
-function YourLink({address, justSaved}: {address: string; justSaved: boolean}) {
-  const [origin, setOrigin] = useState("https://warrant.world");
-  const [canShare, setCanShare] = useState(false);
-  useEffect(() => {
-    setOrigin(window.location.origin);
-    setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
-  }, []);
-  const link = `${origin}/@${address}`;
-  const shown = `${origin.replace(/^https?:\/\//, "")}/@${short(address)}`;
-  return (
-    <section className="wa-me-link" aria-live="polite">
-      {justSaved ? <p className="wa-me-saved">Saved. Your link is ready.</p> : null}
-      <p className="wa-kicker">Your link</p>
-      <p className="wa-me-link-url wa-mono">{shown}</p>
-      <div className="wa-actions">
-        <CopyText text={link} label="Copy your link" />
-        {canShare ? (
-          <button
-            type="button"
-            className="wa-btn"
-            onClick={() => void navigator.share({title: "Pay me on Warrant", url: link}).catch(() => undefined)}
-          >
-            Share
-          </button>
-        ) : null}
-        <Link href={`/@${address}`} className="wa-btn">
-          Open your page
-        </Link>
-      </div>
-      <p className="wa-fine">
-        Send it to whoever pays you. They pay in dollars from any wallet on X Layer and never
-        pick your stock — you get your split, with a receipt for every payment.
-      </p>
-    </section>
-  );
 }
