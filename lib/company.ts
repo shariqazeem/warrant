@@ -487,6 +487,17 @@ export async function readFeaturedGrant(
 }
 
 /**
+ * THE OKX DEX ROUTE A GRANT WAS BOUGHT THROUGH, by symbol ("USD₮0", "USDG", "wSPYx", "SPYx"),
+ * or an empty list when it is not known. The issue flow keeps the route of the real quote it
+ * signed; until that store is wired in, no route is claimed.
+ */
+// STUB — returns lane C's stored route (lib/db.ts `routeFor`) once merged; until then, none.
+export function routeOfGrant(id: number): string[] {
+  void id;
+  return [];
+}
+
+/**
  * The escrow's pool of one stock: its shares outstanding and the units it holds. With these
  * a grant's shares convert to units exactly as the contract converts them.
  */

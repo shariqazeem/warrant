@@ -1,0 +1,679 @@
+/* STUB — removed at merge; lane A owns tokens */
+:root {
+  --vault: #0B2A21;
+  --vault-raised: #0F3327;
+  --vault-line: #24493B;
+  --bond: #F2ECDC;
+  --canvas: #EEF2EE;
+  --engrave: #173B2F;
+  --ink: #0F1A15;
+  --muted: #45544C;
+  --muted-bond: #4A5E54;
+  --on-vault: #F2ECDC;
+  --on-vault-2: #C9D3CC;
+  --on-vault-3: #A9B8AF;
+  --rule: #C5D0CA;
+  --field: #9AABA2;
+  --field-bg: #FFFFFF;
+  --seal: #8C1D1D;
+  --foil: #B38B3E;
+  --settled: #0F7A4F;
+  --warn: #b45309;
+  --refused: #dc2626;
+  --surface: #FFFFFF;
+  --font-display: "Bodoni Moda", Georgia, serif;
+  --font-ui: "Hanken Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --r-control: 6px;
+  --r-panel: 8px;
+  --r-cert: 3px;
+  --shadow-cert-vault: 0 40px 80px rgba(0, 0, 0, 0.45);
+  --fs-display: clamp(2.75rem, 1.2rem + 4.2vw, 4.5rem);
+  --fs-h2: 28px;
+  --fs-lead: 20px;
+}
+/* END STUB */
+
+/**
+ * home.css — THE FRONT PAGE. Vault for the network (the hero, the three rules, the close),
+ * canvas for everything read closely. The certificate is the one object; everything else is
+ * a ruled row or a paragraph. Only token names below: no colour is written here.
+ */
+
+.wa-home {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+}
+
+.wa-home-top {
+  background: var(--vault);
+  color: var(--on-vault);
+  border-bottom: 1px solid var(--vault-line);
+}
+
+.wa-home-wrap {
+  max-width: 1296px;
+  margin: 0 auto;
+  padding-left: 72px;
+  padding-right: 72px;
+  box-sizing: border-box;
+}
+
+/* ── the hero, on vault ───────────────────────────────────────────────── */
+
+.wa-home-hero {
+  background: var(--vault);
+  color: var(--on-vault);
+}
+
+.wa-home-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 760px);
+  gap: 48px;
+  align-items: center;
+  padding-top: 64px;
+  padding-bottom: 72px;
+}
+
+.wa-home-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+}
+
+.wa-home-display {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-display);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--on-vault);
+}
+
+.wa-home-lead {
+  margin: 0;
+  font-size: var(--fs-lead);
+  line-height: 1.55;
+  color: var(--on-vault-2);
+  max-width: 34em;
+}
+
+.wa-home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+
+.wa-home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 26px;
+  border-radius: var(--r-control);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  box-sizing: border-box;
+  transition: background-color 160ms ease-out, border-color 160ms ease-out;
+}
+
+.wa-home-btn.is-bond {
+  background: var(--bond);
+  color: var(--vault);
+  border: 1px solid var(--bond);
+}
+
+.wa-home-btn.is-bond:hover {
+  background: var(--on-vault-2);
+  border-color: var(--on-vault-2);
+}
+
+.wa-home-btn.is-outline {
+  background: transparent;
+  color: var(--on-vault);
+  border: 1px solid var(--on-vault-3);
+  font-weight: 500;
+}
+
+.wa-home-btn.is-outline:hover {
+  border-color: var(--on-vault);
+}
+
+.wa-home-btn.is-vault {
+  background: var(--vault);
+  color: var(--on-vault);
+  border: 1px solid var(--vault);
+}
+
+.wa-home-btn.is-vault:hover {
+  background: var(--vault-raised);
+}
+
+.wa-home-btn.is-quiet {
+  background: var(--field-bg);
+  color: var(--ink);
+  border: 1px solid var(--field);
+  font-weight: 500;
+}
+
+.wa-home-btn.is-quiet:hover {
+  border-color: var(--ink);
+}
+
+.wa-home-hero :focus-visible,
+.wa-home-rules :focus-visible,
+.wa-home-close :focus-visible {
+  outline: 2px solid var(--foil);
+  outline-offset: 3px;
+}
+
+.wa-home-fine {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--on-vault-3);
+  max-width: 36em;
+}
+
+.wa-home-hero-cert {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+  min-width: 0;
+}
+
+.wa-home-hero-cert > * {
+  max-width: 100%;
+}
+
+.wa-home-cert-caption {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--on-vault-2);
+  text-align: right;
+}
+
+.wa-home-cert-caption a {
+  color: var(--on-vault);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.wa-home-cert-held {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--on-vault-2);
+  text-align: right;
+}
+
+/* ── the unissued certificate: an outline, never a sample ─────────────── */
+
+.wa-home-unissued {
+  position: relative;
+  width: 760px;
+  max-width: 100%;
+  aspect-ratio: 760 / 468;
+  box-sizing: border-box;
+  border: 1px solid var(--on-vault-3);
+  border-radius: var(--r-cert);
+  padding: 10px;
+}
+
+.wa-home-unissued.is-portrait {
+  width: 350px;
+  aspect-ratio: 350 / 520;
+  border-color: var(--rule);
+  background: var(--canvas);
+}
+
+.wa-home-unissued-inner {
+  position: absolute;
+  inset: 34px;
+  border: 1px dashed var(--on-vault-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.wa-home-unissued.is-portrait .wa-home-unissued-inner {
+  inset: 26px;
+  border-color: var(--field);
+}
+
+.wa-home-unissued-kicker {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  font-variant-caps: all-small-caps;
+  color: var(--on-vault-3);
+}
+
+.wa-home-unissued-line {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 30px;
+  line-height: 1.2;
+  color: var(--on-vault);
+  max-width: 14em;
+}
+
+.wa-home-unissued.is-portrait .wa-home-unissued-kicker {
+  color: var(--muted);
+}
+
+.wa-home-unissued.is-portrait .wa-home-unissued-line {
+  color: var(--ink);
+  font-size: 24px;
+}
+
+/* ── the three rules, on raised vault ─────────────────────────────────── */
+
+.wa-home-rules {
+  background: var(--vault-raised);
+  color: var(--on-vault);
+  border-top: 1px solid var(--vault-line);
+}
+
+.wa-home-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 56px;
+  padding-top: 44px;
+  padding-bottom: 52px;
+  margin: 0;
+  list-style: none;
+}
+
+.wa-home-rule {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wa-home-rule svg {
+  display: block;
+}
+
+.wa-home-rule h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-h2);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--on-vault);
+}
+
+.wa-home-rule p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--on-vault-2);
+}
+
+/* ── canvas sections ──────────────────────────────────────────────────── */
+
+.wa-home-sec {
+  padding-top: 88px;
+  padding-bottom: 8px;
+}
+
+.wa-home-sec + .wa-home-sec {
+  padding-top: 72px;
+}
+
+.wa-home-kicker {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.wa-home-h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(30px, 1.6rem + 1.2vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  max-width: 22em;
+}
+
+.wa-home-intro {
+  margin: 16px 0 0;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 40em;
+}
+
+.wa-home-sec a:not(.wa-home-btn),
+.wa-home-rows a,
+.wa-home-intro a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.wa-home-sec a:not(.wa-home-btn):hover {
+  color: var(--engrave);
+}
+
+/* The two instruments: two columns of prose under one rule, not cards. */
+.wa-home-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 56px;
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 1px solid var(--rule);
+}
+
+.wa-home-two h3 {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-h2);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.wa-home-two p {
+  margin: 0 0 18px;
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.wa-home-two p strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* What your people see: words beside a phone that holds the real certificate. */
+.wa-home-see {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+  gap: 64px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.wa-home-see-words p {
+  margin: 16px 0 0;
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--muted);
+  max-width: 34em;
+}
+
+.wa-home-see-words .wa-home-actions {
+  margin-top: 26px;
+}
+
+.wa-home-phone {
+  justify-self: center;
+  width: 390px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 18px 20px 26px;
+  border: 1px solid var(--rule);
+  border-radius: 28px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.wa-home-phone-bar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.wa-home-phone > * {
+  max-width: 100%;
+}
+
+/* Ruled rows: the built-on list, the record, the stocks. */
+.wa-home-rows {
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+
+.wa-home-row {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  gap: 24px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+
+.wa-home-row > .k {
+  margin: 0;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.wa-home-row > .v {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.wa-home-row .wa-home-route {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.wa-home-mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.wa-home-more {
+  margin: 22px 0 0;
+  font-size: 16px;
+}
+
+.wa-home-nothing {
+  margin: 32px 0 0;
+  padding: 22px 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 44em;
+}
+
+.wa-home-nothing strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+
+/* The stocks: a row each, the disclosure on the row. */
+.wa-home-stock {
+  display: grid;
+  grid-template-columns: minmax(0, 110px) minmax(0, 200px) minmax(0, 1fr);
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+
+.wa-home-stock .sym {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.wa-home-stock .name {
+  margin: 0;
+  color: var(--ink);
+}
+
+.wa-home-stock .note {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.wa-home-stock .default {
+  font-style: normal;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ── the close, on vault ──────────────────────────────────────────────── */
+
+.wa-home-close {
+  margin-top: 96px;
+  background: var(--vault);
+  color: var(--on-vault);
+}
+
+.wa-home-close-inner {
+  padding-top: 88px;
+  padding-bottom: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+.wa-home-close h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(36px, 1.4rem + 2.6vw, 56px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--on-vault);
+  max-width: 18em;
+}
+
+/* ── narrower screens ─────────────────────────────────────────────────── */
+
+@media (max-width: 1180px) {
+  .wa-home-hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+
+  .wa-home-hero-cert {
+    align-items: flex-start;
+  }
+
+  .wa-home-cert-caption,
+  .wa-home-cert-held {
+    text-align: left;
+  }
+
+  .wa-home-see {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+}
+
+@media (max-width: 900px) {
+  .wa-home-wrap {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+
+  .wa-home-rules-grid,
+  .wa-home-two {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .wa-home-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .wa-home-stock {
+    grid-template-columns: minmax(0, 90px) minmax(0, 1fr);
+  }
+
+  .wa-home-stock .note {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .wa-home-wrap {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .wa-home-hero-grid {
+    padding-top: 40px;
+    padding-bottom: 48px;
+  }
+
+  .wa-home-lead {
+    font-size: 18px;
+  }
+
+  .wa-home-btn {
+    width: 100%;
+  }
+
+  .wa-home-unissued-inner {
+    inset: 18px;
+  }
+
+  .wa-home-unissued-line {
+    font-size: 22px;
+  }
+
+  .wa-home-sec {
+    padding-top: 64px;
+  }
+
+  .wa-home-phone {
+    padding: 14px 10px 20px;
+    border-radius: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wa-home-btn {
+    transition: none;
+  }
+}
