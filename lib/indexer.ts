@@ -27,6 +27,14 @@ import {confirmClaims, stableMovements, type Claim} from "./confirm";
 import {database, writeCursor, readCursor} from "./db";
 import {PAID_EVENT, payrollDeployments} from "./receipts";
 import {escrowAddress} from "./grants";
+import {
+  GRANT_CLOSED_EVENT,
+  GRANT_REVOKED_EVENT,
+  GRANT_SEALED_EVENT,
+  isGrantEvent,
+  writeGrantEvents,
+  type GrantEventLog,
+} from "./grant-events";
 import {attempt, isThrottle, ok, type Outcome} from "./outcome";
 
 export const GRANT_OPENED_EVENT = parseAbiItem(
@@ -306,19 +314,31 @@ async function writePaid(logs: PaidRow[]): Promise<number> {
   return logs.length;
 }
 
+/**
+ * All five escrow events in ONE `getLogs` per window (topic0 is an OR): an opening, a
+ * release, and the seal, cancel and close a certificate lists. One read where there were
+ * two, against an endpoint that answers two or three a second.
+ */
+const ESCROW_EVENTS = [
+  GRANT_OPENED_EVENT,
+  VESTED_EVENT,
+  GRANT_SEALED_EVENT,
+  GRANT_REVOKED_EVENT,
+  GRANT_CLOSED_EVENT,
+] as const;
+
 function escrowWalker(address: Address): Walker {
   return {
     name: `escrow:${address.toLowerCase()}`,
     address,
     read: async (from, to) => {
-      const rpc = client();
-      const [found, vested] = await Promise.all([
-        rpc.getLogs({address, event: GRANT_OPENED_EVENT, fromBlock: from, toBlock: to}),
-        rpc.getLogs({address, event: VESTED_EVENT, fromBlock: from, toBlock: to}),
-      ]);
-      if (found.length === 0 && vested.length === 0) return 0;
+      const logs = await client().getLogs({address, events: ESCROW_EVENTS, fromBlock: from, toBlock: to});
+      if (logs.length === 0) return 0;
+      const found = logs.filter((l) => l.eventName === "GrantOpened") as unknown as OpenedRow[];
+      const vested = logs.filter((l) => l.eventName === "Vested") as unknown as VestedRow[];
+      const states = logs.filter((l) => isGrantEvent(l)) as unknown as GrantEventLog[];
       const opened = await backed(found, address, openedClaim);
-      return writeEscrow(opened, vested);
+      return writeEscrow(opened, vested, states, address);
     },
   };
 }
@@ -358,10 +378,18 @@ export const openedClaim = (l: OpenedRow): Claim => ({
   cash: 0n,
 });
 
-/** Write confirmed grants, and the vests of grants on the record. Repeats are ignored. */
-async function writeEscrow(opened: OpenedRow[], vested: VestedRow[]): Promise<number> {
-  if (opened.length === 0 && vested.length === 0) return 0;
-  const times = await timesFor([...opened, ...vested].map((l) => l.blockNumber!));
+/**
+ * Write confirmed grants, and the vests, seals, cancels and closes of grants on the record.
+ * Repeats are ignored.
+ */
+async function writeEscrow(
+  opened: OpenedRow[],
+  vested: VestedRow[],
+  states: GrantEventLog[] = [],
+  escrow?: Address,
+): Promise<number> {
+  if (opened.length === 0 && vested.length === 0 && states.length === 0) return 0;
+  const times = await timesFor([...opened, ...vested, ...states].map((l) => l.blockNumber!));
   const db = database();
 
   const insertGrant = db.prepare(
@@ -422,6 +450,8 @@ async function writeEscrow(opened: OpenedRow[], vested: VestedRow[]): Promise<nu
       );
     }
   })();
+  // After the openings, so a grant sealed in the block it was opened in is already known.
+  if (escrow && states.length > 0) rows += writeGrantEvents(escrow, states, times);
   return rows;
 }
 
@@ -450,7 +480,16 @@ export async function recordTransaction(hash: `0x${string}`): Promise<number> {
     const mine = receipt.logs.filter((l) => l.address.toLowerCase() === escrow.value.toLowerCase());
     const opened = parseEventLogs({abi: [GRANT_OPENED_EVENT], logs: mine});
     const vested = parseEventLogs({abi: [VESTED_EVENT], logs: mine});
-    rows += await writeEscrow(await backed(opened, escrow.value, openedClaim, receipt), vested);
+    const states = parseEventLogs({
+      abi: [GRANT_SEALED_EVENT, GRANT_REVOKED_EVENT, GRANT_CLOSED_EVENT],
+      logs: mine,
+    }) as unknown as GrantEventLog[];
+    rows += await writeEscrow(
+      await backed(opened, escrow.value, openedClaim, receipt),
+      vested,
+      states,
+      escrow.value,
+    );
   }
 
   return rows;
