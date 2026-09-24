@@ -147,10 +147,11 @@
   white-space: normal;
 }
 
-/* Blocked: still readable, because it names what is missing. */
-.wa-btn[disabled],
-.wa-btn[aria-disabled="true"],
-.wa-action:disabled {
+/* Blocked: still readable, because it names what is missing. Hover changes nothing. */
+.wa-btn:is([disabled], [aria-disabled="true"]),
+.wa-btn:is([disabled], [aria-disabled="true"]):hover,
+.wa-action:disabled,
+.wa-action:disabled:hover {
   cursor: not-allowed;
   background: var(--surface);
   border-color: var(--field);
@@ -210,6 +211,25 @@
 
 .wa-linkish:hover {
   text-decoration-thickness: 2px;
+}
+
+/* The one spinner allowed: inside a busy button. */
+.wa-spin {
+  animation: wa-spin 1s linear infinite;
+}
+
+@keyframes wa-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* What stopped it, and what would work. */
+.wa-refusal {
+  max-width: 52ch;
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+  color: var(--refused);
 }
 
 /* ── words and figures ──────────────────────────────────────────────── */

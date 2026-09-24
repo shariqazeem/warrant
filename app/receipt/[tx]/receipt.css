@@ -1,55 +1,62 @@
 /**
- * receipt.css — the stub's own page. Print-like, unshelled, paper.
- *
- * Aliases only. Nothing is declared here that is not in styles/tokens.css.
+ * receipt.css: a transaction's own page. Print-like, no nav, on canvas: the payment's sheet,
+ * then ruled sheets of what was paid and where it is recorded. Every value is a token.
  */
 
 .wa-receipt {
-  --line: var(--border);
-  max-width: 34rem;
+  max-width: 36rem;
   margin: 0 auto;
   padding: var(--s-7) var(--s-4) var(--s-9);
-  background: var(--bg);
+  background: var(--canvas);
   color: var(--ink);
 }
 
 .wa-r-one + .wa-r-one {
   margin-top: var(--s-8);
   padding-top: var(--s-8);
-  border-top: 1px dashed var(--border-strong);
+  border-top: 1px solid var(--rule);
 }
 
 .wa-r-many {
-  font-size: var(--fs-small);
-  color: var(--ink-muted);
   margin-bottom: var(--s-5);
+  font-size: var(--fs-small);
+  color: var(--muted);
 }
 
-/* ── the sheets under the stub ─────────────────────────────────────── */
+/* ── the sheets under the payment ──────────────────────────────────── */
 
 .wa-r-sheet {
   margin-top: var(--s-6);
 }
 
 .wa-r-sheet-title {
-  font-size: var(--fs-caption);
-  color: var(--ink-faint);
   padding-bottom: var(--s-2);
-  border-bottom: 1px solid var(--line);
-}
-
-.wa-r-line {
-  display: grid;
-  grid-template-columns: 9rem 1fr;
-  gap: var(--s-4);
-  padding: var(--s-3) 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--rule);
   font-size: var(--fs-small);
-  align-items: baseline;
+  font-weight: 600;
+  color: var(--ink);
 }
 
-.wa-r-line .k {
-  color: var(--ink-faint);
+.wa-r-line,
+.wa-r-hashline {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: var(--s-4);
+  align-items: baseline;
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: var(--fs-small);
+}
+
+.wa-r-hashline {
+  border-top: 1px solid var(--rule);
+  border-bottom: 0;
+  font-size: var(--fs-caption);
+}
+
+.wa-r-line .k,
+.wa-r-hashline .k {
+  color: var(--muted);
 }
 
 .wa-r-line .v {
@@ -57,28 +64,34 @@
   overflow-wrap: anywhere;
 }
 
-.wa-r-line a {
-  color: var(--accent);
-  text-decoration: none;
+.wa-r-hashline .v {
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
-.wa-r-line a:hover {
-  color: var(--accent-strong);
+/* A link on a sheet is underlined: it sits in a line of text. */
+.wa-r-line a,
+.wa-r-hashline a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 .wa-r-aside {
   display: block;
   margin-top: var(--s-1);
   font-size: var(--fs-caption);
-  color: var(--ink-faint);
+  color: var(--muted);
 }
 
 /* ── the reason ────────────────────────────────────────────────────── */
 
 .wa-r-reason {
   padding: var(--s-4) 0 var(--s-3);
-  font-size: var(--fs-lead);
-  line-height: var(--lh-lead);
+  font-family: var(--font-display);
+  font-size: var(--fs-h2);
+  line-height: var(--lh-h2);
   color: var(--ink);
 }
 
@@ -86,41 +99,12 @@
   padding: var(--s-4) 0 var(--s-3);
   font-size: var(--fs-small);
   line-height: var(--lh-body);
-  color: var(--ink-muted);
+  color: var(--muted);
 }
 
-/* A refusal is a receipt too: red here means the record disagrees with itself. */
+/* The record disagrees with itself: say so in the refusal colour. */
 .wa-r-note.is-err {
-  color: var(--err);
-}
-
-.wa-r-hashline {
-  display: grid;
-  grid-template-columns: 9rem 1fr;
-  gap: var(--s-4);
-  padding: var(--s-3) 0;
-  border-top: 1px solid var(--line);
-  font-size: var(--fs-caption);
-}
-
-.wa-r-hashline .k {
-  color: var(--ink-faint);
-}
-
-.wa-r-hashline .v {
-  color: var(--ink-muted);
-  overflow-wrap: anywhere;
-}
-
-/* ── per-row disclosure, at the foot of the document it applies to ─── */
-
-.wa-r-issuer {
-  margin-top: var(--s-6);
-  padding-top: var(--s-4);
-  border-top: 1px solid var(--line);
-  font-size: var(--fs-caption);
-  line-height: var(--lh-body);
-  color: var(--ink-faint);
+  color: var(--refused);
 }
 
 .wa-r-held {
@@ -130,32 +114,15 @@
   color: var(--ink);
 }
 
-.wa-mono {
-  font-family: var(--font-mono);
-  font-size: var(--fs-mono);
-  letter-spacing: var(--tracking-mono);
-  font-variant-numeric: tabular-nums;
-}
+/* ── per-row disclosure, at the foot of the document it applies to ─── */
 
-@media (max-width: 480px) {
-  .wa-r-line,
-  .wa-r-hashline {
-    grid-template-columns: 1fr;
-    gap: var(--s-1);
-  }
-}
-
-/* ── printing: it is a stub, so it should print like one ───────────── */
-
-@media print {
-  .wa-receipt {
-    padding: 0;
-  }
-
-  .wa-r-issuer,
-  .wa-r-note {
-    color: var(--ink-muted);
-  }
+.wa-r-issuer {
+  margin-top: var(--s-6);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--rule);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-body);
+  color: var(--muted);
 }
 
 /* An address is shown in full, with copy beside it rather than instead of it. */
@@ -184,11 +151,11 @@
 }
 
 .wa-r-asset-line strong {
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .wa-r-asset-name {
-  color: var(--ink-muted);
+  color: var(--muted);
 }
 
 .wa-r-asset-addr {
@@ -197,13 +164,13 @@
   overflow-wrap: anywhere;
 }
 
-/* Per-row disclosure, on the row it applies to. Never a banner. */
+/* The issuer's powers, on the row they apply to. Never a banner. */
 .wa-r-asset-note {
   display: block;
   margin-top: var(--s-2);
   font-size: var(--fs-caption);
   line-height: var(--lh-body);
-  color: var(--ink-faint);
+  color: var(--muted);
 }
 
 /* The print control is chrome, so it is the one thing that does not print. */
@@ -211,7 +178,20 @@
   margin-top: var(--s-6);
 }
 
+@media (max-width: 480px) {
+  .wa-r-line,
+  .wa-r-hashline {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-1);
+  }
+}
+
 @media print {
+  .wa-receipt {
+    padding: 0;
+    background: none;
+  }
+
   .wa-r-print {
     display: none;
   }

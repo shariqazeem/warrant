@@ -1,123 +1,184 @@
 /**
- * pay.css — the two surfaces that create receipts: the form and its quote.
- * Aliases only; every value comes from styles/tokens.css.
+ * pay.css: the form every money action is made with, and the summary beside it. Issuing a
+ * grant, paying one person, paying a team and choosing how you are paid all load this sheet,
+ * so the field, the input and the money box are defined here and nowhere else.
+ *
+ * A field is a label above its control, as drawn: 15px labels, 48px inputs with a field
+ * border on white, addresses in 13.5px mono, money in 18px. Every value is a token.
  */
 
 .wa-pay {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 20rem;
+  grid-template-columns: minmax(0, 1fr) 22rem;
   gap: var(--s-8);
   align-items: start;
 }
 
-/* ── the form: ruled rows, never a boxed card ──────────────────────── */
-
 .wa-pay-form {
-  border-top: 1px solid var(--border);
+  display: grid;
+  gap: var(--s-5);
+  min-width: 0;
 }
+
+/* ── a field: the label, then the control, then a line of help ─────── */
 
 .wa-field {
   display: grid;
-  grid-template-columns: 8rem minmax(0, 1fr);
-  gap: var(--s-4);
-  align-items: baseline;
-  padding: var(--s-4) 0;
-  border-bottom: 1px solid var(--border);
+  gap: var(--s-2);
+  min-width: 0;
 }
 
 .wa-field .k {
-  font-size: var(--fs-small);
-  color: var(--ink-faint);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .wa-field.is-nested {
-  border-bottom: none;
-  padding-bottom: 0;
+  margin-top: var(--s-4);
+}
+
+.wa-field-v {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.wa-field-help {
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+  color: var(--muted);
 }
 
 .wa-input {
   width: 100%;
-  border: none;
-  background: transparent;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--field);
+  border-radius: var(--r-control);
+  background: var(--surface);
   color: var(--ink);
-  font: inherit;
+  font-family: var(--font-ui);
   font-size: var(--fs-body);
-  padding: 0;
 }
 
-.wa-input::placeholder {
-  color: var(--ink-faint);
+.wa-input.wa-mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
 }
 
-.wa-input:focus {
-  outline: none;
+.wa-input:focus-visible {
+  outline: 2px solid var(--vault);
+  outline-offset: 2px;
+  border-color: var(--vault);
 }
 
-/* The row carries the focus, not the bare input: a ruled row is the object. */
-.wa-field:focus-within {
-  border-bottom-color: var(--accent);
+.wa-input:disabled {
+  background: var(--field-bg);
+  color: var(--muted);
+  cursor: not-allowed;
 }
 
-.wa-field:focus-within .k {
-  color: var(--accent);
+textarea.wa-input {
+  height: auto;
+  min-height: 96px;
+  padding: var(--s-3) 14px;
+  line-height: var(--lh-body);
+  resize: vertical;
 }
 
+/* A chevron drawn from two gradients, so the select needs no image and no colour of its own. */
 select.wa-input {
-  cursor: pointer;
   appearance: none;
+  padding-right: var(--s-7);
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 21px) 50%,
+    calc(100% - 16px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
 }
 
-/* ── an amount ─────────────────────────────────────────────────────── */
+/* ── money: one box holding the sign, the amount and its unit ──────── */
 
 .wa-money {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--s-2);
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--field);
+  border-radius: var(--r-control);
+  background: var(--surface);
+}
+
+.wa-money:focus-within {
+  outline: 2px solid var(--vault);
+  outline-offset: 2px;
+  border-color: var(--vault);
 }
 
 .wa-money-sign {
-  font-family: var(--font-mono);
-  color: var(--ink-faint);
+  font-size: var(--fs-money);
+  color: var(--muted);
 }
 
+.wa-money .wa-input,
 .wa-input.is-amount {
-  font-family: var(--font-mono);
-  font-size: var(--fs-units-sm);
-  font-variant-numeric: tabular-nums;
-  width: 7ch;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: var(--fs-money);
+}
+
+.wa-money .wa-input:focus-visible {
+  outline: none;
 }
 
 .wa-money-unit {
-  font-size: var(--fs-caption);
-  color: var(--ink-faint);
+  flex: none;
+  font-size: var(--fs-small);
+  color: var(--muted);
+  white-space: nowrap;
 }
 
-/* ── the fold: a default that is folded away ───────────────────────── */
+/* ── the fold: a default, folded away ──────────────────────────────── */
 
 .wa-fold {
-  padding: var(--s-4) 0;
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
 }
 
 .wa-fold-toggle {
-  display: inline-flex;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: var(--s-2);
-  border: none;
-  background: none;
+  width: 100%;
+  min-height: 46px;
   padding: 0;
-  cursor: pointer;
-  color: var(--ink-muted);
+  border: 0;
+  background: none;
+  color: var(--ink);
   font: inherit;
-  font-size: var(--fs-small);
-}
-
-.wa-fold-toggle:hover {
-  color: var(--accent);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
 }
 
 .wa-fold-toggle svg {
+  flex: none;
+  color: var(--muted);
   transition: transform var(--dur-1) var(--ease-out);
 }
 
@@ -125,127 +186,151 @@ select.wa-input {
   transform: rotate(180deg);
 }
 
+.wa-fold .wa-field.is-nested {
+  margin: 0 0 var(--s-4);
+}
+
 /* ── the action ────────────────────────────────────────────────────── */
 
 .wa-pay-act {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: var(--s-3);
-  padding-top: var(--s-5);
+  padding-top: var(--s-2);
 }
 
-.wa-spin {
-  animation: wa-spin var(--dur-4) linear infinite;
-}
-
-@keyframes wa-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .wa-spin {
-    animation: none;
-  }
-}
-
-/* A refusal is a receipt too: it names the rule and what would work. */
-.wa-refusal {
-  font-size: var(--fs-small);
-  line-height: var(--lh-body);
-  color: var(--err);
-  max-width: 48ch;
-}
-
-.wa-linkish {
-  border: none;
-  background: none;
-  padding: 0;
-  cursor: pointer;
-  color: var(--accent);
-  font: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-/* ── the quote, beside the form ────────────────────────────────────── */
+/* ── the summary, beside the form ──────────────────────────────────── */
 
 .wa-quote {
   position: sticky;
   top: var(--s-5);
-  border-left: 1px solid var(--border);
-  padding-left: var(--s-5);
-  min-height: 12rem;
+  min-width: 0;
+}
+
+.wa-quote-title {
+  margin-bottom: var(--s-3);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .wa-quote-lead {
-  font-size: var(--fs-caption);
-  color: var(--ink-faint);
-}
-
-/* Units are the largest thing on any page they appear on. */
-.wa-units {
-  font-family: var(--font-mono);
-  font-size: var(--fs-units-sm);
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: var(--tracking-h1);
-  margin-top: var(--s-1);
-  overflow-wrap: anywhere;
-}
-
-.wa-units .sym {
   font-size: var(--fs-small);
-  color: var(--ink-muted);
+  color: var(--muted);
+}
+
+/* The units in the summary: large, but inside the column. */
+.wa-quote .wa-units {
+  margin-top: var(--s-1);
+  font-size: var(--fs-h1);
+}
+
+.wa-units .sym,
+.wa-quote .sym {
   margin-inline-start: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-h2);
+  font-weight: 500;
   letter-spacing: 0;
+  color: var(--ink);
+}
+
+.wa-sum,
+.wa-quote-rows {
+  margin: 0;
+  border-top: 1px solid var(--rule);
 }
 
 .wa-quote-rows {
   margin-top: var(--s-5);
 }
 
+.wa-sum > div,
 .wa-quote-rows > div {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: var(--s-4);
   padding: var(--s-3) 0;
-  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--rule);
   font-size: var(--fs-small);
+  line-height: 1.5;
 }
 
+.wa-sum dt,
 .wa-quote-rows dt {
-  color: var(--ink-faint);
-  font-size: var(--fs-caption);
+  color: var(--muted);
 }
 
+.wa-sum dd,
 .wa-quote-rows dd {
-  margin: var(--s-1) 0 0;
+  margin: 0;
+  min-width: 0;
   color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-small);
   overflow-wrap: anywhere;
+}
+
+/* What they receive is the figure of the page: Bodoni, large. */
+.wa-sum .is-big {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-1);
+}
+
+.wa-sum .is-big dd:not(.wa-sum-plus) {
+  font-family: var(--font-display);
+  font-size: var(--fs-h1);
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+.wa-sum .u {
+  font-family: var(--font-ui);
+  font-size: var(--fs-small);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.wa-sum .is-big dd.wa-sum-plus {
+  font-size: var(--fs-small);
+  color: var(--muted);
 }
 
 .wa-quote-aside {
   display: block;
   margin-top: var(--s-1);
   font-size: var(--fs-caption);
-  color: var(--ink-faint);
   line-height: var(--lh-body);
+  color: var(--muted);
 }
 
 .wa-quote-waiting {
+  max-width: 36ch;
   font-size: var(--fs-small);
   line-height: var(--lh-body);
-  color: var(--ink-faint);
-  max-width: 34ch;
+  color: var(--muted);
 }
 
-/* Per-row disclosure, beside the asset the payer just chose. */
-.wa-quote-issuer {
+/* The issuer's powers, beside the stock just chosen: per row, never a banner. */
+.wa-quote-issuer,
+.wa-quote-foot {
   margin-top: var(--s-5);
   padding-top: var(--s-4);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--rule);
   font-size: var(--fs-caption);
   line-height: var(--lh-body);
-  color: var(--ink-faint);
+  color: var(--muted);
+}
+
+/* How old the price is, said plainly, because a price is a moment. */
+.wa-quote-age {
+  margin-top: var(--s-4);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-body);
+  color: var(--muted);
+}
+
+.wa-quote-age.is-stale {
+  color: var(--warn);
 }
 
 /* ── the wallet row ────────────────────────────────────────────────── */
@@ -259,151 +344,31 @@ select.wa-input {
 
 .wa-connect-addr {
   padding: var(--s-2) var(--s-3);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  color: var(--ink-muted);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--muted);
 }
 
 .wa-connect-note {
+  max-width: 44ch;
   font-size: var(--fs-caption);
-  color: var(--ink-faint);
-  max-width: 40ch;
   line-height: var(--lh-body);
+  color: var(--muted);
 }
 
 .wa-connect-note.is-err {
-  color: var(--err);
+  color: var(--refused);
 }
 
-/* ── narrow ────────────────────────────────────────────────────────── */
+/* ── a recipient the page fixed: the whole address, where the field would be ─ */
 
-@media (max-width: 900px) {
-  .wa-pay {
-    grid-template-columns: 1fr;
-    gap: var(--s-6);
-  }
-
-  .wa-quote {
-    position: static;
-    border-left: none;
-    border-top: 1px solid var(--border);
-    padding-left: 0;
-    padding-top: var(--s-5);
-    min-height: 0;
-  }
-}
-
-@media (max-width: 520px) {
-  .wa-field {
-    grid-template-columns: 1fr;
-    gap: var(--s-1);
-  }
-}
-
-/* How old the price is. Said plainly, because a price is a moment. */
-.wa-quote-age {
-  margin-top: var(--s-4);
-  font-size: var(--fs-caption);
-  color: var(--ink-faint);
-  line-height: var(--lh-body);
-}
-
-.wa-quote-age.is-stale {
-  color: var(--warn);
-}
-
-/* ── the plain-language layout ─────────────────────────────────────── */
-
-.wa-field-v {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  min-width: 0;
-}
-
-.wa-field-help {
-  font-size: var(--fs-caption);
-  color: var(--ink-faint);
-}
-
-/* A placeholder must never look like an answer. The earlier one read as filled in. */
-.wa-input::placeholder {
-  color: var(--ink-faint);
-  opacity: 0.7;
-  font-style: italic;
-}
-
-.wa-btn.is-wide {
-  width: 100%;
-  justify-content: center;
-  padding: var(--s-3) var(--s-4);
-  font-size: var(--fs-body);
-}
-
-/* A blocked button is still readable: it is telling the payer what to do next. */
-.wa-btn.is-primary.is-blocked[disabled] {
-  opacity: 1;
-  background: var(--surface);
-  border-color: var(--border-strong);
-  color: var(--ink-muted);
-}
-
-.wa-fine {
-  font-size: var(--fs-caption);
-  color: var(--ink-faint);
-  line-height: var(--lh-body);
-}
-
-.wa-quote-title {
-  font-size: var(--fs-caption);
-  color: var(--ink-faint);
-  margin-bottom: var(--s-3);
-}
-
-.wa-sum > div {
-  padding: var(--s-3) 0;
-  border-top: 1px solid var(--border);
-}
-
-.wa-sum dt {
-  font-size: var(--fs-caption);
-  color: var(--ink-faint);
-}
-
-.wa-sum dd {
-  margin: var(--s-1) 0 0;
-  font-size: var(--fs-lead);
-  color: var(--ink);
-}
-
-.wa-sum .is-big dd:not(.wa-sum-plus) {
-  font-size: var(--fs-units-sm);
-  line-height: 1.1;
-}
-
-.wa-sum .u {
-  font-size: var(--fs-small);
-  color: var(--ink-muted);
-}
-
-.wa-sum-plus {
-  font-size: var(--fs-small) !important;
-  color: var(--ink-muted) !important;
-}
-
-.wa-quote-foot {
-  margin-top: var(--s-5);
-  padding-top: var(--s-4);
-  border-top: 1px solid var(--border);
-  font-size: var(--fs-caption);
-  line-height: var(--lh-body);
-  color: var(--ink-faint);
-}
-
-
-/* A recipient the page fixed (a pay link, or /pay?to=): the whole address, shown where the
- * field would be. It wraps rather than running past the edge at 375px. */
 .wa-fixed-to {
+  display: block;
+  padding: var(--s-3) 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-control);
+  background: var(--field-bg);
   color: var(--ink);
   line-height: var(--lh-body);
   overflow-wrap: anywhere;
@@ -411,32 +376,47 @@ select.wa-input {
 
 /* /pay?to=0x…: who the link fixed, and the way out of it. */
 .wa-pay-to {
+  max-width: 62ch;
   margin-top: var(--s-4);
   font-size: var(--fs-small);
   line-height: var(--lh-body);
-  color: var(--ink-muted);
-  max-width: 62ch;
-}
-
-.wa-pay-to a {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-.wa-pay-to a:hover {
-  color: var(--accent-strong);
+  color: var(--muted);
 }
 
 .wa-pay-to.is-refused {
-  color: var(--err);
+  color: var(--refused);
 }
 
 /* Their signed choice, where a payer would otherwise pick a stock. */
 .wa-their-choice {
   display: block;
+  font-weight: 600;
   color: var(--ink);
-  font-weight: 500;
 }
+
 .wa-whose {
   margin-top: var(--s-3);
+}
+
+/* ── narrow ────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .wa-pay {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-6);
+  }
+
+  .wa-quote {
+    position: static;
+    padding-top: var(--s-5);
+    border-top: 1px solid var(--rule);
+  }
+}
+
+@media (max-width: 520px) {
+  .wa-sum > div,
+  .wa-quote-rows > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-1);
+  }
 }
