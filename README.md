@@ -67,7 +67,7 @@ and is not used.
 | `middleware.ts` | A per-visitor allowance for price requests and record pages, so one script can't spend everyone's OKX quota or RPC reads |
 | `app/` | `/`, `/pay`, `/run`, `/grants`, `/receipt/[tx]`, `/@[address]`, `/run/[id]`, `/grant/[id]`, with share cards |
 
-**Tests: 65 Foundry and 221 Vitest.** Four of the Foundry tests exist only for what an
+**Tests: 69 Foundry and 326 Vitest.** Four of the Foundry tests exist only for what an
 xStock issuer can do to the escrow, and four more only for what a donated token must not be
 able to do to a receipt.
 
