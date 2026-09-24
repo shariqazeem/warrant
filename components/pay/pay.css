@@ -224,7 +224,6 @@ select.wa-input {
   font-size: var(--fs-h1);
 }
 
-.wa-units .sym,
 .wa-quote .sym {
   margin-inline-start: var(--s-2);
   font-family: var(--font-display);

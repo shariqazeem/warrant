@@ -45,7 +45,6 @@
   align-self: center;
   width: 8px;
   height: 8px;
-  border-radius: 2px;
   background: var(--muted);
 }
 
