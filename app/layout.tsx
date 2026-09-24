@@ -25,9 +25,13 @@ const hanken = Hanken_Grotesk({
   display: "swap",
   variable: "--font-face-ui",
 });
+// Not preloaded: it sets addresses, hashes and counters, never the first thing painted, and
+// the preloads are sent before the page's own CSS is found, so on a slow phone every
+// preloaded font is bandwidth the first paint waits behind.
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   display: "swap",
+  preload: false,
   variable: "--font-face-mono",
 });
 
