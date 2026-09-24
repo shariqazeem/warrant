@@ -1,6 +1,6 @@
 "use client";
 
-import {ArrowRight, Search} from "lucide-react";
+import {ChevronRight, Search} from "lucide-react";
 import {useEffect, useMemo, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
 import {resolve, type Destination} from "./resolve";
@@ -9,8 +9,8 @@ import "./jump.css";
 /**
  * ⌘K — PASTE ANYTHING, GO TO IT.
  *
- * A transaction hash opens its receipt, an address opens that company's record, a run's
- * name opens the run. It resolves by SHAPE and never by guesswork: a half-typed address
+ * A transaction hash opens what it did, an address opens that wallet's record, a number
+ * opens that certificate, a run's name opens the payroll run. It resolves by SHAPE and never by guesswork: a half-typed address
  * matches nothing, because the only thing worse than not finding a company is finding the
  * wrong one on a page about who got paid.
  *
@@ -51,10 +51,16 @@ export function Jump() {
 
   if (!open) {
     return (
-      <button type="button" className="wa-jump-hint" onClick={() => setOpen(true)}>
-        <Search size={14} strokeWidth={2} aria-hidden />
-        <span>Jump to anything</span>
-        <kbd>⌘K</kbd>
+      <button
+        type="button"
+        className="wa-jump-hint"
+        aria-label="Jump to anything"
+        aria-keyshortcuts="Meta+K Control+K"
+        onClick={() => setOpen(true)}
+      >
+        <Search size={16} strokeWidth={1.75} aria-hidden />
+        <span className="wa-jump-word">Jump to anything</span>
+        <kbd aria-hidden>⌘K</kbd>
       </button>
     );
   }
@@ -84,7 +90,8 @@ export function Jump() {
             value={query}
             spellCheck={false}
             autoComplete="off"
-            placeholder="Paste a transaction, an address, or a run's name"
+            aria-label="A transaction, a wallet address or a certificate number"
+            placeholder="A transaction, a wallet address or a certificate number"
             onChange={(e) => {
               setQuery(e.target.value);
               setCursor(0);
@@ -115,14 +122,15 @@ export function Jump() {
               >
                 <span className="wa-jump-label">{d.label}</span>
                 <span className="wa-jump-hintline">{d.hint}</span>
-                <ArrowRight size={14} strokeWidth={2} aria-hidden />
+                <ChevronRight size={16} strokeWidth={1.75} aria-hidden />
               </button>
             </li>
           ))}
         </ul>
 
         <p className="wa-jump-foot">
-          A transaction opens its receipt. An address opens that company&rsquo;s record.
+          Paste a transaction to see what it did, a wallet address to see its record, or a
+          certificate number to see the grant.
         </p>
       </div>
     </div>

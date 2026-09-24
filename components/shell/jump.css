@@ -1,32 +1,68 @@
 /**
- * jump.css — ⌘K. Aliases only; every value comes from styles/tokens.css.
+ * jump.css: ⌘K. The hint lives in the nav on vault; the box opens on canvas, flat, with a
+ * rule for an edge and no shadow. Every value is a token.
  */
 
+/* The hint: an outline button on vault. On a phone it is the search icon alone. */
 .wa-jump-hint {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--s-2);
-  padding: var(--s-2) var(--s-3);
-  border: 1px solid var(--border-inverse);
-  border-radius: var(--r-sm);
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--vault-field);
+  border-radius: var(--r-control);
   background: transparent;
-  color: var(--ink-inverse-faint);
+  color: var(--on-vault-2);
   font: inherit;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-small);
   cursor: pointer;
-  transition: color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out);
+  transition:
+    color var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out);
 }
 
 .wa-jump-hint:hover {
-  color: var(--ink-inverse);
-  border-color: var(--ink-inverse-faint);
+  border-color: var(--on-vault-2);
+  color: var(--on-vault-hover);
+}
+
+.wa-jump-hint svg {
+  color: var(--foil);
 }
 
 .wa-jump-hint kbd {
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
-  color: var(--ink-inverse-faint);
+  color: var(--on-vault-3);
 }
+
+/* The words go first when the nav runs short of room; the name stays for screen readers. */
+@media (max-width: 1180px) {
+  .wa-jump-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* A phone has no ⌘K key, so only the icon remains. */
+@media (max-width: 860px) {
+  .wa-jump-hint {
+    padding: 0;
+  }
+
+  .wa-jump-hint kbd {
+    display: none;
+  }
+}
+
+/* ── the box ───────────────────────────────────────────────────────── */
 
 .wa-jump-scrim {
   position: fixed;
@@ -36,102 +72,112 @@
   justify-content: center;
   align-items: flex-start;
   padding: 12vh var(--s-4) var(--s-4);
-  background: rgba(20, 22, 28, 0.55);
+  background: var(--vault-scrim);
 }
 
 .wa-jump {
   width: 100%;
-  max-width: 34rem;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-float);
+  max-width: 36rem;
   overflow: hidden;
+  border: 1px solid var(--vault-line);
+  border-radius: var(--r-panel);
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .wa-jump-field {
   display: flex;
   align-items: center;
   gap: var(--s-3);
-  padding: var(--s-4) var(--s-5);
-  border-bottom: 1px solid var(--border);
-  color: var(--ink-faint);
+  min-height: 56px;
+  padding: 0 var(--s-5);
+  border-bottom: 1px solid var(--rule);
+  color: var(--muted);
+}
+
+.wa-jump-field:focus-within {
+  border-bottom-color: var(--vault);
 }
 
 .wa-jump-input {
   flex: 1;
-  border: none;
+  min-width: 0;
+  padding: var(--s-3) 0;
+  border: 0;
   background: transparent;
   color: var(--ink);
-  font-family: var(--font-mono);
-  font-size: var(--fs-small);
-  padding: 0;
 }
 
-.wa-jump-input:focus {
+.wa-jump-input:focus,
+.wa-jump-input:focus-visible {
   outline: none;
 }
 
 .wa-jump-input::placeholder {
-  color: var(--ink-faint);
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
+  font-size: var(--fs-small);
 }
 
 .wa-jump-list {
-  list-style: none;
+  max-height: 46vh;
   margin: 0;
   padding: 0;
-  max-height: 46vh;
   overflow-y: auto;
+  list-style: none;
 }
 
 .wa-jump-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  gap: var(--s-2) var(--s-4);
+  gap: var(--s-1) var(--s-4);
   width: 100%;
+  min-height: 56px;
   padding: var(--s-3) var(--s-5);
-  border: none;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-left: 3px solid transparent;
   background: transparent;
+  color: var(--ink);
+  font: inherit;
   text-align: left;
   cursor: pointer;
-  font: inherit;
-  color: var(--ink);
-  border-bottom: 1px solid var(--border);
 }
 
 .wa-jump-item.is-on {
-  background: var(--accent-soft);
+  border-left-color: var(--vault);
+  background: var(--canvas);
 }
 
 .wa-jump-item svg {
   grid-row: 1 / 3;
   grid-column: 2;
-  color: var(--ink-faint);
   align-self: center;
+  color: var(--muted);
 }
 
 .wa-jump-item.is-on svg {
-  color: var(--accent);
+  color: var(--vault);
 }
 
 .wa-jump-label {
   font-size: var(--fs-body);
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 .wa-jump-hintline {
   grid-column: 1;
-  font-size: var(--fs-caption);
-  color: var(--ink-faint);
+  font-size: var(--fs-small);
+  color: var(--muted);
 }
 
 .wa-jump-foot {
   padding: var(--s-3) var(--s-5);
+  background: var(--field-bg);
   font-size: var(--fs-caption);
-  color: var(--ink-faint);
-  background: var(--bg);
+  line-height: var(--lh-body);
+  color: var(--muted);
 }
 
 @media (max-width: 520px) {

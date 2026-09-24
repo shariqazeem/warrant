@@ -1,113 +1,233 @@
 /**
- * site.css — the marketing pages under the floor's nav: paper, one reading column, ruled
- * sections. Aliases only.
+ * site.css: the nav and the footer, both on vault, and the page a SiteFrame lays out.
+ * Every value is a token.
  */
-.wa-site-main {
-  padding-top: var(--s-8);
-  max-width: var(--measure);
+
+/* ── the header: skip link, then the nav ───────────────────────────── */
+
+.wa-header {
+  position: relative;
 }
-.wa-site-main.is-wide {
-  max-width: var(--measure-wide);
+
+/* On the front page the hero shares the vault band, so a hairline separates them. On an
+ * app page the header is the band's only child and the band meets the canvas directly. */
+.wa-header:not(:last-child) {
+  border-bottom: 1px solid var(--vault-line);
 }
-.wa-site-h1 {
-  font-size: var(--fs-h1);
-  line-height: var(--lh-h1);
-  letter-spacing: var(--tracking-h1);
+
+/* Out of sight until a keyboard reaches it; then it is the first thing on the page. */
+.wa-header a.wa-skip,
+.wa-header a.wa-skip:hover {
+  position: absolute;
+  left: var(--s-4);
+  top: var(--s-2);
+  z-index: 90;
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-control);
+  background: var(--bond);
+  color: var(--vault);
   font-weight: 600;
-  margin: 0 0 var(--s-4);
-  max-width: 22ch;
+  text-decoration: none;
+  transform: translateY(-200%);
 }
+
+.wa-header a.wa-skip:focus,
+.wa-header a.wa-skip:focus-visible {
+  transform: none;
+}
+
+.wa-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  max-width: 1344px;
+  min-height: 76px;
+  margin: 0 auto;
+  padding: var(--s-3) var(--s-5);
+}
+
+.wa-nav-brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-inline-end: auto;
+  color: var(--on-vault);
+  text-decoration: none;
+}
+
+.wa-nav-doors {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wa-nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--fs-label);
+  white-space: nowrap;
+  text-decoration: none;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+}
+
+.wa-nav-link:hover,
+.wa-nav-link[aria-current="page"] {
+  text-decoration-line: underline;
+}
+
+.wa-nav-end {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.wa-nav-cta {
+  white-space: nowrap;
+}
+
+/* Phones and small tablets: the word, search and "Grant stock" on one line, the four
+ * doors on the next. The doors scroll sideways inside the nav if a face runs wide, so the
+ * page itself never does. */
+@media (max-width: 860px) {
+  .wa-nav {
+    flex-wrap: wrap;
+    gap: 0 var(--s-2);
+    min-height: 0;
+    padding: var(--s-2) var(--s-5) 0;
+  }
+
+  /* The padding keeps a focused door's outline inside the scroller. */
+  .wa-nav-doors {
+    order: 3;
+    flex: 1 0 100%;
+    gap: var(--s-4);
+    padding: var(--s-1) var(--s-1) var(--s-2);
+    margin-inline: calc(-1 * var(--s-1));
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .wa-nav-doors::-webkit-scrollbar {
+    display: none;
+  }
+
+  .wa-nav-link {
+    font-size: var(--fs-small);
+  }
+}
+
+@media (max-width: 420px) {
+  .wa-nav {
+    padding-inline: var(--s-4);
+  }
+}
+
+/* ── the footer ────────────────────────────────────────────────────── */
+
+.wa-site-foot {
+  max-width: 1344px;
+  margin: 0 auto;
+  padding: var(--s-7) var(--s-5) var(--s-8);
+  color: var(--on-vault-2);
+  font-size: var(--fs-small);
+}
+
+.wa-foot-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3) var(--s-6);
+}
+
+.wa-foot-brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-inline-end: auto;
+  color: var(--on-vault);
+  text-decoration: none;
+}
+
+.wa-foot-doors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wa-site-foot .wa-foot-doors a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--on-vault-2);
+  text-decoration: none;
+  text-underline-offset: 4px;
+}
+
+.wa-site-foot .wa-foot-doors a:hover {
+  color: var(--on-vault-hover);
+  text-decoration-line: underline;
+}
+
+/* The definition, set as a dictionary would. */
+.wa-foot-word {
+  margin-top: var(--s-5);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--vault-line);
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  font-style: italic;
+  color: var(--on-vault-3);
+}
+
+/* ── a page laid out by SiteFrame ──────────────────────────────────── */
+
+.wa-site-main .wa-lede {
+  margin-top: var(--s-3);
+}
+
 .wa-site-body {
   display: grid;
   gap: var(--s-7);
   margin-top: var(--s-7);
 }
+
 .wa-site-section {
-  border-top: 1px solid var(--line-strong);
-  padding-top: var(--s-4);
   display: grid;
   gap: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--rule);
 }
-.wa-site-section .wa-section-label {
+
+.wa-section-label {
   display: flex;
   justify-content: space-between;
   gap: var(--s-4);
   margin: 0;
-  font-size: var(--fs-caption);
-  color: var(--ink-faint);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--muted);
 }
-.wa-site-section .wa-section-label a {
-  color: var(--accent);
-}
-.wa-site-section p.wa-body {
-  margin: 0;
-}
-.wa-site-section .wa-truths {
-  margin-top: 0;
-  max-width: none;
-}
-/* A document page states its facts; only the front door makes them enter. */
-.wa-site-section .wa-truth {
-  opacity: 1;
-  transform: none;
-  transition: none;
-}
-.wa-site-section .wa-truth .v a,
-.wa-site-body a.wa-inline-link {
-  color: var(--accent);
-}
+
 .wa-site-section ul {
   margin: 0;
   padding-left: 1.2em;
-  font-size: var(--fs-body);
-  line-height: 1.6;
-  color: var(--ink-muted);
+  line-height: var(--lh-body);
+  color: var(--muted);
 }
-.wa-site-section ul li + li {
+
+.wa-site-section li + li {
   margin-top: var(--s-2);
 }
-.wa-site-section li strong,
-.wa-site-section p strong {
+
+.wa-site-section strong {
   color: var(--ink);
   font-weight: 600;
-}
-.wa-site-section pre {
-  margin: 0;
-  padding: var(--s-4);
-  background: var(--surface-inverse);
-  color: var(--ink-inverse);
-  border-radius: var(--r-md);
-  font-family: var(--font-mono);
-  font-size: var(--fs-caption);
-  line-height: 1.6;
-  overflow-x: auto;
-}
-.wa-site-section .mono {
-  font-family: var(--font-mono);
-  font-size: var(--fs-mono);
-  letter-spacing: var(--tracking-mono);
-  overflow-wrap: anywhere;
-}
-.wa-site-foot {
-  max-width: var(--measure-wide);
-  margin: var(--s-10) auto 0;
-  padding: var(--s-6) var(--pad) var(--s-8);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-3) var(--s-5);
-  align-items: center;
-  border-top: 1px solid var(--line);
-  font-size: var(--fs-caption);
-  color: var(--ink-faint);
-}
-.wa-site-foot a:hover {
-  color: var(--accent);
-}
-/* the wordmark: Fraunces, in exactly two places */
-.wa-wordmark {
-  font-family: var(--font-serif);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  font-variation-settings: "opsz" 144, "SOFT" 30;
 }

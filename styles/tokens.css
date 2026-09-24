@@ -90,7 +90,7 @@
 
   --tracking-head: -0.02em;  /* every headline */
 
-  --fs-lead: 1.03125rem;     /* 16.5px on canvas; 20px on vault, below */
+  --fs-lead: 1.03125rem;     /* 16.5px on canvas; the vault class (globals.css) raises it to 20px */
   --lh-lead: 1.55;
 
   --fs-body: 1rem;           /* 16px */
@@ -113,12 +113,6 @@
   --ease-out: ease-out;
   --ease-wipe: cubic-bezier(0.3, 0.6, 0.2, 1);
   --ease-press: cubic-bezier(0.2, 0.8, 0.25, 1.15);
-}
-
-/* On vault the lead is larger, because the band is the stage. */
-.wa-vault,
-.wa-dark {
-  --fs-lead: clamp(1.0625rem, 0.95rem + 0.5vw, 1.25rem);   /* 17px at 390, 20px at 1440 */
 }
 
 /* Reduced motion shows every final state at once, with nothing moving. */
@@ -190,14 +184,8 @@ h2 {
   color: var(--bond);
 }
 
-/* Visible focus everywhere: vault on canvas, foil on vault. */
+/* Visible focus everywhere: vault on canvas; the vault class (globals.css) turns it foil. */
 :focus-visible {
   outline: 2px solid var(--vault);
   outline-offset: 2px;
-}
-
-.wa-vault :focus-visible,
-.wa-dark :focus-visible {
-  outline-color: var(--foil);
-  outline-offset: 3px;
 }

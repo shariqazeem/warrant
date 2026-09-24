@@ -1,4 +1,3 @@
-import { PageFrame } from "./page-frame";
 import "./skeleton.css";
 
 /**
@@ -24,15 +23,5 @@ export function SkeletonRows({ rows = 4 }: { rows?: number }) {
         </div>
       ))}
     </div>
-  );
-}
-
-/** A whole shelled page, waiting. `title` is the one thing already known. */
-export function SkeletonPage({ eyebrow, title, rows = 5 }: { eyebrow?: string; title: string; rows?: number }) {
-  return (
-    <PageFrame eyebrow={eyebrow} title={title}>
-      <p className="wa-skel-note">Reading the chain…</p>
-      <SkeletonRows rows={rows} />
-    </PageFrame>
   );
 }

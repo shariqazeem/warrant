@@ -1,4 +1,4 @@
-import {SiteNav} from "@/components/site/site-frame";
+import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {SkeletonRows} from "./skeleton";
 import "@/app/landing.css";
 import "./skeleton.css";
@@ -22,17 +22,20 @@ export function LoadingFrame({
 }) {
   return (
     <div className="wa-landing">
-      <div className="wa-dark">
+      <div className="wa-vault">
         <SiteNav />
       </div>
       <div className="wa-tear" aria-hidden />
-      <main className="wa-sec is-wide" aria-busy="true">
+      <main id="main" className="wa-sec is-wide" aria-busy="true">
         <p className="wa-kicker">{eyebrow}</p>
-        <h1 className="wa-h2">{title}</h1>
-        <div style={{marginTop: "var(--s-7)"}}>
+        <h1 className="wa-h1">{title}</h1>
+        <div className="wa-skel-gap">
           <SkeletonRows rows={rows} />
         </div>
       </main>
+      <div className="wa-vault">
+        <SiteFoot />
+      </div>
     </div>
   );
 }

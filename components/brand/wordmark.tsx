@@ -1,17 +1,15 @@
 import {WarrantMark} from "./warrant-mark";
+import "./brand.css";
 
 /**
- * THE WORDMARK — Warrant, set in Fraunces at a heavy optical size, tight: the engraver's
- * serif of a certificate. Fraunces appears in exactly two places, here and on the title
- * line of a receipt; nowhere else.
+ * THE WORDMARK: the mark, then "Warrant" in Bodoni Moda 600, the engraver's face of a
+ * certificate. `size` is the mark's height; the word is set a little smaller, as drawn.
  */
-export function Wordmark({size = 22, withMark = true}: {size?: number; withMark?: boolean}) {
+export function Wordmark({size = 28, withMark = true}: {size?: number; withMark?: boolean}) {
   return (
-    <span style={{display: "inline-flex", alignItems: "center", gap: Math.round(size * 0.4)}}>
+    <span className="wa-wordmark" style={{fontSize: Math.round(size * 0.9)}}>
       {withMark ? <WarrantMark size={size} /> : null}
-      <span className="wa-wordmark" style={{fontSize: size * 1.05}}>
-        Warrant
-      </span>
+      <span className="wa-wordmark-word">Warrant</span>
     </span>
   );
 }

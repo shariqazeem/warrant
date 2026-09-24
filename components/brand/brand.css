@@ -1,0 +1,36 @@
+/**
+ * brand.css: the mark and the wordmark. Every value is a token.
+ */
+
+.wa-mark {
+  display: block;
+  flex: none;
+}
+
+.wa-mark-sheet {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.wa-mark-seal {
+  fill: var(--seal);
+  stroke: var(--on-vault);
+  stroke-width: 1.4px;
+}
+
+.wa-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  color: inherit;
+}
+
+.wa-wordmark-word {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}

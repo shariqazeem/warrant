@@ -1,15 +1,292 @@
 @import "tailwindcss";
 
 /**
- * THE CSS RESET, AND NOTHING ELSE.
+ * THE RESET, THEN THE PRIMITIVES EVERY PAGE CAN RENDER.
  *
- * Warrant writes no Tailwind utility classes anywhere — every class in the product is
- * defined in one of its own stylesheets, prefixed wa-. But `@import "tailwindcss"` also ships PREFLIGHT,
- * which is the reset the whole layout sits on: `box-sizing: border-box`, zeroed margins,
- * unstyled headings and lists. Dropping the import would silently reflow the product, so
- * the reset stays and nothing else joins it.
+ * `@import "tailwindcss"` is here for its preflight only: box-sizing, zeroed margins,
+ * unstyled headings and lists. Warrant writes no Tailwind utility class anywhere.
  *
- * The single source of design truth is styles/tokens.css. Never add a colour, radius,
- * shadow or type declaration to this file. Two projects reached this rule only after their
- * stylesheets drifted and raw colour literals had to be hunted down; Warrant starts here.
+ * Below the reset are the handful of classes any page may render: buttons, the vault
+ * material, figures, kickers, the honest empty state. They live here, loaded by the root
+ * layout, so they are styled on every page, including the ones that load no other sheet.
+ * Each is defined once, in this file; surfaces refine them in context and never redefine
+ * them. Every value is a token from styles/tokens.css.
  */
+
+/* ── links inside running text are underlined, not colour-only ──────── */
+
+:where(p, li, dd, td, figcaption, blockquote) a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+:where(p, li, dd, td, figcaption, blockquote) a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* ── the vault: nav, hero, footer ───────────────────────────────────── */
+
+.wa-vault,
+.wa-dark {
+  --fs-lead: clamp(1.0625rem, 0.95rem + 0.5vw, 1.25rem); /* 17px at 390, 20px at 1440 */
+  background: var(--vault);
+  color: var(--on-vault);
+}
+
+.wa-vault a,
+.wa-dark a {
+  color: var(--on-vault);
+}
+
+.wa-vault a:hover,
+.wa-dark a:hover {
+  color: var(--on-vault-hover);
+}
+
+.wa-vault :focus-visible,
+.wa-dark :focus-visible {
+  outline-color: var(--foil);
+  outline-offset: 3px;
+}
+
+/* ── buttons. Every one says exactly what happens. ──────────────────── */
+
+/* Secondary, on canvas: surface, a field border, ink. `.wa-action` is the same button. */
+.wa-btn,
+.wa-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 0 var(--s-4);
+  border: 1px solid var(--field);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-label);
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out);
+}
+
+.wa-btn:hover,
+.wa-action:hover {
+  border-color: var(--vault);
+  color: var(--ink);
+}
+
+/* Primary, on canvas: vault with bond text. */
+.wa-btn.is-primary,
+.wa-action.is-primary {
+  background: var(--vault);
+  border-color: var(--vault);
+  color: var(--bond);
+  font-weight: 600;
+}
+
+.wa-btn.is-primary:hover,
+.wa-action.is-primary:hover {
+  background: var(--engrave);
+  border-color: var(--engrave);
+  color: var(--bond);
+}
+
+/* The seal button: permanent, so it is oxblood. */
+.wa-btn.is-seal {
+  background: var(--seal);
+  border-color: var(--seal);
+  color: var(--bond);
+  font-weight: 600;
+}
+
+.wa-btn.is-seal:hover {
+  border-color: var(--ink);
+  color: var(--on-vault-hover);
+}
+
+/* Underlined words, no box: "Issue another". */
+.wa-btn.is-quiet,
+.wa-action.is-quiet {
+  border-color: transparent;
+  background: transparent;
+  padding: 0 var(--s-2);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.wa-btn.is-quiet:hover,
+.wa-action.is-quiet:hover {
+  border-color: transparent;
+  text-decoration-thickness: 2px;
+}
+
+.wa-btn.is-large {
+  min-height: 52px;
+  padding: 0 var(--s-5);
+  font-size: var(--fs-body);
+}
+
+/* The one button at the foot of a form: full width. */
+.wa-btn.is-block,
+.wa-btn.is-wide {
+  width: 100%;
+  min-height: 56px;
+  padding: var(--s-2) var(--s-4);
+  font-size: var(--fs-body);
+  white-space: normal;
+}
+
+/* Blocked: still readable, because it names what is missing. */
+.wa-btn[disabled],
+.wa-btn[aria-disabled="true"],
+.wa-action:disabled {
+  cursor: not-allowed;
+  background: var(--surface);
+  border-color: var(--field);
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* On vault: a primary is bond with vault text; a secondary is an outline. */
+.wa-vault .wa-btn,
+.wa-dark .wa-btn {
+  background: transparent;
+  border-color: var(--vault-field);
+  color: var(--on-vault);
+}
+
+.wa-vault .wa-btn:hover,
+.wa-dark .wa-btn:hover {
+  border-color: var(--on-vault-2);
+  color: var(--on-vault-hover);
+}
+
+.wa-vault .wa-btn.is-primary,
+.wa-dark .wa-btn.is-primary {
+  background: var(--bond);
+  border-color: var(--bond);
+  color: var(--vault);
+}
+
+.wa-vault .wa-btn.is-primary:hover,
+.wa-dark .wa-btn.is-primary:hover {
+  background: var(--on-vault-hover);
+  border-color: var(--on-vault-hover);
+  color: var(--vault);
+}
+
+.wa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-5);
+}
+
+/* A control that reads as a link inside a sentence. */
+.wa-linkish {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.wa-linkish:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* ── words and figures ──────────────────────────────────────────────── */
+
+/* A small sentence-case label above a headline. Never all caps. */
+.wa-kicker {
+  margin: 0 0 var(--s-3);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.wa-vault .wa-kicker,
+.wa-dark .wa-kicker {
+  color: var(--on-vault-3);
+}
+
+/* Units are the largest thing on any page they appear on: Bodoni Moda, as engraved. */
+.wa-units {
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.wa-units-sm {
+  font-family: var(--font-display);
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+/* An address or a hash. JetBrains Mono, and nothing else is. */
+.wa-mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  letter-spacing: var(--tracking-mono);
+  overflow-wrap: anywhere;
+}
+
+/* The small print under a control: what it will do, what it costs. */
+.wa-fine {
+  font-size: var(--fs-caption);
+  line-height: var(--lh-body);
+  color: var(--muted);
+}
+
+/* The honest empty state: a line in bold, then what will fill it. Never a sample row. */
+.wa-nothing {
+  max-width: 62ch;
+  padding: var(--s-5);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-panel);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: var(--lh-body);
+}
+
+.wa-nothing strong {
+  display: block;
+  margin-bottom: var(--s-2);
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+.wa-vault .wa-nothing,
+.wa-dark .wa-nothing {
+  border-color: var(--vault-line);
+  background: var(--vault-raised);
+  color: var(--on-vault-2);
+}
+
+.wa-vault .wa-nothing strong,
+.wa-dark .wa-nothing strong {
+  color: var(--on-vault);
+}
