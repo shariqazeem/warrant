@@ -6,9 +6,15 @@
  * block time, "people paid" is a count of distinct recipients, and the total is a sum of
  * what was actually pulled from the payer.
  */
+import {erc20Abi} from "viem";
+// Server only: it reads SQLite, and the grant readers below read the escrow live.
 import {database} from "./db";
 import {assetByAddress} from "./assets";
-import {held, ok, type Outcome} from "./outcome";
+import type {PoolFacts} from "./certificate-data";
+import {escrowAddress, readGrant, type Grant} from "./grants";
+import {attempt, held, ok, type Outcome} from "./outcome";
+import {grantEscrowAbi} from "./payroll-abi";
+import {client} from "./receipts";
 
 export type CompanyReceipt = {
   txHash: `0x${string}`;
@@ -324,4 +330,300 @@ export function readRun(runId: string): Outcome<CompanyReceipt[]> {
     .all(id, id) as Array<Record<string, unknown>>;
 
   return ok(rows.map(toReceipt));
+}
+
+// ── grants as the record holds them, and the public record ──────────────────────────────
+
+/**
+ * A GRANT AS ITS OPENING RECORDED IT: the GrantOpened event, copied by the indexer after the
+ * USDT it claims was seen leaving the payer. None of these terms changes after opening. What
+ * has happened since (sealed, released, cancelled, closed) is only on the contract, and is
+ * read live wherever a page shows it.
+ */
+export type OpenedGrant = {
+  id: number;
+  txHash: `0x${string}`;
+  blockNumber: number;
+  blockTime: number | null;
+  payer: `0x${string}`;
+  beneficiary: `0x${string}`;
+  asset: `0x${string}`;
+  assetSymbol: string;
+  assetDecimals: number;
+  /** The units the grant bought when it opened. */
+  units: bigint;
+  shares: bigint;
+  /** What the payer spent opening it, in USDT base units. */
+  stableCost: bigint;
+  start: number;
+  cliffSeconds: number;
+  durationSeconds: number;
+  tipBps: number;
+  reasonHash: `0x${string}`;
+  reason: string | null;
+};
+
+function toOpenedGrant(g: Record<string, unknown>): OpenedGrant {
+  const facts = assetFacts(String(g.asset));
+  return {
+    id: Number(g.id),
+    txHash: String(g.tx_hash) as `0x${string}`,
+    blockNumber: Number(g.block_number),
+    blockTime: g.block_time === null || g.block_time === undefined ? null : Number(g.block_time),
+    payer: String(g.payer) as `0x${string}`,
+    beneficiary: String(g.beneficiary) as `0x${string}`,
+    asset: String(g.asset) as `0x${string}`,
+    assetSymbol: facts.symbol,
+    assetDecimals: facts.decimals,
+    units: BigInt(String(g.units)),
+    shares: BigInt(String(g.shares)),
+    stableCost: BigInt(String(g.stable_cost)),
+    start: Number(g.start_at),
+    cliffSeconds: Number(g.cliff_seconds),
+    durationSeconds: Number(g.duration_secs),
+    tipBps: Number(g.tip_bps),
+    reasonHash: String(g.reason_hash) as `0x${string}`,
+    reason: g.reason_text === null || g.reason_text === undefined ? null : String(g.reason_text),
+  };
+}
+
+type GrantFilter = {beneficiary?: string; payer?: string};
+
+function grantWhere(filter: GrantFilter, prefix: string): {sql: string; args: string[]} {
+  const where: string[] = [];
+  const args: string[] = [];
+  if (filter.beneficiary !== undefined) {
+    where.push(`${prefix}beneficiary = ?`);
+    args.push(filter.beneficiary.toLowerCase());
+  }
+  if (filter.payer !== undefined) {
+    where.push(`${prefix}payer = ?`);
+    args.push(filter.payer.toLowerCase());
+  }
+  return {sql: where.length > 0 ? `WHERE ${where.join(" AND ")}` : "", args};
+}
+
+/**
+ * Grant openings on the record, newest first: all of them, or only those naming one wallet
+ * as the person it vests to, or as the company that granted it. Any case of the address.
+ */
+export function readOpenedGrants(filter: GrantFilter = {}, limit = 50): OpenedGrant[] {
+  const {sql, args} = grantWhere(filter, "g.");
+  const rows = database()
+    .prepare(
+      `SELECT g.*, n.text AS reason_text
+         FROM grants g
+         LEFT JOIN reasons n ON n.hash = g.reason_hash
+        ${sql}
+        ORDER BY g.block_number DESC, g.id DESC
+        LIMIT ?`,
+    )
+    .all(...args, limit) as Array<Record<string, unknown>>;
+  return rows.map(toOpenedGrant);
+}
+
+/** How many grants the record holds, all of them or one wallet's. */
+export function countOpenedGrants(filter: GrantFilter = {}): number {
+  const {sql, args} = grantWhere(filter, "");
+  const row = database().prepare(`SELECT COUNT(*) AS n FROM grants ${sql}`).get(...args) as {n: number};
+  return row.n ?? 0;
+}
+
+/** Reads one grant live from the escrow: lib/grants.ts's readGrant, or a test's own. */
+export type GrantReader = (id: number) => Promise<Outcome<Grant>>;
+
+/** A grant as it opened, and as the escrow says it stands now. */
+export type LiveGrant = {opened: OpenedGrant; grant: Grant};
+
+/**
+ * THE ESCROW'S GRANT IS THE ONE THE RECORD HOLDS. The record is a cache, and a cache left
+ * over from another deployment must not lend its rows to this escrow's grants: a person
+ * would be shown somebody else's grant as theirs. Payer, beneficiary and asset never change
+ * after opening, so all three must agree.
+ */
+export function sameGrant(g: Pick<Grant, "payer" | "beneficiary" | "asset">, o: OpenedGrant): boolean {
+  return (
+    g.payer.toLowerCase() === o.payer.toLowerCase() &&
+    g.beneficiary.toLowerCase() === o.beneficiary.toLowerCase() &&
+    g.asset.toLowerCase() === o.asset.toLowerCase()
+  );
+}
+
+/**
+ * THE GRANT THE FRONT PAGE SHOWS: the newest real one, read live. The newest that is sealed
+ * and still vesting, if one of the newest few is; otherwise the newest still open and not
+ * cancelled; otherwise the newest that could be read. Null when no grant has ever been
+ * opened, which the page shows as an unissued certificate, never as a sample.
+ *
+ * Read one at a time, newest first, and only as far as it must: each grant is three reads
+ * against an endpoint that throttles at two or three a second.
+ */
+export async function readFeaturedGrant(
+  options: {tries?: number; read?: GrantReader} = {},
+): Promise<Outcome<LiveGrant | null>> {
+  const read = options.read ?? readGrant;
+  const rows = readOpenedGrants({}, options.tries ?? 6);
+  if (rows.length === 0) return ok(null);
+
+  const seen: LiveGrant[] = [];
+  let why: string | null = null;
+  for (const opened of rows) {
+    const r = await read(opened.id);
+    if (!r.ok) {
+      why ??= r.why;
+      continue;
+    }
+    if (!sameGrant(r.value, opened)) continue;
+    const live = {opened, grant: r.value};
+    if (r.value.isSealed && r.value.state === "open" && !r.value.revoked) return ok(live);
+    seen.push(live);
+  }
+  const pick =
+    seen.find((l) => l.grant.state === "open" && !l.grant.revoked) ??
+    seen.find((l) => l.grant.state === "open") ??
+    seen[0];
+  if (pick) return ok(pick);
+  return held(why ?? "The newest grants could not be read just now.");
+}
+
+/**
+ * The escrow's pool of one stock: its shares outstanding and the units it holds. With these
+ * a grant's shares convert to units exactly as the contract converts them.
+ */
+export function readEscrowPool(asset: `0x${string}`): Promise<Outcome<PoolFacts>> {
+  return attempt("the escrow's holding of this stock", async () => {
+    const escrow = escrowAddress();
+    if (!escrow.ok) return escrow;
+    const rpc = client();
+    const [poolShares, escrowBalance] = await Promise.all([
+      rpc.readContract({address: escrow.value, abi: grantEscrowAbi, functionName: "poolShares", args: [asset]}),
+      rpc.readContract({address: asset, abi: erc20Abi, functionName: "balanceOf", args: [escrow.value]}),
+    ]);
+    return ok({poolShares, escrowBalance});
+  });
+}
+
+/** One payroll run on the public record: everyone paid under one run id, by the payer who used it first. */
+export type RecordRun = {
+  kind: "run";
+  runId: `0x${string}`;
+  payer: `0x${string}`;
+  /** The run's first transaction. Nearly every run is exactly one. */
+  txHash: `0x${string}`;
+  transactions: number;
+  blockNumber: number;
+  blockTime: number | null;
+  people: number;
+  payments: number;
+  totalStable: bigint;
+  /** The part that arrived as USDT, over every payslip in the run. */
+  cashTotal: bigint;
+  /** The stock that arrived, per stock. Units of two stocks are never added together. */
+  delivered: DeliveredAsset[];
+};
+
+export type RecordGrant = {kind: "grant"} & OpenedGrant;
+
+export type RecordEntry = RecordGrant | RecordRun;
+
+export type PublicRecord = {
+  /** Every grant on the record, however many are listed. */
+  grantCount: number;
+  /** Every run on the record, however many are listed. */
+  runCount: number;
+  /** Newest first, at most `limit`. */
+  entries: RecordEntry[];
+};
+
+type RunRow = {
+  tx_hash: string;
+  log_index: number;
+  block_number: number;
+  block_time: number | null;
+  payer: string;
+  recipient: string;
+  run_id: string;
+  asset: string;
+  stable_amount: string;
+  cash_amount: string;
+  asset_amount: string;
+};
+
+/**
+ * THE PUBLIC RECORD: every grant and every payroll run, newest first, as the chain's events
+ * recorded them. A single payment is a run of one, with its own payslip.
+ *
+ * A run belongs to the payer who used its id first, exactly as its own page reads it
+ * (readRun): anyone can call the contract with any run id, and rows a stranger adds under
+ * the same id later are not part of that run.
+ *
+ * Every figure is a count or an exact bigint sum over rows the indexer copied from the chain.
+ */
+export function readRecord(limit = 200): Outcome<PublicRecord> {
+  const receiptRows = database()
+    .prepare(
+      `SELECT tx_hash, log_index, block_number, block_time, payer, recipient, run_id, asset,
+              stable_amount, cash_amount, asset_amount
+         FROM receipts
+        ORDER BY block_number ASC, log_index ASC`,
+    )
+    .all() as RunRow[];
+
+  type Building = {
+    run: Omit<RecordRun, "delivered" | "people" | "transactions">;
+    recipients: Set<string>;
+    txs: Set<string>;
+    byAsset: Map<string, bigint>;
+  };
+  const runs = new Map<string, Building>();
+  for (const r of receiptRows) {
+    const id = r.run_id.toLowerCase();
+    let b = runs.get(id);
+    if (!b) {
+      b = {
+        run: {
+          kind: "run",
+          runId: id as `0x${string}`,
+          payer: r.payer.toLowerCase() as `0x${string}`,
+          txHash: r.tx_hash as `0x${string}`,
+          blockNumber: r.block_number,
+          blockTime: r.block_time,
+          payments: 0,
+          totalStable: 0n,
+          cashTotal: 0n,
+        },
+        recipients: new Set(),
+        txs: new Set(),
+        byAsset: new Map(),
+      };
+      runs.set(id, b);
+    }
+    // Someone else's rows under an id already in use are not this run's.
+    if (r.payer.toLowerCase() !== b.run.payer) continue;
+    b.run.payments += 1;
+    b.run.totalStable += BigInt(r.stable_amount);
+    b.run.cashTotal += BigInt(r.cash_amount);
+    b.recipients.add(r.recipient.toLowerCase());
+    b.txs.add(r.tx_hash.toLowerCase());
+    const units = BigInt(r.asset_amount);
+    if (units > 0n && r.asset !== ZERO_ASSET) b.byAsset.set(r.asset, (b.byAsset.get(r.asset) ?? 0n) + units);
+  }
+
+  const runEntries: RecordRun[] = [...runs.values()].map((b) => ({
+    ...b.run,
+    people: b.recipients.size,
+    transactions: b.txs.size,
+    delivered: [...b.byAsset.entries()].map(([asset, units]) => {
+      const facts = assetFacts(asset);
+      return {asset: asset as `0x${string}`, symbol: facts.symbol, decimals: facts.decimals, units};
+    }),
+  }));
+
+  const grants: RecordGrant[] = readOpenedGrants({}, limit).map((g) => ({kind: "grant" as const, ...g}));
+
+  const entries: RecordEntry[] = [...grants, ...runEntries]
+    .sort((a, b) => b.blockNumber - a.blockNumber || (a.kind === b.kind ? 0 : a.kind === "grant" ? -1 : 1))
+    .slice(0, limit);
+
+  return ok({grantCount: countOpenedGrants(), runCount: runEntries.length, entries});
 }

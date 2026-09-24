@@ -9,8 +9,17 @@
  */
 import {assetByAddress} from "./assets";
 import type {StoredChoice} from "./choice";
-import type {CompanyReceipt, DeliveredAsset} from "./company";
+import {
+  countOpenedGrants,
+  readOpenedGrants,
+  sameGrant,
+  type CompanyReceipt,
+  type DeliveredAsset,
+  type GrantReader,
+  type LiveGrant,
+} from "./company";
 import {database, readChoiceAt, readLatestChoice} from "./db";
+import {readGrant} from "./grants";
 import {held, ok, type Outcome} from "./outcome";
 
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
@@ -106,6 +115,62 @@ export function readPaidTo(person: string, limit = 200): Outcome<PaidTo> {
     }),
     receipts: rows.map(toReceipt),
   });
+}
+
+// ── the grants that name one wallet ────────────────────────────────────────────────────
+
+export type GrantsOf = {
+  address: `0x${string}`;
+  /** How many grants the record holds for this wallet: every one, not only those read. */
+  count: number;
+  /** Read live from the escrow, newest first. */
+  grants: LiveGrant[];
+  /** Asked for and not read, newest first, each with the reason, so a page can say so. */
+  unread: {id: number; why: string}[];
+};
+
+async function liveGrantsOf(
+  side: "beneficiary" | "payer",
+  who: string,
+  limit: number,
+  read: GrantReader,
+): Promise<Outcome<GrantsOf>> {
+  if (!ADDRESS.test(who)) return held("That is not an address, so no grant can name it.");
+  const filter = side === "beneficiary" ? {beneficiary: who} : {payer: who};
+  const opened = readOpenedGrants(filter, limit);
+  const results = await Promise.all(opened.map((o) => read(o.id)));
+
+  const grants: LiveGrant[] = [];
+  const unread: {id: number; why: string}[] = [];
+  results.forEach((r, i) => {
+    const o = opened[i]!;
+    if (!r.ok) unread.push({id: o.id, why: r.why});
+    else if (!sameGrant(r.value, o)) {
+      unread.push({id: o.id, why: `Grant ${o.id} on the escrow is not the grant the record holds, so it is not shown.`});
+    } else grants.push({opened: o, grant: r.value});
+  });
+
+  return ok({address: who.toLowerCase() as `0x${string}`, count: countOpenedGrants(filter), grants, unread});
+}
+
+/**
+ * EVERY GRANT THAT VESTS TO THIS WALLET, newest first: the openings the indexer copied from
+ * the chain, each read live from the escrow, so a sealed, released or cancelled grant shows
+ * as it stands now. Any case of the address.
+ */
+export function grantsFor(
+  beneficiary: string,
+  options: {limit?: number; read?: GrantReader} = {},
+): Promise<Outcome<GrantsOf>> {
+  return liveGrantsOf("beneficiary", beneficiary, options.limit ?? 20, options.read ?? readGrant);
+}
+
+/** Every grant this wallet has made to someone, newest first, read the same way. */
+export function grantsBy(
+  payer: string,
+  options: {limit?: number; read?: GrantReader} = {},
+): Promise<Outcome<GrantsOf>> {
+  return liveGrantsOf("payer", payer, options.limit ?? 20, options.read ?? readGrant);
 }
 
 // ── one row, exactly as lib/company.ts reads it ────────────────────────────────────────

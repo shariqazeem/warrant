@@ -293,3 +293,242 @@ describe("what was paid to one wallet", () => {
     expect(person.readPaidTo("robots.txt").ok).toBe(false);
   });
 });
+
+// ── the grants that name one wallet, and the public record ──────────────────────────
+
+type Grant = import("./grants").Grant;
+type Outcome<T> = import("./outcome").Outcome<T>;
+
+let grantId = 0;
+let grantBlock = 50_000;
+
+/** A GrantOpened row as the indexer writes it: addresses lowercase, amounts as text. */
+function opened(over: Partial<Record<string, string | number | null>> = {}) {
+  grantId++;
+  grantBlock += 10;
+  const row = {
+    id: grantId,
+    tx_hash: `0x${grantId.toString(16).padStart(64, "9")}`,
+    block_number: grantBlock,
+    block_time: 1_790_100_000 + grantBlock,
+    payer: "0x00000000000000000000000000000000000000e1",
+    beneficiary: "0x00000000000000000000000000000000000000f1",
+    asset: SPYX,
+    units: "1303200000000000000",
+    shares: "1303200000000000000000000",
+    stable_cost: "1000000000",
+    start_at: 1_790_000_000,
+    cliff_seconds: 15_768_000,
+    duration_secs: 63_072_000,
+    tip_bps: 50,
+    reason_hash: `0x${"ef".repeat(32)}`,
+    ...over,
+  };
+  db.database()
+    .prepare(
+      `INSERT INTO grants (id, tx_hash, block_number, block_time, payer, beneficiary, asset, units,
+         shares, stable_cost, start_at, cliff_seconds, duration_secs, tip_bps, reason_hash)
+       VALUES (@id, @tx_hash, @block_number, @block_time, @payer, @beneficiary, @asset, @units,
+         @shares, @stable_cost, @start_at, @cliff_seconds, @duration_secs, @tip_bps, @reason_hash)`,
+    )
+    .run(row);
+  return row;
+}
+
+/** The grant as the escrow would answer for a row, with whatever has happened since. */
+function live(row: ReturnType<typeof opened>, over: Partial<Grant> = {}): Grant {
+  return {
+    id: row.id,
+    payer: row.payer as `0x${string}`,
+    beneficiary: row.beneficiary as `0x${string}`,
+    asset: row.asset as `0x${string}`,
+    assetSymbol: "SPYx",
+    assetDecimals: 18,
+    shares: BigInt(row.shares),
+    sharesReleased: 0n,
+    stableCost: BigInt(row.stable_cost),
+    start: row.start_at,
+    cliffSeconds: row.cliff_seconds,
+    durationSeconds: row.duration_secs,
+    tipBps: row.tip_bps,
+    isSealed: false,
+    revoked: false,
+    frozenVestedShares: 0n,
+    reasonHash: row.reason_hash as `0x${string}`,
+    reason: null,
+    state: "open",
+    heldUnits: BigInt(row.units),
+    releasableUnits: 0n,
+    ...over,
+  };
+}
+
+/** An escrow that answers from a table, and counts how often it is asked. */
+function escrow(answers: Map<number, Outcome<Grant>>) {
+  const asked: number[] = [];
+  const read = async (id: number): Promise<Outcome<Grant>> => {
+    asked.push(id);
+    return answers.get(id) ?? {ok: false, why: `There is no grant ${id}.`};
+  };
+  return {read, asked};
+}
+
+describe("the grants that vest to one wallet", () => {
+  it("lists them newest first, each as the escrow says it stands now", async () => {
+    const to = "0x00000000000000000000000000000000000000f2";
+    const older = opened({beneficiary: to});
+    const newer = opened({beneficiary: to});
+    opened({beneficiary: "0x00000000000000000000000000000000000000f3"});
+    const {read} = escrow(
+      new Map([
+        [older.id, {ok: true, value: live(older, {isSealed: true})}],
+        [newer.id, {ok: true, value: live(newer, {revoked: true})}],
+      ]),
+    );
+
+    const got = await person.grantsFor(getAddress(to), {read});
+    expect(got.ok).toBe(true);
+    if (!got.ok) return;
+    expect(got.value.count).toBe(2);
+    expect(got.value.grants.map((g) => g.grant.id)).toEqual([newer.id, older.id]);
+    expect(got.value.grants[0]!.grant.revoked).toBe(true);
+    expect(got.value.grants[1]!.grant.isSealed).toBe(true);
+    // The opening's own terms travel with it, for the certificate's price and its link.
+    expect(got.value.grants[1]!.opened.units).toBe(1_303_200_000_000_000_000n);
+    expect(got.value.grants[1]!.opened.txHash).toBe(older.tx_hash);
+    expect(got.value.unread).toEqual([]);
+  });
+
+  it("says which grants it could not read, and never drops them silently", async () => {
+    const to = "0x00000000000000000000000000000000000000f4";
+    const a = opened({beneficiary: to});
+    const b = opened({beneficiary: to});
+    const {read} = escrow(
+      new Map([
+        [a.id, {ok: true, value: live(a)}],
+        [b.id, {ok: false, why: "X Layer's endpoint is refusing reads right now."}],
+      ]),
+    );
+    const got = await person.grantsFor(to, {read});
+    expect(got.ok && got.value.grants.map((g) => g.grant.id)).toEqual([a.id]);
+    expect(got.ok && got.value.unread).toEqual([{id: b.id, why: "X Layer's endpoint is refusing reads right now."}]);
+  });
+
+  it("refuses a grant the escrow says belongs to someone else", async () => {
+    const to = "0x00000000000000000000000000000000000000f5";
+    const row = opened({beneficiary: to});
+    const {read} = escrow(
+      new Map([[row.id, {ok: true, value: live(row, {beneficiary: "0x00000000000000000000000000000000000000f6"})}]]),
+    );
+    const got = await person.grantsFor(to, {read});
+    expect(got.ok && got.value.grants).toEqual([]);
+    expect(got.ok && got.value.unread.map((u) => u.id)).toEqual([row.id]);
+  });
+
+  it("reads the company's side too, and nothing for a wallet no grant names", async () => {
+    const company_ = "0x00000000000000000000000000000000000000e7";
+    const row = opened({payer: company_});
+    const {read, asked} = escrow(new Map([[row.id, {ok: true, value: live(row)}]]));
+    const by = await person.grantsBy(company_, {read});
+    expect(by.ok && by.value.grants.map((g) => g.grant.id)).toEqual([row.id]);
+
+    const none = await person.grantsFor("0x00000000000000000000000000000000000000f9", {read});
+    expect(none).toEqual({
+      ok: true,
+      value: {address: "0x00000000000000000000000000000000000000f9", count: 0, grants: [], unread: []},
+    });
+    expect(asked).toEqual([row.id]);
+    expect((await person.grantsFor("not an address", {read})).ok).toBe(false);
+  });
+});
+
+describe("the grant the front page shows", () => {
+  it("is the newest sealed grant still vesting, read no further than it must", async () => {
+    const sealedOlder = opened();
+    const sealed = opened();
+    const unsealedNewest = opened();
+    const {read, asked} = escrow(
+      new Map([
+        [sealedOlder.id, {ok: true, value: live(sealedOlder, {isSealed: true})}],
+        [sealed.id, {ok: true, value: live(sealed, {isSealed: true})}],
+        [unsealedNewest.id, {ok: true, value: live(unsealedNewest)}],
+      ]),
+    );
+    const got = await company.readFeaturedGrant({read});
+    expect(got.ok && got.value?.grant.id).toBe(sealed.id);
+    expect(asked).toEqual([unsealedNewest.id, sealed.id]);
+  });
+
+  it("falls back to the newest open grant, then to any it could read", async () => {
+    const closedSealed = opened();
+    const open = opened();
+    const cancelled = opened();
+    const {read} = escrow(
+      new Map([
+        [closedSealed.id, {ok: true, value: live(closedSealed, {isSealed: true, state: "closed"})}],
+        [open.id, {ok: true, value: live(open)}],
+        [cancelled.id, {ok: true, value: live(cancelled, {revoked: true})}],
+      ]),
+    );
+    const got = await company.readFeaturedGrant({read});
+    expect(got.ok && got.value?.grant.id).toBe(open.id);
+  });
+
+  it("says so when none of the newest could be read, rather than showing a sample", async () => {
+    opened();
+    const {read} = escrow(new Map());
+    const got = await company.readFeaturedGrant({read, tries: 2});
+    expect(got.ok).toBe(false);
+  });
+});
+
+describe("the public record", () => {
+  it("lists every grant and every run, newest first, a run only its first payer's", () => {
+    const runId = runIdFromName("record-run-1");
+    const payer = "0x00000000000000000000000000000000000000c7";
+    paid({run_id: runId, payer, block_number: 900_000, recipient: "0x00000000000000000000000000000000000000d9"});
+    paid({
+      run_id: runId,
+      payer,
+      block_number: 900_000,
+      log_index: 1,
+      recipient: "0x00000000000000000000000000000000000000da",
+      stable_amount: "3000000",
+      cash_amount: "3000000",
+      asset_amount: "0",
+    });
+    // A stranger reusing the id later is not part of the run.
+    paid({run_id: runId, payer: "0x00000000000000000000000000000000000000c8", block_number: 900_500});
+    const grant = opened({block_number: 900_100});
+
+    const got = company.readRecord(500);
+    expect(got.ok).toBe(true);
+    if (!got.ok) return;
+    const entries = got.value.entries;
+    const iGrant = entries.findIndex((e) => e.kind === "grant" && e.id === grant.id);
+    const iRun = entries.findIndex((e) => e.kind === "run" && e.runId === runId.toLowerCase());
+    expect(iGrant).toBeGreaterThanOrEqual(0);
+    expect(iRun).toBeGreaterThan(iGrant);
+
+    const run = entries[iRun]!;
+    if (run.kind !== "run") return;
+    expect(run.payer).toBe(payer);
+    expect(run.payments).toBe(2);
+    expect(run.people).toBe(2);
+    expect(run.transactions).toBe(2);
+    expect(run.totalStable).toBe(28_000_000n);
+    expect(run.cashTotal).toBe(3_000_000n);
+    expect(run.delivered).toEqual([{asset: SPYX, symbol: "SPYx", decimals: 18, units: 36_000_000_000_000_000n}]);
+
+    for (let i = 1; i < entries.length; i++) {
+      expect(entries[i - 1]!.blockNumber).toBeGreaterThanOrEqual(entries[i]!.blockNumber);
+    }
+    expect(got.value.grantCount).toBe(entries.filter((e) => e.kind === "grant").length);
+  });
+
+  it("lists no more than it is asked for, and counts everything", () => {
+    const got = company.readRecord(1);
+    expect(got.ok && got.value.entries).toHaveLength(1);
+    expect(got.ok && got.value.grantCount + got.value.runCount).toBeGreaterThan(1);
+  });
+});
