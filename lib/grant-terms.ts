@@ -14,6 +14,7 @@
  * is involved, and all tested. The browser and the server both import this file, so it
  * imports nothing but other pure helpers.
  */
+import {dateUTC, stampUTC} from "./format";
 import {held as no, ok as yes, type Outcome} from "./outcome";
 
 /** GrantEscrow.MAX_TIP_BPS. A keeper taking more than this of every release is not a keeper. */
@@ -158,6 +159,17 @@ export function cliffWords(span: Span): string {
 /** "2 years, 6-month cliff" — the way a preset is named on its card and in the summary. */
 export function scheduleWords(length: Span, cliff: Span): string {
   return `${spanWords(length)}, ${cliffWords(cliff)}`;
+}
+
+/** Shorter than this, a schedule's moments are said with their time, not only their date. */
+export const SHORT_SCHEDULE_SECONDS = 2 * 86_400;
+
+/**
+ * A moment on a schedule, said the way its length needs: "24 Mar 2027" on a two-year grant,
+ * "24 Sep 2026, 14:05 UTC" on a two-hour one, where the date alone would say nothing.
+ */
+export function stampOrDate(unixSeconds: number, durationSeconds: number): string {
+  return durationSeconds < SHORT_SCHEDULE_SECONDS ? stampUTC(unixSeconds) : dateUTC(unixSeconds);
 }
 
 // --- the release fee ---------------------------------------------------------------------

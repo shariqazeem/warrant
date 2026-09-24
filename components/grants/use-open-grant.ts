@@ -55,7 +55,7 @@ export type IssuePhase =
   /** Reading the allowance or simulating: nothing is being asked of the wallet yet. */
   | {kind: "checking"}
   /** The wallet has a request open: a permit signature, an approval, or the grant itself. */
-  | {kind: "waiting"; step: "permit" | "approve" | "issue"}
+  | {kind: "waiting"; step: "permit" | "approve" | "issue"; twoStep?: boolean}
   /** The approval was sent and is confirming. */
   | {kind: "approving"; hash: Hex}
   /** The grant was sent and is confirming: "Engraving…". */
@@ -327,7 +327,7 @@ export function useOpenGrant(escrow: Address | undefined, stock: IssueStock) {
               // The exact amount, never unlimited.
               args: [escrow, total],
             });
-            setPhase({kind: "waiting", step: "approve"});
+            setPhase({kind: "waiting", step: "approve", twoStep: true});
             const approveHash = await writeContract(config, approve.request);
             setPhase({kind: "approving", hash: approveHash});
             const approved = await waitForTransactionReceipt(config, {hash: approveHash, chainId: xLayer.id});
@@ -342,7 +342,7 @@ export function useOpenGrant(escrow: Address | undefined, stock: IssueStock) {
 
             setPhase({kind: "checking"});
             const simulated = await simulateAfterApproval(simulateOpen);
-            setPhase({kind: "waiting", step: "issue"});
+            setPhase({kind: "waiting", step: "issue", twoStep: true});
             sent = await writeContract(config, simulated.request);
           }
         }

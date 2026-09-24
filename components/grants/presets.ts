@@ -7,7 +7,7 @@
  *
  * Relative imports, so the tests resolve without the app's alias.
  */
-import {ASSETS, type Asset} from "../../lib/assets";
+import {ASSETS, ELIGIBILITY_FACT, type Asset} from "../../lib/assets";
 import {scheduleWords, type Span} from "../../lib/grant-terms";
 
 export type PresetId = "bonus" | "retention" | "standard" | "custom";
@@ -87,6 +87,16 @@ export function featuredAssets(chosen: string): Asset[] {
 /** "S&P 500" for the S&P 500 xStock: every one of them is an xStock, so a chip drops the word. */
 export function shortName(asset: Pick<Asset, "name">): string {
   return asset.name.replace(/\s*xStock$/i, "");
+}
+
+/**
+ * THE REVIEW LINE before the button: "0x7c1E5a…9aB2 can hold xStocks where they live.
+ * xStocks aren't available to US persons, or in Canada, the UK or Australia." The second
+ * sentence is the one disclosure lib/assets.ts states, reworded, never retyped.
+ */
+export function reviewLine(who: string | null): string {
+  const where = ELIGIBILITY_FACT.replace(/^Not available/, "xStocks aren't available");
+  return `${who ?? "The person you're granting to"} can hold xStocks where they live. ${where}`;
 }
 
 /** The fifteen, narrowed by what was typed into the picker's search: symbol or name. */

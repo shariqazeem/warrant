@@ -15,6 +15,7 @@ import {
   featuredAssets,
   presetById,
   presetDetail,
+  reviewLine,
   searchAssets,
   shortName,
 } from "./presets";
@@ -84,6 +85,14 @@ describe("the stock picker", () => {
     expect(chips.at(-1)?.symbol).toBe("TSLAx");
     const spy = ASSETS.find((a) => a.symbol === "SPYx")!;
     expect(featuredAssets(spy.address).map((a) => a.symbol)).toEqual([...FEATURED_SYMBOLS]);
+  });
+
+  it("says who can hold it in the words lib/assets.ts states", () => {
+    expect(reviewLine("0x7c1E5a…9aB2")).toBe(
+      "0x7c1E5a…9aB2 can hold xStocks where they live. xStocks aren't available to US " +
+        "persons, or in Canada, the UK or Australia.",
+    );
+    expect(reviewLine(null)).toMatch(/^The person you're granting to can hold xStocks/);
   });
 
   it("drops the word xStock from a chip's name", () => {

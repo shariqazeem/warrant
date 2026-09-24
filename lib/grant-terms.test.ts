@@ -35,6 +35,7 @@ import {
   scheduleWords,
   spanSeconds,
   spanWords,
+  stampOrDate,
   unitPrice,
   unixToLocalInput,
   usdExact,
@@ -147,6 +148,11 @@ describe("a schedule's length in seconds", () => {
     expect(parseSpan("-1", "days").ok).toBe(false);
     expect(parseSpan("1.5", "months").ok).toBe(false);
     expect(parseSpan("two", "years").ok).toBe(false);
+  });
+
+  it("says a short schedule's moments with their time, and a long one's with the date", () => {
+    expect(stampOrDate(SEP_24, 7_200)).toBe("24 Sep 2026, 12:00 UTC");
+    expect(stampOrDate(SEP_24, 731 * DAY)).toBe("24 Sep 2026");
   });
 
   it("says a schedule the way a company does", () => {
