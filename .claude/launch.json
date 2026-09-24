@@ -4,8 +4,20 @@
     {
       "name": "warrant",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3000
+    },
+    {
+      "name": "warrant-check",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "NEXT_DIST_DIR=.next-check NEXT_TELEMETRY_DISABLED=1 npx next start -p 3100"
+      ],
+      "port": 3100
     }
   ]
 }

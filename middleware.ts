@@ -18,7 +18,8 @@ const LIMITS = {
   // Asking for prices. A 100-person run asks once per person, so the allowance holds a whole
   // run at once, then refills at one ask every two seconds.
   action: {capacity: 120, perSecond: 0.5},
-  // Pages that read the record or the chain: receipts, runs, grants, companies, share cards.
+  // Pages that read the record or the chain: receipts, runs, certificates, grants, the public
+  // record, companies, share cards.
   record: {capacity: 120, perSecond: 2},
 } satisfies Record<string, Limit>;
 
@@ -48,7 +49,7 @@ function visitor(req: NextRequest): string {
   return xff?.split(",").pop()?.trim() || "unknown";
 }
 
-const RECORD = /^\/(receipt|grant)\/|^\/run\/[^/]+|^\/(@|%40|0x)|\/opengraph-image|^\/api\/client-error/;
+const RECORD = /^\/(receipt|grant|g)\/|^\/run\/[^/]+|^\/record\b|^\/(@|%40|0x)|\/opengraph-image|^\/api\/client-error/;
 
 export function middleware(req: NextRequest) {
   const isAction = req.method === "POST" && req.headers.has("next-action");
