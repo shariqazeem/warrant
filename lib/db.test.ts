@@ -66,3 +66,33 @@ describe("the reason cache", () => {
     expect(db.reasonFor(hash.toUpperCase().replace("0X", "0x")).found).toBe(true);
   });
 });
+
+describe("the route a grant was bought through", () => {
+  const TX = "0x" + "ab".repeat(32);
+
+  it("gives back the names it was given, for that transaction", () => {
+    expect(db.rememberRoute(TX, ["USD₮0", "USDG", "wSPYx", "SPYx"])).toBe(true);
+    expect(db.routeFor(TX)).toEqual(["USD₮0", "USDG", "wSPYx", "SPYx"]);
+  });
+
+  it("matches a hash whatever case it arrives in", () => {
+    expect(db.routeFor(TX.toUpperCase().replace("0X", "0x"))).toEqual(["USD₮0", "USDG", "wSPYx", "SPYx"]);
+  });
+
+  it("keeps the first route written; a second cannot replace it", () => {
+    expect(db.rememberRoute(TX, ["USD₮0", "FAKE", "SPYx"])).toBe(false);
+    expect(db.routeFor(TX)).toEqual(["USD₮0", "USDG", "wSPYx", "SPYx"]);
+  });
+
+  it("says nothing is kept rather than inventing a route", () => {
+    expect(db.routeFor("0x" + "cd".repeat(32))).toBeNull();
+  });
+
+  it("refuses to hand back something that is not a list of names", () => {
+    const bad = "0x" + "ef".repeat(32);
+    db.database()
+      .prepare(`INSERT INTO routes (tx_hash, hops, written_at) VALUES (?, ?, ?)`)
+      .run(bad, '{"not":"a list"}', 0);
+    expect(db.routeFor(bad)).toBeNull();
+  });
+});
