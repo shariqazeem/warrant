@@ -62,11 +62,13 @@ const normalise = (raw: string) => decodeURIComponent(raw).replace(/^@/, "");
 export async function generateMetadata({params}: Params): Promise<Metadata> {
   const {company} = await params;
   const address = normalise(company);
+  // Not an address: the page answers with "There is nothing at this address", so the tab
+  // says the same rather than naming a wallet that cannot exist.
+  if (!ADDRESS.test(address)) return {title: "Not found — Warrant"};
   const record: Metadata = {
     title: `${short(address)}'s grants and payroll — Warrant`,
     description: "Every grant and every payslip this company has issued on X Layer, each with its reason.",
   };
-  if (!ADDRESS.test(address)) return record;
   try {
     // The same rule the page decides by, so the tab never names a page that is not there.
     const facts = linkFacts(address);
