@@ -20,6 +20,7 @@ import {useAccount, useConnect, useSwitchChain, useWatchAsset} from "wagmi";
 import {CopyText} from "@/components/app/copy-text";
 import {useGrantAction, type GrantAction} from "@/components/grants/use-grant";
 import {OKX_CONNECT_ID} from "@/components/wallet/okx-connect";
+import {TopUp} from "@/components/wallet/top-up";
 import {NEEDS_OKB, useWallet} from "@/components/wallet/use-wallet";
 import {connectWords, switchWords} from "@/components/wallet/wallet-words";
 import {EXPLORER_TX, xLayer} from "@/lib/chain";
@@ -229,7 +230,9 @@ export function CertActions(p: CertActionsProps) {
                   : ended
                     ? "Everything has been released"
                     : "Nothing to claim yet"
-                : `Claim ${fmt(ready)} ${p.asset.symbol} now`}
+                : wallet.noGas
+                  ? "Top up a little OKB to claim"
+                  : `Claim ${fmt(ready)} ${p.asset.symbol} now`}
             </button>
             <button type="button" className="wa-btn is-large" disabled={shown === "asking"} onClick={() => void showInWallet()}>
               {shown === "shown"
@@ -267,7 +270,7 @@ export function CertActions(p: CertActionsProps) {
               onClick={() => void act("seal")}
             >
               {busy && action === "seal" ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
-              Seal it now
+              {wallet.noGas ? "Top up a little OKB to seal" : "Seal it now"}
             </button>
             {canCancel ? (
               <button
@@ -328,7 +331,7 @@ export function CertActions(p: CertActionsProps) {
               onClick={() => void act("vest")}
             >
               {busy && action === "vest" ? <Loader2 size={16} strokeWidth={2} aria-hidden className="wa-spin" /> : null}
-              {ready === 0n ? "Nothing is due yet" : "Release what's due"}
+              {ready === 0n ? "Nothing is due yet" : wallet.noGas ? "Top up a little OKB to release" : "Release what's due"}
             </button>
           </div>
           <p className="wa-fine">
@@ -342,7 +345,18 @@ export function CertActions(p: CertActionsProps) {
         </div>
       ) : null}
 
-      {blocker && wallet.status !== "wrong-chain" ? <p className="wa-refusal">{blocker}</p> : null}
+      {/* No OKB: every action here is a transaction, so say how to get some, the same way the
+          forms do. The steps are OKX's own withdrawal, on the X Layer network. */}
+      {wallet.noGas && wallet.address ? (
+        <TopUp
+          address={wallet.address}
+          usdMissing={0n}
+          okbShort
+          purpose={isRecipient ? "claim it yourself" : isGrantor ? "seal or cancel it" : "release what's due"}
+        />
+      ) : blocker && wallet.status !== "wrong-chain" ? (
+        <p className="wa-refusal">{blocker}</p>
+      ) : null}
 
       {/* WHERE THE LAST ACTION STANDS */}
       <div className="wa-cx-status" aria-live="polite">

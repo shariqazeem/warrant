@@ -4,6 +4,7 @@ import {ChevronDown} from "lucide-react";
 import type {ReactNode} from "react";
 import {CopyText} from "@/components/app/copy-text";
 import {ceilCents, STABLE_NAME} from "@/lib/grant-terms";
+import "./wallet.css";
 
 /**
  * TOP UP FROM OKX: how to fill this wallet from an OKX account.
