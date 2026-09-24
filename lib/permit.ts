@@ -20,7 +20,7 @@ import {
   type Address,
   type TypedDataDomain,
 } from "viem";
-import {STABLE, xLayer} from "./chain";
+import {STABLE, transport, xLayer} from "./chain";
 import {held, ok, type Outcome} from "./outcome";
 
 /** The EIP-2612 type, identical for every compliant token. */
@@ -88,7 +88,7 @@ export async function resolveDomain(
 ): Promise<Outcome<{domain: TypedDataDomain; name: string; version: string}>> {
   const rpc = createPublicClient({
     chain: xLayer,
-    transport: http(rpcUrl ?? xLayer.rpcUrls.default.http[0]),
+    transport: rpcUrl ? http(rpcUrl) : transport(),
   });
 
   let onchain: `0x${string}`;
@@ -145,7 +145,7 @@ export async function deadlineIn(minutes: number, rpcUrl?: string): Promise<bigi
   try {
     const rpc = createPublicClient({
       chain: xLayer,
-      transport: http(rpcUrl ?? xLayer.rpcUrls.default.http[0]),
+      transport: rpcUrl ? http(rpcUrl) : transport(),
     });
     const block = await rpc.getBlock({blockTag: "latest"});
     const later = block.timestamp > local ? block.timestamp : local;
@@ -159,7 +159,7 @@ export async function deadlineIn(minutes: number, rpcUrl?: string): Promise<bigi
 export async function permitNonce(owner: Address, rpcUrl?: string): Promise<Outcome<bigint>> {
   const rpc = createPublicClient({
     chain: xLayer,
-    transport: http(rpcUrl ?? xLayer.rpcUrls.default.http[0]),
+    transport: rpcUrl ? http(rpcUrl) : transport(),
   });
   try {
     const n = await rpc.readContract({

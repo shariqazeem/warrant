@@ -22,7 +22,7 @@
  * shares the address, still gets its reads.
  */
 import {createPublicClient, http, parseAbiItem, parseEventLogs, type Address, type TransactionReceipt} from "viem";
-import {LOG_WINDOW, STABLE, xLayer} from "./chain";
+import {LOG_WINDOW, STABLE, transport, xLayer} from "./chain";
 import {confirmClaims, stableMovements, type Claim} from "./confirm";
 import {database, writeCursor, readCursor} from "./db";
 import {PAID_EVENT, payrollDeployments} from "./receipts";
@@ -79,7 +79,7 @@ async function findDeployBlock(address: Address, head: bigint): Promise<bigint> 
   return low;
 }
 
-const client = () => createPublicClient({chain: xLayer, transport: http()});
+const client = () => createPublicClient({chain: xLayer, transport: transport()});
 
 /** How far behind the tip the walk stays. X Layer makes a block about every second. */
 const CONFIRMATIONS = 3n;

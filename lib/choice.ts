@@ -16,7 +16,7 @@
  */
 import {createPublicClient, hashTypedData, http, type PublicClient} from "viem";
 import {assetByAddress} from "./assets";
-import {xLayer} from "./chain";
+import {transport, xLayer} from "./chain";
 import {bps, short, usdt} from "./format";
 import {held, isThrottle, ok, shortReason, type Outcome} from "./outcome";
 import {checkAddress, checkListedAsset} from "./payment";
@@ -236,7 +236,7 @@ export type VerifyOptions = {
 
 let xLayerClient: SignatureChecker | null = null;
 function defaultClient(): SignatureChecker {
-  xLayerClient ??= createPublicClient({chain: xLayer, transport: http()});
+  xLayerClient ??= createPublicClient({chain: xLayer, transport: transport()});
   return xLayerClient;
 }
 
