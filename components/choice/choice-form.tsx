@@ -22,7 +22,7 @@ import {
 import {bps, short, stampUTC} from "@/lib/format";
 import {held, type Outcome} from "@/lib/outcome";
 import {ChoiceWallet} from "./choice-wallet";
-import {STALE_PAGE, isStaleBuild} from "@/components/app/report";
+import {STALE_PAGE, isStaleBuild, reportError} from "@/components/app/report";
 import {switchWords} from "@/components/wallet/wallet-words";
 import "@/components/pay/pay.css";
 import "./choice.css";
@@ -179,6 +179,9 @@ export function ChoiceForm() {
     } catch (err) {
       if (mine !== attemptSeq.current) return;
       const read = readSignError(err);
+      // A wallet that fails to sign, for a reason that is neither a no nor the network, is
+      // something to fix here: its words go to the server log, with any address blanked.
+      if (read.kind === "other") reportError(new Error(read.said.replace(/0x[0-9a-fA-F]{40}/g, "0x…")), "me-sign");
       setPhase(read.kind === "chain" ? "wrong-chain" : "failed");
       setWhy(read.kind === "chain" ? null : read.text);
       return;
@@ -539,11 +542,14 @@ export function ChoiceForm() {
   );
 }
 
+/** viem's own wrappers, which say that a wallet failed but not why. */
+const GENERIC = /^(An unknown RPC error occurred|An internal error was received|Unknown RPC error|RPC Request failed)\.?$/i;
+
 /**
  * WHAT A WALLET MEANT WHEN IT DID NOT SIGN. A dismissal, a wallet that only signs for the
  * network it is on, or something else, said in its own first line.
  */
-function readSignError(err: unknown): {kind: "rejected" | "chain" | "other"; text: string} {
+function readSignError(err: unknown): {kind: "rejected" | "chain" | "other"; text: string; said: string} {
   const said: string[] = [];
   let code: number | undefined;
   let e: unknown = err;
@@ -555,12 +561,14 @@ function readSignError(err: unknown): {kind: "rejected" | "chain" | "other"; tex
   }
   const text = said.join(" ");
   if (code === 4001 || /reject|denied|cancel/i.test(text)) {
-    return {kind: "rejected", text: "You closed the request in your wallet, so nothing was signed and nothing changed."};
+    return {kind: "rejected", text: "You closed the request in your wallet, so nothing was signed and nothing changed.", said: text};
   }
-  if (/chain ?id/i.test(text) && /match|active|differ/i.test(text)) return {kind: "chain", text: ""};
-  if (/already pending/i.test(text)) return {kind: "other", text: "Your wallet already has a request open. Check it."};
-  const first = (said[0] ?? "no reason given").split("\n")[0]!.slice(0, 200);
-  return {kind: "other", text: `Your wallet did not sign (${first}). Nothing changed.`};
+  if (/chain ?id/i.test(text) && /match|active|differ/i.test(text)) return {kind: "chain", text: "", said: text};
+  if (/already pending/i.test(text)) return {kind: "other", text: "Your wallet already has a request open. Check it.", said: text};
+  // viem wraps what a wallet said in a generic line of its own; the wallet's words come after.
+  const specific = said.find((s) => !GENERIC.test(s.trim())) ?? said[0] ?? "no reason given";
+  const first = specific.split("\n")[0]!.slice(0, 200);
+  return {kind: "other", text: `Your wallet did not sign (${first}). Nothing changed.`, said: said.join(" | ").slice(0, 900)};
 }
 
 
