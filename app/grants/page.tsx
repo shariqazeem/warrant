@@ -1,107 +1,116 @@
 import type {Metadata} from "next";
-import Link from "next/link";
+import {Suspense} from "react";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {WalletProvider} from "@/components/wallet/provider";
 import {Guard} from "@/components/app/guard";
 import {Toasts} from "@/components/toast/toasts";
-import {GrantForm} from "@/components/grants/grant-form";
-import {GrantList} from "@/components/grants/grant-list";
-import {escrowAddress, readGrantShelf, shelfHeading, type GrantShelf} from "@/lib/grants";
+import {IssueForm} from "@/components/grants/issue-form";
+import {GrantList, type ShelfRow} from "@/components/grants/grant-list";
+import {escrowAddress, grantStanding, readGrantShelf, shelfHeading} from "@/lib/grants";
 import "@/app/landing.css";
-import "@/components/grants/grants.css";
+import "@/components/grants/issue.css";
 
 export const metadata: Metadata = {
-  title: "Grants — Warrant",
+  title: "Issue a grant — Warrant",
   description:
-    "Ownership that vests on a schedule, out of an escrow the company cannot reach into.",
+    "Grant someone stock that vests. It is bought on day one through OKX DEX, held in an escrow " +
+    "nobody can spend, and theirs a little every second.",
 };
 
 /** Grants change on the chain, not in a cache. Read them fresh. */
 export const revalidate = 10;
 
+const SUBTITLE =
+  "The certificate on the right follows every choice you make, and becomes real when you issue it.";
+
 /**
- * THE GRANTS THAT WOULD NOT READ, NAMED. They exist — the escrow counted them — and a page
- * that quietly leaves them out is a page whose total is wrong. Each has its own record, which
- * reads it again.
+ * THE GRANTS THAT EXIST, read from the escrow on the server and handed to the list, which
+ * picks out the connected wallet's own. Where each one stands is worked out here, once, with
+ * the same clock for every row.
  */
-function Unread({unread}: {unread: GrantShelf["unread"]}) {
-  // Nearly always one cause for all of them — the endpoint's throttle — so the first
-  // reason is said once rather than once per grant.
+async function Shelf() {
+  const shelf = await readGrantShelf();
+  if (!shelf.ok) {
+    return (
+      <section className="wa-issue-shelf" aria-labelledby="shelf-heading">
+        <h2 id="shelf-heading">Grants</h2>
+        <p className="wa-issue-empty">
+          <strong>Grants could not be read just now.</strong>
+          {shelf.why} Each one is still on X Layer; reload in a moment.
+        </p>
+      </section>
+    );
+  }
+  const now = Math.floor(Date.now() / 1000);
+  const rows: ShelfRow[] = shelf.value.grants.map((g) => {
+    const standing = grantStanding(g, now);
+    return {
+      id: g.id,
+      payer: g.payer,
+      beneficiary: g.beneficiary,
+      assetSymbol: g.assetSymbol,
+      assetDecimals: g.assetDecimals,
+      heldUnits: g.heldUnits,
+      start: g.start,
+      durationSeconds: g.durationSeconds,
+      sealed: g.isSealed,
+      standing: standing.label,
+      standingKind: standing.kind,
+    };
+  });
   return (
-    <div className="wa-nothing" style={{marginBottom: "var(--s-5)"}}>
-      <strong>
-        {unread.length === 1
-          ? "One grant could not be read just now."
-          : `${unread.length} grants could not be read just now.`}
-      </strong>
-      {unread[0]!.why} Each one is still on X Layer, and its own page reads it again:{" "}
-      {unread.map((u, i) => (
-        <span key={u.id}>
-          {i === 0 ? "" : ", "}
-          <Link href={`/grant/${u.id}`} className="wa-linkish">
-            grant {u.id}
-          </Link>
-        </span>
-      ))}
-      .
-    </div>
+    <GrantList
+      rows={rows}
+      count={shelf.value.count}
+      heading={shelfHeading(shelf.value)}
+      unread={shelf.value.unread}
+    />
   );
 }
 
-export default async function GrantsPage() {
+function ShelfLoading() {
+  return (
+    <section className="wa-issue-shelf" aria-busy="true" aria-label="Grants, loading">
+      <p className="wa-issue-shelf-note">Reading the grants from X Layer…</p>
+    </section>
+  );
+}
+
+export default function GrantsPage() {
   const escrow = escrowAddress();
-  const grants = escrow.ok ? await readGrantShelf() : null;
-  // Read once, on the server, so every bar on the page is drawn against the same moment.
+  // Read once, on the server, so the first render in the browser matches this HTML.
   const now = Math.floor(Date.now() / 1000);
 
   return (
-    <div className="wa-landing">
+    <div className="wa-landing wa-issue-page">
       <div className="wa-dark">
         <SiteNav />
       </div>
+
       <div className="wa-tear" aria-hidden />
-
-      <main className="wa-sec is-wide">
-        <p className="wa-kicker">Vesting grants</p>
-        <h1 className="wa-h2">Give someone stock that vests over time.</h1>
-        <p className="wa-lede">
-          The stock is bought today and held in an escrow. It releases to them on a schedule —
-          with a cliff if you want one — and you can make it irrevocable so it can never be
-          taken back.
-        </p>
-
+      <main id="main">
         {escrow.ok ? (
           <Guard where="grants">
             <WalletProvider>
-              <div style={{marginTop: "var(--s-7)"}}>
-                <GrantForm escrow={escrow.value} />
-              </div>
-
-              <section style={{marginTop: "var(--s-9)"}}>
-                <p className="wa-kicker">{grants?.ok ? shelfHeading(grants.value) : "Grants"}</p>
-                {grants?.ok ? (
-                  <>
-                    {grants.value.unread.length > 0 ? <Unread unread={grants.value.unread} /> : null}
-                    {/* "No grants yet" is only true when the escrow has none, not when the
-                        ones it has would not read. */}
-                    {grants.value.grants.length > 0 || grants.value.count === 0 ? (
-                      <GrantList grants={grants.value.grants} escrow={escrow.value} now={now} />
-                    ) : null}
-                  </>
-                ) : (
-                  <div className="wa-nothing">
-                    <strong>Grants could not be loaded.</strong>
-                    {grants?.ok === false ? grants.why : "The chain did not answer."}
-                  </div>
-                )}
-              </section>
+              <IssueForm escrow={escrow.value} initialNow={now} />
+              <Suspense fallback={<ShelfLoading />}>
+                <Shelf />
+              </Suspense>
               <Toasts />
             </WalletProvider>
           </Guard>
         ) : (
-          <div className="wa-nothing" style={{marginTop: "var(--s-7)"}}>
-            <strong>Grants are not switched on yet.</strong>
-            {escrow.why}
+          <div className="wa-issue">
+            <header className="wa-issue-head">
+              <h1>Issue a grant</h1>
+              <p>{SUBTITLE}</p>
+            </header>
+            <div className="wa-issue-form">
+              <p className="wa-issue-empty">
+                <strong>Grants are not switched on yet.</strong>
+                {escrow.why}
+              </p>
+            </div>
           </div>
         )}
       </main>

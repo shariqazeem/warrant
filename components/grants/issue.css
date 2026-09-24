@@ -1,0 +1,919 @@
+/* STUB — removed at merge; lane A owns tokens */
+:root {
+  --vault: #0b2a21;
+  --vault-raised: #0f3327;
+  --vault-line: #24493b;
+  --bond: #f2ecdc;
+  --canvas: #eef2ee;
+  --engrave: #173b2f;
+  --muted: #45544c;
+  --muted-bond: #4a5e54;
+  --on-vault: #f2ecdc;
+  --on-vault-2: #c9d3cc;
+  --on-vault-3: #a9b8af;
+  --rule: #c5d0ca;
+  --field: #9aaba2;
+  --field-bg: #f6f8f6;
+  --seal: #8c1d1d;
+  --foil: #b38b3e;
+  --settled: #0f7a4f;
+  --refused: #b42318;
+  --font-display: "Bodoni Moda", Georgia, serif;
+  --font-ui: "Hanken Grotesk", system-ui, sans-serif;
+  --r-control: 6px;
+  --r-panel: 8px;
+  --r-cert: 3px;
+  --shadow-cert: 0 26px 60px rgba(11, 42, 33, 0.28);
+}
+/* END STUB */
+
+/*
+ * ISSUE A GRANT. The form on the left, 520 wide at full size; the specimen and its summary on
+ * the right, 760 wide, held in view while the form scrolls. Below 900px it is one column:
+ * the heading, the specimen, the form, then the summary.
+ *
+ * Every colour is a token. Tones between two tokens are mixed from them, never typed.
+ */
+
+.wa-issue-page {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-ui);
+}
+
+.wa-issue {
+  display: grid;
+  grid-template-columns: minmax(340px, 520fr) minmax(0, 760fr);
+  grid-template-areas:
+    "head aside"
+    "form aside";
+  grid-template-rows: auto 1fr;
+  column-gap: 64px;
+  row-gap: var(--s-5);
+  max-width: 1344px;
+  margin: 0 auto;
+  padding: 40px 48px var(--s-7);
+  align-items: start;
+}
+
+.wa-issue-head {
+  grid-area: head;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.wa-issue-head h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-h1, 46px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.wa-issue-head p {
+  margin: 0;
+  font-size: var(--fs-lead, 16.5px);
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 34em;
+}
+
+.wa-issue-form {
+  grid-area: form;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  min-width: 0;
+}
+
+.wa-issue-fields {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.wa-issue-aside {
+  grid-area: aside;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+  position: sticky;
+  top: var(--s-5);
+}
+
+/* --- fields ------------------------------------------------------------------------- */
+
+.wa-issue-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.wa-issue-label {
+  font-size: var(--fs-label, 15px);
+  font-weight: 600;
+  color: var(--ink);
+  padding: 0;
+}
+
+.wa-issue-sublabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.wa-issue-help {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.wa-issue-help p {
+  margin: 0;
+}
+
+.wa-issue-input {
+  height: 48px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border: 1px solid var(--field);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-label, 15px);
+  min-width: 0;
+  width: 100%;
+}
+
+.wa-issue-input.is-mono,
+.is-mono {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  letter-spacing: 0.01em;
+}
+
+.wa-issue-input::placeholder,
+.wa-issue-money input::placeholder {
+  color: var(--muted);
+
+}
+
+.wa-issue-input[aria-invalid="true"],
+.wa-issue-money:has(input[aria-invalid="true"]) {
+  border-color: var(--refused);
+}
+
+.wa-issue-address {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.wa-issue-address strong,
+.wa-issue-help strong {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.wa-issue-choice {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.wa-issue-money {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 48px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border: 1px solid var(--field);
+  border-radius: var(--r-control);
+  background: var(--surface);
+}
+
+.wa-issue-money.is-short {
+  max-width: 160px;
+}
+
+.wa-issue-money:focus-within {
+  outline: 2px solid var(--vault);
+  outline-offset: 2px;
+}
+
+.wa-issue-money .sign {
+  font-size: 17px;
+  color: var(--muted);
+}
+
+.wa-issue-money input {
+  flex-grow: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: var(--fs-money, 18px);
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--ink);
+}
+
+.wa-issue-money .unit {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.is-refused {
+  color: var(--refused);
+}
+
+.is-warn {
+  color: var(--warn);
+}
+
+.is-waiting {
+  color: var(--muted);
+}
+
+.wa-issue-tick {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- the stock picker --------------------------------------------------------------- */
+
+.wa-issue-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.wa-issue-chip,
+.wa-issue-stockrow,
+.wa-issue-preset,
+.wa-issue-radio {
+  border: 1px solid color-mix(in srgb, var(--field) 40%, var(--rule));
+  background: var(--field-bg);
+  color: var(--ink);
+  border-radius: var(--r-control);
+  font-family: var(--font-ui);
+}
+
+.wa-issue-chip[aria-pressed="true"],
+.wa-issue-stockrow[aria-pressed="true"],
+.wa-issue-preset[aria-pressed="true"],
+.wa-issue-radio:has(input:checked) {
+  border: 1.5px solid var(--vault);
+  background: var(--surface);
+}
+
+.wa-issue-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 52px;
+  padding: var(--s-2) 14px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.wa-issue-chip .sym,
+.wa-issue-stockrow .sym {
+  font-size: var(--fs-label, 15px);
+  font-weight: 600;
+}
+
+.wa-issue-chip .name,
+.wa-issue-stockrow .name {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.wa-issue-more {
+  min-height: 44px;
+  padding: 0 var(--s-2);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.wa-issue-stocks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-panel);
+  background: var(--field-bg);
+}
+
+.wa-issue-stocklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.wa-issue-stocklist li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-3);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.wa-issue-stocklist li:last-child {
+  border-bottom: 0;
+}
+
+.wa-issue-stockrow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  min-height: 44px;
+  min-width: 190px;
+  padding: 0 var(--s-3);
+  cursor: pointer;
+  text-align: left;
+}
+
+/* The shared "What is SPYx?" note, in this page's colours. */
+.wa-issue .wa-assetnote .wa-linkish {
+  color: var(--vault);
+  min-height: 32px;
+}
+
+.wa-issue .wa-assetnote-body {
+  color: var(--muted);
+}
+
+/* --- vesting ------------------------------------------------------------------------ */
+
+.wa-issue-presets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.wa-issue-preset {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  min-height: 66px;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wa-issue-preset .text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wa-issue-preset .label {
+  font-size: var(--fs-label, 15px);
+  font-weight: 600;
+}
+
+.wa-issue-preset .detail {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.wa-issue-curve {
+  flex-shrink: 0;
+}
+
+.wa-issue-curve .base {
+  fill: none;
+  stroke: color-mix(in srgb, var(--field) 40%, var(--rule));
+  stroke-width: 1px;
+}
+
+.wa-issue-curve .line {
+  fill: none;
+  stroke: var(--vault);
+  stroke-width: 1.6px;
+  stroke-linejoin: round;
+}
+
+.wa-issue-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-panel);
+  background: var(--field-bg);
+}
+
+.wa-issue-span {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) minmax(0, 140px);
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.wa-issue-span label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* --- after issuing ------------------------------------------------------------------ */
+
+.wa-issue-after {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.wa-issue-after legend {
+  margin-bottom: var(--s-2);
+}
+
+.wa-issue-radio {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+  padding: var(--s-3) 14px;
+  cursor: pointer;
+}
+
+.wa-issue-radio input {
+  margin: 2px 0 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--vault);
+  flex-shrink: 0;
+}
+
+.wa-issue-radio > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wa-issue-radio .title {
+  font-size: var(--fs-label, 15px);
+  font-weight: 600;
+}
+
+.wa-issue-radio .detail {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* --- advanced ----------------------------------------------------------------------- */
+
+.wa-issue-fold {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+
+.wa-issue-fold-toggle {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-label, 15px);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wa-issue-fold-toggle .sign {
+  font-size: 19px;
+  font-weight: 400;
+}
+
+.wa-issue-fold-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: var(--s-1) 0 18px;
+}
+
+/* --- review, act -------------------------------------------------------------------- */
+
+.wa-issue-review {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+  min-height: 44px;
+  padding: var(--s-3) 14px;
+  box-sizing: border-box;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.wa-issue-review input {
+  margin: 2px 0 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--vault);
+  flex-shrink: 0;
+}
+
+.wa-issue-act {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wa-issue-btn {
+  min-height: 56px;
+  padding: 0 var(--s-4);
+  border: 0;
+  border-radius: var(--r-control);
+  background: var(--vault);
+  color: var(--bond);
+  font-family: var(--font-ui);
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+  cursor: pointer;
+}
+
+.wa-issue-btn:hover:not(:disabled) {
+  background: var(--vault-raised);
+}
+
+.wa-issue-btn.is-blocked,
+.wa-issue-btn:disabled {
+  border: 1px solid var(--field);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.wa-issue-status {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
+  display: block;
+}
+
+.wa-issue-status:empty {
+  display: none;
+}
+
+.wa-issue-status.is-settled {
+  color: var(--settled);
+  font-weight: 600;
+}
+
+.wa-issue-check {
+  vertical-align: -3px;
+  margin-right: 6px;
+  fill: none;
+  stroke: var(--settled);
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.wa-issue-fine {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.wa-issue-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--vault);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.wa-issue-status .wa-issue-link {
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+}
+
+/* --- the specimen and its summary --------------------------------------------------- */
+
+.wa-issue-cert {
+  min-width: 0;
+}
+
+.wa-issue-fit {
+  width: 100%;
+  overflow: hidden;
+}
+
+.wa-issue-cert-port {
+  display: none;
+}
+
+.wa-issue-summary {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--rule);
+}
+
+.wa-issue-summary > div {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: var(--s-4);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.wa-issue-summary dt {
+  color: var(--muted);
+}
+
+.wa-issue-summary dd {
+  margin: 0;
+  color: var(--ink);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.wa-issue-summary .sub {
+  display: block;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+/* --- your grants -------------------------------------------------------------------- */
+
+.wa-issue-shelf {
+  max-width: 1344px;
+  margin: 0 auto;
+  padding: 0 48px var(--s-9);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.wa-issue-shelf h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-h2, 28px);
+  letter-spacing: -0.02em;
+}
+
+.wa-issue-shelf-note {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 60ch;
+}
+
+.wa-issue-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+}
+
+.wa-issue-rows li {
+  border-bottom: 1px solid var(--rule);
+}
+
+.wa-issue-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: var(--s-4);
+  align-items: baseline;
+  min-height: 52px;
+  padding: var(--s-3) var(--s-2);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.wa-issue-row:hover {
+  background: var(--field-bg);
+}
+
+.wa-issue-row .no {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.wa-issue-row .units {
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.wa-issue-row .who,
+.wa-issue-row .when {
+  color: var(--muted);
+}
+
+.wa-issue-row .state {
+  color: var(--ink);
+}
+
+.wa-issue-row .state .sealed {
+  color: var(--seal);
+}
+
+.wa-issue-all > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: var(--fs-label, 15px);
+  font-weight: 600;
+}
+
+.wa-issue-empty {
+  margin: 0;
+  padding: var(--s-4);
+  border: 1px dashed var(--field);
+  border-radius: var(--r-panel);
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.wa-issue-empty strong {
+  display: block;
+  color: var(--ink);
+}
+
+.wa-issue-skeleton {
+  display: block;
+  height: 14px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--rule) 60%, var(--canvas));
+}
+
+.wa-issue-skeleton.is-field {
+  height: 48px;
+  border-radius: var(--r-control);
+  background: transparent;
+  border: 1px solid var(--rule);
+}
+
+.wa-issue-cert-outline {
+  width: 100%;
+  aspect-ratio: 760 / 468;
+  border: 1px dashed var(--field);
+  border-radius: var(--r-cert);
+}
+
+/* --- focus, motion ------------------------------------------------------------------ */
+
+.wa-issue a:focus-visible,
+.wa-issue button:focus-visible,
+.wa-issue input:focus-visible,
+.wa-issue select:focus-visible,
+.wa-issue-shelf a:focus-visible,
+.wa-issue-shelf summary:focus-visible {
+  outline: 2px solid var(--vault);
+  outline-offset: 2px;
+}
+
+.wa-issue-money input:focus-visible {
+  outline: none;
+}
+
+/* --- narrower ----------------------------------------------------------------------- */
+
+@media (max-width: 1200px) {
+  .wa-issue {
+    column-gap: 40px;
+    padding: 32px 32px var(--s-7);
+  }
+
+  .wa-issue-shelf {
+    padding: 0 32px var(--s-8);
+  }
+}
+
+@media (max-width: 899px) {
+  .wa-issue {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "head"
+      "cert"
+      "form"
+      "summary";
+    grid-template-rows: none;
+    padding: 24px 16px var(--s-6);
+    row-gap: var(--s-5);
+  }
+
+  .wa-issue-aside {
+    display: contents;
+  }
+
+  .wa-issue-cert {
+    grid-area: cert;
+  }
+
+  .wa-issue-summary {
+    grid-area: summary;
+  }
+
+  .wa-issue-head h1 {
+    font-size: 36px;
+  }
+
+  .wa-issue-shelf {
+    padding: 0 16px var(--s-7);
+  }
+
+  .wa-issue-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 599px) {
+  .wa-issue-cert-land {
+    display: none;
+  }
+
+  .wa-issue-cert-port {
+    display: flex;
+    justify-content: center;
+  }
+
+  .wa-issue-cert-port .wa-issue-fit {
+    max-width: 350px;
+  }
+
+  .wa-issue-presets {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wa-issue-summary > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .wa-issue-span {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .wa-issue-span label {
+    grid-column: 1 / -1;
+  }
+}

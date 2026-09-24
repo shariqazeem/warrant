@@ -118,6 +118,16 @@ export function database(): Database.Database {
       saved_at      INTEGER NOT NULL,
       PRIMARY KEY (person, issued_at)
     );
+
+    -- The route a grant was bought through, in tokens (USD₮0 → USDG → wSPYx → SPYx), as the
+    -- quote it was issued on named it. The chain holds the calldata, not the names, so the
+    -- certificate reads them from here, keyed by the transaction that opened the grant. The
+    -- first route written for a transaction stands; nothing replaces it.
+    CREATE TABLE IF NOT EXISTS routes (
+      tx_hash       TEXT PRIMARY KEY,
+      hops          TEXT NOT NULL,
+      written_at    INTEGER NOT NULL
+    );
   `);
   return db;
 }
@@ -266,4 +276,39 @@ export function readChoiceAt(person: string, unixSeconds: number): StoredChoice 
     )
     .get(person.toLowerCase(), unixSeconds) as ChoiceRow | undefined;
   return row ? toStoredChoice(row) : null;
+}
+
+/**
+ * Keep the route a grant was bought through, by the transaction that opened it. The caller
+ * has already checked the names (`checkRoute` in lib/grant-terms.ts) and that the
+ * transaction opened a grant. True when this call wrote it; false when a route was already
+ * kept for that transaction, which stands.
+ */
+export function rememberRoute(txHash: string, hops: readonly string[]): boolean {
+  const written = database()
+    .prepare(
+      `INSERT INTO routes (tx_hash, hops, written_at) VALUES (?, ?, ?)
+       ON CONFLICT(tx_hash) DO NOTHING`,
+    )
+    .run(txHash.toLowerCase(), JSON.stringify(hops), Math.floor(Date.now() / 1000));
+  return written.changes === 1;
+}
+
+/**
+ * The route kept for a grant's opening transaction, or null when none was kept — or when
+ * what is kept is not a list of names, which a certificate must not print as a route.
+ */
+export function routeFor(txHash: string): string[] | null {
+  const row = database()
+    .prepare(`SELECT hops FROM routes WHERE tx_hash = ?`)
+    .get(txHash.toLowerCase()) as {hops: string} | undefined;
+  if (!row) return null;
+  try {
+    const hops: unknown = JSON.parse(row.hops);
+    return Array.isArray(hops) && hops.length > 0 && hops.every((h) => typeof h === "string")
+      ? (hops as string[])
+      : null;
+  } catch {
+    return null;
+  }
 }
