@@ -4,6 +4,8 @@
 
 **Give your team stock that vests.**
 
+![Warrant's front page: a real grant's certificate, sealed and vesting on X Layer](docs/screenshots/front.png)
+
 A company grants one of its people a tokenized stock (the S&P 500, NVIDIA or thirteen more).
 The grant buys the stock on day one through OKX DEX and holds it in an escrow nobody can
 spend, and it vests to them every second. What vests is theirs for good; seal the grant and
@@ -11,12 +13,18 @@ so is the rest. Every grant is a numbered certificate anyone can open without a 
 when the company runs payroll, one signature pays the whole team, each person in the split
 they chose.
 
+**Why.** Teams of 5 to 50 people that pay in USDT across borders (crypto startups, agencies,
+DAOs) cannot give equity to people in six countries, so their best people leave for a raise.
+Public companies keep people with stock that vests. Warrant gives that to everyone else.
+
 Built during **OKX Dev Day 2026** on **X Layer mainnet**, with **xStocks** as the asset, the
 **OKX DEX aggregator** as the route, **USD₮0** as the money and **OKX Wallet** (by QR,
 through OKX Connect) as the wallet. Track: X Layer, tokenized stocks and RWA.
 
-**Live on X Layer mainnet: https://warrant.world**. The code is public at
-https://github.com/shariqazeem/warrant, with its full history.
+- **Live on X Layer mainnet:** https://warrant.world
+- **A certificate vesting right now:** [No. 000003](https://warrant.world/g/3), no wallet needed
+- **Every grant and payroll run:** [the public record](https://warrant.world/record)
+- **The code, with its full history:** https://github.com/shariqazeem/warrant
 
 ---
 
@@ -57,9 +65,37 @@ either), and every line gets a payslip anyone can open.
 **The person chooses the stock**, once, at `/me`, with an EIP-712 signature that is free and
 sends nothing. Payroll follows it. Their grants, payslips and choice live on one page.
 
-<!-- SCREENSHOT: the front page hero with the live certificate, 1440 wide (docs/screenshots/front.png) -->
-<!-- SCREENSHOT: a certificate on a phone, 390 wide, vesting (docs/screenshots/certificate-phone.png) -->
-<!-- SCREENSHOT: a sealed certificate, landscape, with its route and transaction (docs/screenshots/certificate.png) -->
+<p align="center">
+  <img src="docs/screenshots/certificate.png" width="66%" alt="Certificate No. 000003: 0.0059 AAPLx, bought for $2.00 through OKX DEX, its route, the schedule, and the oxblood seal">
+  <img src="docs/screenshots/certificate-phone.png" width="25%" alt="The same certificate on a phone, with no wallet: vested so far, ticking every second">
+</p>
+
+Every grant is a certificate with its own number and its own engraving, drawn from the
+chain: the units, what they were bought for and at what price, the route OKX DEX took, the
+schedule, the seal, and the transaction it was recorded in. It opens on a phone from a link,
+with no wallet and no account, and the vested figure moves every second.
+
+| Issuing a grant | A payslip |
+| --- | --- |
+| ![The grant form: person, stock, value, schedule, seal or keep revocable, with a live specimen certificate](docs/screenshots/issue.png) | ![A real payslip from a payroll run: $2 paid, $1 of it bought NVDAx, $1 kept as USD₮0, the price and the note](docs/screenshots/payslips.png) |
+
+## Built on X Layer and OKX
+
+- **X Layer mainnet (196).** Both contracts live there, and every grant, seal, cancel,
+  release and payslip is an X Layer transaction, paid for in OKB at a fraction of a cent. Every
+  figure on a certificate links to its transaction on OKLink.
+- **OKX DEX aggregator (V6).** Every grant and every payroll line buys its stock through a
+  live aggregator route, requested server side and checked before anyone signs: the router
+  the contracts were deployed with, no value attached, the right tokens and amount. The
+  contract enforces the quote's minimum, and the route itself is printed on the certificate
+  (for No. 000003: USD₮0 → USDG → wAAPLx → AAPLx).
+- **xStocks.** Fifteen tokenized stocks, each checked on chain for its issuer and for real
+  liquidity, with what the issuer can do stated beside every one.
+- **OKX Wallet**, in the browser or by QR through OKX Connect: connect, sign a choice
+  (EIP-712, free), issue, seal, claim, and "Show AAPLx in OKX Wallet" (`wallet_watchAsset`).
+- **USD₮0 with EIP-2612.** Approval is a signature, so a grant is one signature and one
+  transaction, and a whole payroll run is too.
+- **OKLink.** Both contracts are verified there as exact matches of this repository.
 
 ## Live links and contracts
 
@@ -145,7 +181,7 @@ The schedule lives in two languages, so it is held to one fixture by both.
   FORK_URL=http://127.0.0.1:8547 npx tsx scripts/prove-vesting-fork.ts
   ```
 
-**Tests.** 69 Foundry tests and 530 Vitest tests, all passing, run by CI on every push
+**Tests.** 69 Foundry tests and 545 Vitest tests, all passing, run by CI on every push
 ([tests](https://github.com/shariqazeem/warrant/actions/workflows/tests.yml)).
 
 ```bash
@@ -189,7 +225,7 @@ from `/run` in one signature. Its header has the setup.
 | [`lib/okx.ts`](lib/okx.ts) | The OKX DEX aggregator client (V6), server side and paced. Every route is checked: the router the contracts were deployed with, no value, the right tokens and amount |
 | [`lib/confirm.ts`](lib/confirm.ts) | An event is only as honest as the call that made it. Nothing is shown as a payment or a grant unless its stock is listed and the USD₮0 it claims really left the payer, read from the transaction's own transfers |
 | [`lib/indexer.ts`](lib/indexer.ts) | Walks the contracts' events into SQLite, 100 blocks at a time (the public RPC's cap), waiting out rate limits. The cursor only advances on a window that read cleanly |
-| [`scripts/keeper.ts`](scripts/keeper.ts) | The release service: calls `vest` on every grant with something due, after a simulation, from a key that holds only gas money |
+| [`scripts/keeper.ts`](scripts/keeper.ts) | The release service: calls `vest` on grants with something due, after a simulation, from a key that holds only gas money. Each grant is released about 48 times over its schedule (every 2 minutes on a 10-minute grant, daily on a long one) and once more when it ends, so a dollar of OKB pays for over a thousand releases ([`lib/keeper-cadence.ts`](lib/keeper-cadence.ts)) |
 | `app/` | `/`, `/grants`, `/g/[id]`, `/me`, `/run`, `/pay`, `/record`, `/receipt/[tx]`, `/run/[id]`, `/@[address]`, with share cards. Server-rendered; wallet code loads only where a wallet is used |
 
 Stack: Next.js 15 (App Router), TypeScript strict, viem, wagmi with OKX Connect, SQLite
@@ -222,13 +258,13 @@ Stack: Next.js 15 (App Router), TypeScript strict, viem, wagmi with OKX Connect,
   do not live in Canada, the UK or Australia when they choose stock; there is no KYC.
 - **No on-ramp or off-ramp.** A company needs USD₮0 and a little OKB on X Layer. A person
   realises value by holding, moving or selling the stock elsewhere; Warrant has no sell flow.
-- **Fifteen stocks.** Three (SPYx, QQQx, NVDAx) have been settled end to end through Payroll
-  on a fork; the other twelve are quoted by the aggregator and have not been. Liquidity was
-  measured on 22 and 23 September, and markets move.
+- **Fifteen stocks.** SPYx, NVDAx and AAPLx have settled on mainnet (grants and a payroll
+  run), and QQQx on a fork; the other eleven are quoted by the aggregator and have not been
+  bought yet. Liquidity was measured on 22 and 23 September, and markets move.
 - **The public RPC.** X Layer's public endpoint answers log queries over at most 100 blocks
   and a few reads a second; the indexer and every page are built around that.
-- **One server.** The app and the indexer run on one machine with SQLite. The record is a
-  cache of the chain: delete it and it is rebuilt from the events.
+- **One server.** The app, the indexer and the release service run on one machine with
+  SQLite. The record is a cache of the chain: delete it and it is rebuilt from the events.
 - **Releases need a caller.** The keeper releases what is due; if it stops, anyone can still
   release from a certificate, and the page says so instead of promising releases.
 - **English only.**
