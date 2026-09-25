@@ -368,7 +368,9 @@ export function CertActions(p: CertActionsProps) {
 
       {/* No OKB: every action here is a transaction, so say how to get some, the same way the
           forms do. The steps are OKX's own withdrawal, on the X Layer network. */}
-      {wallet.noGas && wallet.address ? (
+      {/* Only when this wallet has something it could do: a claim or release that is due, or,
+          for the grantor, a seal or cancel. Otherwise there is nothing to pay a fee for. */}
+      {wallet.noGas && wallet.address && (ready > 0n || (isGrantor && canSeal)) ? (
         <TopUp
           address={wallet.address}
           usdMissing={0n}

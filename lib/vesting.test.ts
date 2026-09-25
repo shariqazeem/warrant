@@ -21,6 +21,7 @@ import {
   sharesToUnits,
   vestedShares,
   vestedUnitsAt,
+  vestedUnitsSoFar,
   vestingPhase,
   type PoolState,
   type VestingTerms,
@@ -250,5 +251,47 @@ describe("a figure, rounded down to a fixed number of places", () => {
     expect(formatUnitsFixed(15n, 1, 3)).toBe("1.500");
     expect(formatUnitsFixed(42n, 0, 2)).toBe("42.00");
     expect(formatUnitsFixed(42n, 0, 0)).toBe("42");
+  });
+});
+
+describe("units vested so far, once some of it has been paid out", () => {
+  // Grant No. 000002 on mainnet, roughly: 0.0038 SPYx opened at a million shares a unit.
+  const units = 3_895_000_000_000_000n;
+  const shares = units * 1_000_000n;
+  const t = {
+    shares,
+    sharesReleased: 0n,
+    start: 1_000,
+    cliffSeconds: 0,
+    durationSeconds: 600,
+    revoked: false,
+    frozenVestedShares: 0n,
+  };
+  const opened = {units, shares};
+  const fullPool = {poolShares: shares, escrowBalance: units};
+
+  it("is the escrow's own figure while nothing has been paid out", () => {
+    expect(vestedUnitsSoFar(t, fullPool, 1_300, opened)).toBe(vestedUnitsAt(t, fullPool, 1_300));
+  });
+
+  it("is exactly what the grant opened with once all of it is paid out, whatever dust is left", () => {
+    const dust = {poolShares: 41_700_000_000_000_000n, escrowBalance: 70_000_000_000n};
+    const done = {...t, sharesReleased: shares};
+    expect(vestedUnitsSoFar(done, dust, 2_000, opened)).toBe(units);
+    // The escrow's view, priced against the dust, is nowhere near it: the bug it replaces.
+    expect(vestedUnitsAt(done, dust, 2_000)).not.toBe(units);
+  });
+
+  it("adds what was paid out at the opening rate to what is still held, priced now", () => {
+    const quarter = shares / 4n;
+    const midway = {...t, sharesReleased: quarter};
+    const pool = {poolShares: shares - quarter, escrowBalance: units - units / 4n};
+    const at = 1_300; // half vested
+    const expected = (quarter * units) / shares + sharesToUnits(shares / 2n - quarter, pool.poolShares, pool.escrowBalance);
+    expect(vestedUnitsSoFar(midway, pool, at, opened)).toBe(expected);
+  });
+
+  it("falls back to the escrow's view without the opening's figures", () => {
+    expect(vestedUnitsSoFar(t, fullPool, 1_300, null)).toBe(vestedUnitsAt(t, fullPool, 1_300));
   });
 });

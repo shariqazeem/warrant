@@ -114,6 +114,7 @@ export function VestingRule({
           startLabel,
           cliffLabel,
           endLabel,
+          opened: d.units !== null && d.openedShares !== undefined ? {units: d.units, shares: d.openedShares} : null,
         }
       : null;
 

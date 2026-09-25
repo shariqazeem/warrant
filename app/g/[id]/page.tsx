@@ -122,6 +122,11 @@ function Facts({r, now}: {r: CertificateRecord; now: number}) {
   const d = r.data;
   const sym = d.asset.symbol;
   const u = (v: bigint, dp = 4) => `${formatUnitsFixed(v, d.asset.decimals, dp)} ${sym}`;
+  // A release fee on a small grant can be under a millionth of a unit: widen it, never 0.000000.
+  const uFine = (v: bigint) => {
+    const six = formatUnitsFixed(v, d.asset.decimals, 6);
+    return v > 0n && /^0\.0+$/.test(six) ? u(v, 10) : `${six} ${sym}`;
+  };
   const when = (t: number | null) => (t === null ? "time not read" : stampUTC(t));
   const route = routeLine(d.route);
   const released = r.vests.reduce((s, v) => s + v.unitsToBeneficiary, 0n);
@@ -147,8 +152,8 @@ function Facts({r, now}: {r: CertificateRecord; now: number}) {
       block: v.blockNumber,
       label: self ? "Claimed by them" : "Released",
       detail:
-        `${u(v.unitsToBeneficiary, 6)} to their wallet` +
-        (v.unitsToCaller > 0n ? `, ${u(v.unitsToCaller, 6)} release fee to ${shortAddress(v.caller)}` : ""),
+        `${uFine(v.unitsToBeneficiary)} to their wallet` +
+        (v.unitsToCaller > 0n ? `, ${uFine(v.unitsToCaller)} release fee to ${shortAddress(v.caller)}` : ""),
       at: v.blockTime,
       tx: v.txHash,
     });

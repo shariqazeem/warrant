@@ -107,6 +107,28 @@ export function vestedUnitsAt(t: VestingTerms, pool: PoolState, atSeconds: numbe
   return sharesToUnits(vestedShares(t, atSeconds), pool.poolShares, pool.escrowBalance);
 }
 
+/**
+ * UNITS VESTED SO FAR, AS A PERSON COUNTS THEM: what has already been paid out, at the rate
+ * the grant was opened at, plus what vested and is still in the escrow, at the pool's rate now.
+ *
+ * `vestedUnitsAt` (the escrow's own view) prices every vested share at today's pool. That is
+ * right while nothing has left the pool, and wrong once it has emptied: a fully released
+ * grant's pool holds only rounding dust, and its shares priced against dust read as nonsense
+ * (grant No. 000002 on 25 Sep showed 0.0065 "fully vested" of a 0.0038 grant). The opening's
+ * units and shares come from its GrantOpened event; without them this is the escrow's view.
+ */
+export function vestedUnitsSoFar(
+  t: VestingTerms,
+  pool: PoolState,
+  atSeconds: number,
+  opened: {units: bigint; shares: bigint} | null,
+): bigint {
+  if (!opened || opened.shares <= 0n) return vestedUnitsAt(t, pool, atSeconds);
+  const vested = vestedShares(t, atSeconds);
+  const paid = vested < t.sharesReleased ? vested : t.sharesReleased;
+  return (paid * opened.units) / opened.shares + sharesToUnits(vested - paid, pool.poolShares, pool.escrowBalance);
+}
+
 /** Units accrued (not yet vested before the cliff), priced at the pool as given. */
 export function accruedUnitsAt(t: VestingTerms, pool: PoolState, atSeconds: number): bigint {
   return sharesToUnits(accruedShares(t, atSeconds), pool.poolShares, pool.escrowBalance);

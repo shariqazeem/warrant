@@ -16,7 +16,7 @@ import {
   accruedUnitsAt,
   formatUnitsFixed,
   releasableUnits,
-  vestedUnitsAt,
+  vestedUnitsSoFar,
   vestingPhase,
   type PoolState,
   type VestingTerms,
@@ -35,6 +35,8 @@ export type TickerProps = {
   startLabel: string;
   cliffLabel: string | null;
   endLabel: string;
+  /** Units and shares the grant opened with, so what has been paid out is counted exactly. */
+  opened?: {units: bigint; shares: bigint} | null;
 };
 
 type Readout = {
@@ -50,7 +52,7 @@ type Readout = {
 function readout(p: TickerProps, at: number): Readout {
   const {terms: t, pool, decimals} = p;
   const phase = p.closed ? "closed" : vestingPhase(t, at);
-  const vested = vestedUnitsAt(t, pool, at);
+  const vested = vestedUnitsSoFar(t, pool, at, p.opened ?? null);
   const ready = releasableUnits(t, pool, at);
   const fmt = (v: bigint, dp: number) => formatUnitsFixed(v, decimals, dp);
 

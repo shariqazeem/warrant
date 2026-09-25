@@ -87,6 +87,7 @@ export async function readYours(person: string): Promise<Outcome<Yours>> {
       const data = certificateDataFor(l.grant, {
         tx: l.opened.txHash,
         openedUnits: l.opened.units,
+        openedShares: l.opened.shares,
         route: routeOfGrant(l.grant.id),
         ...(pool?.ok ? pool.value : {}),
       });

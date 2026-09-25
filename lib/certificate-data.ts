@@ -35,6 +35,8 @@ export type CertificateExtras = {
   /** The units the grant bought when it opened, from its GrantOpened event. Used for the
    *  price, and for the units when the pool was not read. */
   openedUnits?: bigint;
+  /** The shares it opened with, from the same event, so paid-out units are counted exactly. */
+  openedShares?: bigint;
 };
 
 /**
@@ -79,7 +81,9 @@ export function certificateDataFor(grant: Grant, extras: CertificateExtras = {})
     extras.poolShares !== undefined && extras.escrowBalance !== undefined
       ? {poolShares: extras.poolShares, escrowBalance: extras.escrowBalance}
       : null;
-  const units = pool ? unitsOfShares(grant.shares, pool) : (extras.openedUnits ?? null);
+  // What was granted is what the opening bought. Priced from today's pool instead, a grant
+  // whose pool has emptied (everything released) reads as nonsense.
+  const units = extras.openedUnits ?? (pool ? unitsOfShares(grant.shares, pool) : null);
   const bought = extras.openedUnits ?? units;
 
   return {
@@ -106,6 +110,7 @@ export function certificateDataFor(grant: Grant, extras: CertificateExtras = {})
     shares: grant.shares,
     sharesReleased: grant.sharesReleased,
     frozenVestedShares: grant.frozenVestedShares,
+    openedShares: extras.openedShares,
     poolShares: pool?.poolShares,
     escrowBalance: pool?.escrowBalance,
     tx: extras.tx ?? null,
