@@ -23,9 +23,10 @@ https://github.com/shariqazeem/warrant, with its full history.
 ## A 60-second path for judges
 
 1. **Open a live certificate with no wallet.** Go to
-   [warrant.world/record](https://warrant.world/record) and open the newest grant. Every
-   grant is listed there, newest first, from the events the escrow wrote on X Layer.
-   <!-- MERGE: once Grant A is issued, link its certificate directly: https://warrant.world/g/{id} -->
+   [warrant.world/record](https://warrant.world/record) and open the newest grant, or
+   [certificate No. 000002](https://warrant.world/g/2), sealed and fully released by the
+   keeper. Every grant is listed on the record, newest first, from the events the escrow
+   wrote on X Layer.
 2. **Watch it vest.** "Vested now" moves every second. It is the escrow's own arithmetic,
    interpolated between exact values.
 3. **Click its transaction.** "Recorded on X Layer in 0x…" opens the grant's opening on
@@ -100,16 +101,17 @@ The runbook for each row is [`docs/proofs.md`](docs/proofs.md).
 | Claim | Transaction | Block | Time (UTC) |
 | --- | --- | --- | --- |
 | First real payment: $2 paid, 0.0026 SPYx received (Payroll v1) | [`0x9efd0b66…809f64`](https://www.oklink.com/x-layer/tx/0x9efd0b668e6f2c7ff88100163697278b73f53d7f735120d7008720b122809f64) | 71,418,717 | 23 Sep 18:22 |
-| Grant A issued (founder to the founder's second wallet, 10 minutes, sealed) | pending | | |
-| Grant A sealed | pending | | |
-| Grant A released by the keeper | pending | | |
+| Grant A, [certificate No. 000002](https://warrant.world/g/2): $3 of SPYx from the founder's company wallet to the founder's second wallet, 10 minutes, no cliff | [`0x1e534b82…032da2`](https://www.oklink.com/x-layer/tx/0x1e534b8221a8009bac392cfae4c340bed9565f2000f0f091577bd10c86032da2) | 71,575,157 | 25 Sep 13:49 |
+| Grant A sealed (after it had fully vested) | [`0x26e46413…c3ce84`](https://www.oklink.com/x-layer/tx/0x26e4641334dec16f3f0357461a7c279a77ed080ebca7237a2ebfd81b55c3ce84) | 71,576,220 | 25 Sep 14:07 |
+| Grant A released by the keeper, nobody pressing anything: the first of six releases, two minutes apart | [`0xd66665ef…e62378`](https://www.oklink.com/x-layer/tx/0xd66665efd6842cfe5fc1a49f1a13ea8e09da3b8106e3a0df5478643ecce62378) | 71,575,176 | 25 Sep 13:50 |
+| Grant A's last release: all 0.0039 SPYx in the recipient's wallet | [`0xf6ec7df6…93c5fe`](https://www.oklink.com/x-layer/tx/0xf6ec7df6128c9680b8accfd6e09f8a61b1c124d592651df00d98eafeaa93c5fe) | 71,575,797 | 25 Sep 14:00 |
 | Grant A claimed by the recipient | pending | | |
-| Grant B issued, revocable | pending | | |
-| Grant B cancelled: what had vested stayed theirs | pending | | |
-| Grant B claimed, what had vested | pending | | |
+| Grant B, [certificate No. 000001](https://warrant.world/g/1): $2 of SPYx to the founder's second wallet, 30 minutes, 2-minute cliff, revocable | [`0x2984e221…231f5d`](https://www.oklink.com/x-layer/tx/0x2984e2213a4e99bf30f8195c9cdcf9913e8254ff591754038c434259c9231f5d) | 71,573,076 | 25 Sep 13:15 |
+| Grant B cancelled after the cliff: 0.0024 SPYx back to the company at once, the 0.00018 that had vested stayed theirs | [`0x044290a6…58d828`](https://www.oklink.com/x-layer/tx/0x044290a6c6d638045791fbd23ae2280da5fc7b7b683927c65eac141dd858d828) | 71,573,202 | 25 Sep 13:17 |
+| Grant B: what had vested, released to them by the keeper 44 seconds later | [`0x839d5d69…4b2b8e`](https://www.oklink.com/x-layer/tx/0x839d5d696a4a8c3608e6d555158d0bea7ac0d99d5bcdc3bf5fb96cb9a14b2b8e) | 71,573,246 | 25 Sep 13:18 |
 | Grant C issued by a real team to one of its people | pending | | |
-| Payroll run: several people, each their own split, one signature | pending | | |
-| Signed choices from real people | count: pending | | |
+| Payroll run: three of the founder's wallets, three different signed choices (100% SPYx, 50% NVDAx, all dollars), one signature, [three payslips](https://warrant.world/receipt/0xbe8dd2e473743166420fc54ce48c484c2a3dcc75aa722f4068001a412b9b3e4f) | [`0xbe8dd2e4…9b3e4f`](https://www.oklink.com/x-layer/tx/0xbe8dd2e473743166420fc54ce48c484c2a3dcc75aa722f4068001a412b9b3e4f) | 71,577,946 | 25 Sep 14:36 |
+| Signed choices | 3, all the founder's own wallets; none yet from other people | | |
 
 ## How the vesting maths is verified
 

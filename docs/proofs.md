@@ -80,14 +80,14 @@ The certificate then shows the revoked state: what vested and stayed theirs, wha
 | Claim | Transaction | Block | Time (UTC) |
 | --- | --- | --- | --- |
 | First real payment, $2 → 0.0026 SPYx (Payroll v1) | `0x9efd0b668e6f2c7ff88100163697278b73f53d7f735120d7008720b122809f64` | 71,418,717 | 23 Sep 18:22 |
-| Grant A issued | pending | | |
-| Grant A sealed | pending | | |
-| Grant A released by the keeper | pending | | |
+| Grant A issued (No. 000002) | `0x1e534b8221a8009bac392cfae4c340bed9565f2000f0f091577bd10c86032da2` | 71,575,157 | 25 Sep 13:49 |
+| Grant A sealed (after it had fully vested) | `0x26e4641334dec16f3f0357461a7c279a77ed080ebca7237a2ebfd81b55c3ce84` | 71,576,220 | 25 Sep 14:07 |
+| Grant A released by the keeper (first of six; last `0xf6ec7df6…c5fe`, 14:00) | `0xd66665efd6842cfe5fc1a49f1a13ea8e09da3b8106e3a0df5478643ecce62378` | 71,575,176 | 25 Sep 13:50 |
 | Grant A claimed by the recipient | pending | | |
-| Grant B issued (revocable) | pending | | |
-| Grant B cancelled | pending | | |
-| Grant B claimed (what had vested) | pending | | |
+| Grant B issued (No. 000001, revocable) | `0x2984e2213a4e99bf30f8195c9cdcf9913e8254ff591754038c434259c9231f5d` | 71,573,076 | 25 Sep 13:15 |
+| Grant B cancelled | `0x044290a6c6d638045791fbd23ae2280da5fc7b7b683927c65eac141dd858d828` | 71,573,202 | 25 Sep 13:17 |
+| Grant B: what had vested, released by the keeper | `0x839d5d696a4a8c3608e6d555158d0bea7ac0d99d5bcdc3bf5fb96cb9a14b2b8e` | 71,573,246 | 25 Sep 13:18 |
 | Grant C issued by a real team | pending | | |
-| Payroll run, N people, one signature | pending | | |
-| Signed choices | count: pending | | |
+| Payroll run, 3 of the founder's wallets, 3 different choices, one signature | `0xbe8dd2e473743166420fc54ce48c484c2a3dcc75aa722f4068001a412b9b3e4f` | 71,577,946 | 25 Sep 14:36 |
+| Signed choices | 3, all the founder's wallets | | |
 | The video's grant | pending | | |
