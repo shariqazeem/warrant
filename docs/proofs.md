@@ -87,6 +87,8 @@ The certificate then shows the revoked state: what vested and stayed theirs, wha
 | Grant B issued (No. 000001, revocable) | `0x2984e2213a4e99bf30f8195c9cdcf9913e8254ff591754038c434259c9231f5d` | 71,573,076 | 25 Sep 13:15 |
 | Grant B cancelled | `0x044290a6c6d638045791fbd23ae2280da5fc7b7b683927c65eac141dd858d828` | 71,573,202 | 25 Sep 13:17 |
 | Grant B: what had vested, released by the keeper | `0x839d5d696a4a8c3608e6d555158d0bea7ac0d99d5bcdc3bf5fb96cb9a14b2b8e` | 71,573,246 | 25 Sep 13:18 |
+| The live grant (No. 000003, 14 days, AAPLx) issued | `0x98e181b9f031d48ee0196c9f2f4f1afcd805e1914b4b7e817071221c0c42e766` | 71,578,495 | 25 Sep 14:45 |
+| No. 000003 sealed while it vests | `0x8076b16d2aafee41f144c5fae8f7e03200042e3152cca36d65a5c42f58a5e9cf` | 71,579,602 | 25 Sep 15:03 |
 | Grant C issued by a real team | pending | | |
 | Payroll run, 3 of the founder's wallets, 3 different choices, one signature | `0xbe8dd2e473743166420fc54ce48c484c2a3dcc75aa722f4068001a412b9b3e4f` | 71,577,946 | 25 Sep 14:36 |
 | Signed choices | 3, all the founder's wallets | | |

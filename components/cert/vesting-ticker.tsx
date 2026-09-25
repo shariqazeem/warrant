@@ -55,6 +55,12 @@ function readout(p: TickerProps, at: number): Readout {
   const vested = vestedUnitsSoFar(t, pool, at, p.opened ?? null);
   const ready = releasableUnits(t, pool, at);
   const fmt = (v: bigint, dp: number) => formatUnitsFixed(v, decimals, dp);
+  // Early in a long grant what is due can be under a millionth of a unit: widen the figure
+  // rather than print a real amount as 0.000000.
+  const fine = (v: bigint) => {
+    const six = fmt(v, 6);
+    return v > 0n && /^0\.0+$/.test(six) ? fmt(v, 10) : six;
+  };
 
   switch (phase) {
     case "closed":
@@ -90,7 +96,7 @@ function readout(p: TickerProps, at: number): Readout {
       return {
         label: "Fully vested",
         value: fmt(vested, 10),
-        right: ready > 0n ? {k: "Ready to release", v: fmt(ready, 6)} : {k: "All released", v: null},
+        right: ready > 0n ? {k: "Ready to release", v: fine(ready)} : {k: "All released", v: null},
         spoken: `Fully vested: ${fmt(vested, 6)} ${p.symbol}.`,
         ready,
         phase,
@@ -99,7 +105,7 @@ function readout(p: TickerProps, at: number): Readout {
       return {
         label: "Vested before it was cancelled",
         value: fmt(vested, 10),
-        right: ready > 0n ? {k: "Ready to release", v: fmt(ready, 6)} : {k: "All released", v: null},
+        right: ready > 0n ? {k: "Ready to release", v: fine(ready)} : {k: "All released", v: null},
         spoken: `Vested before it was cancelled: ${fmt(vested, 6)} ${p.symbol}.`,
         ready,
         phase,
@@ -108,8 +114,8 @@ function readout(p: TickerProps, at: number): Readout {
       return {
         label: "Vested now",
         value: fmt(vested, 10),
-        right: {k: "Ready to release", v: fmt(ready, 6)},
-        spoken: `Vested now ${fmt(vested, 6)} ${p.symbol}. Ready to release ${fmt(ready, 6)}.`,
+        right: {k: "Ready to release", v: fine(ready)},
+        spoken: `Vested now ${fmt(vested, 6)} ${p.symbol}. Ready to release ${fine(ready)}.`,
         ready,
         phase,
       };

@@ -22,11 +22,11 @@ https://github.com/shariqazeem/warrant, with its full history.
 
 ## A 60-second path for judges
 
-1. **Open a live certificate with no wallet.** Go to
-   [warrant.world/record](https://warrant.world/record) and open the newest grant, or
-   [certificate No. 000002](https://warrant.world/g/2), sealed and fully released by the
-   keeper. Every grant is listed on the record, newest first, from the events the escrow
-   wrote on X Layer.
+1. **Open a live certificate with no wallet:**
+   [certificate No. 000003](https://warrant.world/g/3), $2 of Apple stock, sealed, vesting
+   every second until 9 October. Every grant is on
+   [warrant.world/record](https://warrant.world/record), newest first, from the events the
+   escrow wrote on X Layer.
 2. **Watch it vest.** "Vested now" moves every second. It is the escrow's own arithmetic,
    interpolated between exact values.
 3. **Click its transaction.** "Recorded on X Layer in 0x…" opens the grant's opening on
@@ -109,6 +109,8 @@ The runbook for each row is [`docs/proofs.md`](docs/proofs.md).
 | Grant B, [certificate No. 000001](https://warrant.world/g/1): $2 of SPYx to the founder's second wallet, 30 minutes, 2-minute cliff, revocable | [`0x2984e221…231f5d`](https://www.oklink.com/x-layer/tx/0x2984e2213a4e99bf30f8195c9cdcf9913e8254ff591754038c434259c9231f5d) | 71,573,076 | 25 Sep 13:15 |
 | Grant B cancelled after the cliff: 0.0024 SPYx back to the company at once, the 0.00018 that had vested stayed theirs | [`0x044290a6…58d828`](https://www.oklink.com/x-layer/tx/0x044290a6c6d638045791fbd23ae2280da5fc7b7b683927c65eac141dd858d828) | 71,573,202 | 25 Sep 13:17 |
 | Grant B: what had vested, released to them by the keeper 44 seconds later | [`0x839d5d69…4b2b8e`](https://www.oklink.com/x-layer/tx/0x839d5d696a4a8c3608e6d555158d0bea7ac0d99d5bcdc3bf5fb96cb9a14b2b8e) | 71,573,246 | 25 Sep 13:18 |
+| The live grant, [certificate No. 000003](https://warrant.world/g/3): $2 of AAPLx to the founder's second wallet, 14 days, no cliff, still vesting through judging | [`0x98e181b9…42e766`](https://www.oklink.com/x-layer/tx/0x98e181b9f031d48ee0196c9f2f4f1afcd805e1914b4b7e817071221c0c42e766) | 71,578,495 | 25 Sep 14:45 |
+| Certificate No. 000003 sealed, while it vests | [`0x8076b16d…a5e9cf`](https://www.oklink.com/x-layer/tx/0x8076b16d2aafee41f144c5fae8f7e03200042e3152cca36d65a5c42f58a5e9cf) | 71,579,602 | 25 Sep 15:03 |
 | Grant C issued by a real team to one of its people | pending | | |
 | Payroll run: three of the founder's wallets, three different signed choices (100% SPYx, 50% NVDAx, all dollars), one signature, [three payslips](https://warrant.world/receipt/0xbe8dd2e473743166420fc54ce48c484c2a3dcc75aa722f4068001a412b9b3e4f) | [`0xbe8dd2e4…9b3e4f`](https://www.oklink.com/x-layer/tx/0xbe8dd2e473743166420fc54ce48c484c2a3dcc75aa722f4068001a412b9b3e4f) | 71,577,946 | 25 Sep 14:36 |
 | Signed choices | 3, all the founder's own wallets; none yet from other people | | |
