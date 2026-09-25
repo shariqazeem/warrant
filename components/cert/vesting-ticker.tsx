@@ -164,7 +164,7 @@ export function TickerStack(p: TickerProps & {unitsText: string}) {
             : r.phase === "vested"
               ? `of ${p.unitsText} ${p.symbol}, fully vested since ${p.endLabel}`
               : r.phase === "accruing"
-                ? `of ${p.unitsText} ${p.symbol}, unlocking on ${p.cliffLabel ?? p.startLabel}, then vesting every second until ${p.endLabel}`
+                ? `of ${p.unitsText} ${p.symbol}, unlocking ${onOrAt(p.cliffLabel ?? p.startLabel)}, then vesting every second until ${p.endLabel}`
                 : `of ${p.unitsText} ${p.symbol}, vesting every second until ${p.endLabel}`}
       </span>
       <span className="wa-sr" aria-live="polite">

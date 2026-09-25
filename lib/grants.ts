@@ -10,7 +10,7 @@ import {grantEscrowAbi} from "./payroll-abi";
 import {transport, xLayer} from "./chain";
 import {assetByAddress} from "./assets";
 import {reasonFor} from "./db";
-import {dateUTC} from "./format";
+import {onOrAt, whenLabel} from "./format";
 import {attempt, held, map, ok, type Outcome} from "./outcome";
 
 export type GrantState = "open" | "closed";
@@ -275,13 +275,18 @@ export function grantStanding(
   const ends = g.start + g.durationSeconds;
   const cliff = g.start + g.cliffSeconds;
 
+  // The page prints the label, then these words: "Vesting. Nothing can be released…". So the
+  // words never open with the label again, and a moment reads as a clock time on a grant
+  // shorter than two days ("at 13:17 UTC") and as a date on anything longer.
+  const when = (t: number) => onOrAt(whenLabel(t, g.durationSeconds));
+
   if (g.state === "closed") {
     return {
       kind: "closed",
       label: "Closed",
       words: g.revoked
-        ? "Closed. It was cancelled, and everything that had vested by then was released to them."
-        : "Closed. It vested in full and everything was released to them.",
+        ? "It was cancelled, and everything that had vested by then was released to them."
+        : "It vested in full and everything was released to them.",
       irrevocable,
     };
   }
@@ -291,7 +296,7 @@ export function grantStanding(
       kind: "cancelled",
       label: "Cancelled",
       words:
-        "Cancelled by the company. What had vested by then stays theirs and can still be " +
+        "The company cancelled it. What had vested by then stays theirs and can still be " +
         "released to them; the rest went back to the company. Nothing more will vest.",
       irrevocable,
     };
@@ -308,7 +313,7 @@ export function grantStanding(
     return {
       kind: "fully-vested",
       label: "Fully vested",
-      words: `Fully vested on ${dateUTC(ends)}: all of it is theirs.${lock}`,
+      words: `All of it is theirs: it finished vesting ${when(ends)}.${lock}`,
       irrevocable,
     };
   }
@@ -316,7 +321,7 @@ export function grantStanding(
     return {
       kind: "not-started",
       label: "Not started",
-      words: `Vesting starts on ${dateUTC(g.start)} and ends on ${dateUTC(ends)}.${lock}`,
+      words: `Vesting starts ${when(g.start)} and ends ${when(ends)}.${lock}`,
       irrevocable,
     };
   }
@@ -325,15 +330,15 @@ export function grantStanding(
       kind: "before-cliff",
       label: "Vesting",
       words:
-        `Vesting. Nothing can be released before the cliff on ${dateUTC(cliff)}, when ` +
-        `everything vested up to then becomes theirs at once.${lock}`,
+        `Nothing can be released before the cliff ${when(cliff)}, when everything vested up to ` +
+        `then becomes theirs at once.${lock}`,
       irrevocable,
     };
   }
   return {
     kind: "vesting",
     label: "Vesting",
-    words: `Vesting a little every second until it is fully vested on ${dateUTC(ends)}.${lock}`,
+    words: `A little more vests every second until it is fully vested ${when(ends)}.${lock}`,
     irrevocable,
   };
 }

@@ -24,7 +24,7 @@ import {TopUp} from "@/components/wallet/top-up";
 import {NEEDS_OKB, useWallet} from "@/components/wallet/use-wallet";
 import {connectWords, switchWords} from "@/components/wallet/wallet-words";
 import {EXPLORER_TX, xLayer} from "@/lib/chain";
-import {since} from "@/lib/format";
+import {onOrAt, since, whenLabel} from "@/lib/format";
 import {
   formatUnitsFixed,
   releasableUnits,
@@ -136,6 +136,19 @@ export function CertActions(p: CertActionsProps) {
 
   const ready = releasableUnits(p.terms, p.pool, at);
   const fmt = (v: bigint, dp = 6) => formatUnitsFixed(v, p.asset.decimals, dp);
+  // A release fee on a small grant can be under a millionth of a unit: widen the figure rather
+  // than print a real amount as 0.000000.
+  const fine = (v: bigint) => {
+    const six = fmt(v, 6);
+    return v > 0n && /^0\.0+$/.test(six) ? fmt(v, 10) : six;
+  };
+  const cliffAt = p.terms.start + p.terms.cliffSeconds;
+  const nothingDue =
+    at < cliffAt
+      ? `Nothing unlocks before the cliff ${onOrAt(whenLabel(cliffAt, p.terms.durationSeconds))}.`
+      : p.revoked || ended
+        ? "Everything owed so far has been released."
+        : "Nothing has vested since the last release.";
   const busy = phase === "signing" || phase === "confirming";
 
   // Arrived from issuing, asked to seal: bring the button into view, once, when it exists.
@@ -154,7 +167,12 @@ export function CertActions(p: CertActionsProps) {
     if (busy || blocker) return;
     setConfirming(null);
     const tx = await run(p.id, which);
-    if (!tx) return;
+    if (!tx) {
+      // Refused or dismissed: often because the release service got there first. Read the
+      // grant again, so the buttons stop offering what is no longer there.
+      router.refresh();
+      return;
+    }
     await settleCertificate(String(p.id), tx).catch(() => undefined);
     if (which === "seal") {
       // The chain says it is sealed: now, and only now, the seal presses.
@@ -339,10 +357,10 @@ export function CertActions(p: CertActionsProps) {
           </div>
           <p className="wa-fine">
             {ready === 0n
-              ? "Nothing has vested since the last release."
-              : `Sends ${fmt(ready)} ${p.asset.symbol} to ${short(p.recipient)}` +
+              ? nothingDue
+              : `Sends ${fine(ready)} ${p.asset.symbol} to ${short(p.recipient)}` +
                 (p.tipBps > 0
-                  ? `, and ${fmt(releaseFee(ready, p.tipBps, false))} ${p.asset.symbol} of it to you, the ${(p.tipBps / 100).toFixed(2)}% release fee.`
+                  ? `, and ${fine(releaseFee(ready, p.tipBps, false))} ${p.asset.symbol} of it to you, the ${(p.tipBps / 100).toFixed(2)}% release fee.`
                   : ". This grant carries no release fee.")}
           </p>
         </div>

@@ -4,16 +4,16 @@ import {CopyText} from "@/components/app/copy-text";
 import {Certificate} from "@/components/cert/certificate";
 import {CertActionsLazy} from "@/components/cert/cert-actions-lazy";
 import {CertShare, PlayedOnce} from "@/components/cert/cert-share";
-import {RefreshWhilePending} from "@/components/cert/refresh";
+import {RefreshWhileLive, RefreshWhilePending} from "@/components/cert/refresh";
 import {lengthWords, routeLine, shortAddress, whenLabel, onOrAt} from "@/components/cert/cert-text";
 import {VestingRule} from "@/components/cert/vesting-rule";
 import {AssetNote} from "@/components/pay/asset-note";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {EXPLORER_ADDRESS, EXPLORER_TX} from "@/lib/chain";
-import {bps, stampUTC} from "@/lib/format";
+import {bps, isShortGrant, stampUTC} from "@/lib/format";
 import {parseGrantId, findGrant} from "@/lib/grants";
 import {recordTransaction} from "@/lib/indexer";
-import {formatUnitsFixed, sharesToUnits, vestingPhase} from "@/lib/vesting";
+import {formatUnitsFixed, releasableUnits, sharesToUnits, vestingPhase} from "@/lib/vesting";
 import {forgetCertificate, readCertificate, type CertificateRecord} from "./read";
 import "@/app/landing.css";
 import "./cert-page.css";
@@ -371,6 +371,24 @@ export default async function CertificatePage({params, searchParams}: Props) {
   const issued = one(sp.issued) === "1";
   const pressSeal = one(sp.sealed) === "1" && d.sealed;
   const released = r.vests.reduce((sum, v) => sum + v.unitsToBeneficiary, 0n);
+  // Still changing: vesting, or holding something due that the release service (or anyone) is
+  // about to send. While it is, the page reads the grant again every 20 seconds on a short
+  // grant and every minute on a long one.
+  const owed =
+    releasableUnits(
+      {
+        shares: r.grant.shares,
+        sharesReleased: r.grant.sharesReleased,
+        start: r.grant.start,
+        cliffSeconds: r.grant.cliffSeconds,
+        durationSeconds: r.grant.durationSeconds,
+        revoked: r.grant.revoked,
+        frozenVestedShares: r.grant.frozenVestedShares,
+      },
+      {poolShares: d.poolShares ?? 0n, escrowBalance: d.escrowBalance ?? 0n},
+      now,
+    ) > 0n;
+  const live = !d.closed && ((!d.revoked && now < d.start + d.durationSeconds) || owed);
 
   return (
     <Frame
@@ -425,6 +443,7 @@ export default async function CertificatePage({params, searchParams}: Props) {
               callSeal={one(sp.seal) === "1"}
             />
             <CertShare id={id} />
+            {live ? <RefreshWhileLive every={isShortGrant(d.durationSeconds) ? 20_000 : 60_000} /> : null}
           </div>
 
           <div className="wa-cp-right">

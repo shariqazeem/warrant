@@ -5,11 +5,14 @@
  * each state's wording is checked (components/cert/cert-text.test.ts). Every number in these
  * sentences is a field of the data; nothing is estimated here.
  */
-import {dateUTC} from "../../lib/format";
+import {dateUTC, isShortGrant, onOrAt, timeUTC, whenLabel} from "../../lib/format";
 import {formatUnitsFixed, type PoolState, type VestingTerms} from "../../lib/vesting";
 import type {CertificateData} from "./types";
 
 const DAY = 86_400;
+
+// The schedule's clock-or-date rule lives in lib/format, where lib/grants reads it too.
+export {isShortGrant, onOrAt, timeUTC, whenLabel};
 
 /** "000001": the grant id, six digits. A specimen is 000000. */
 export function certNumber(id: number, specimen = false): string {
@@ -20,22 +23,6 @@ export function certNumber(id: number, specimen = false): string {
 /** "0x7c1E…9aB2": the design's short form, the first four and the last four. */
 export function shortAddress(a: string): string {
   return a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;
-}
-
-/** A grant shorter than two days is told in clock times rather than dates. */
-export function isShortGrant(durationSeconds: number): boolean {
-  return durationSeconds < 2 * DAY;
-}
-
-/** "14:05 UTC". */
-export function timeUTC(unixSeconds: number): string {
-  const d = new Date(unixSeconds * 1000);
-  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} UTC`;
-}
-
-/** A moment on a grant's schedule: a date, or a clock time for a short grant. */
-export function whenLabel(unixSeconds: number, durationSeconds: number): string {
-  return isShortGrant(durationSeconds) ? timeUTC(unixSeconds) : dateUTC(unixSeconds);
 }
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -92,11 +79,6 @@ export function purchaseLine(
 export function routeLine(route: readonly string[]): string | null {
   const hops = route.map((r) => r.trim()).filter(Boolean);
   return hops.length >= 2 ? hops.join(" → ") : null;
-}
-
-/** "on 24 Mar 2027" for a date, "at 17:57 UTC" for a time of day: the preposition a label takes. */
-export function onOrAt(label: string): string {
-  return /\d{1,2}:\d{2}/.test(label) ? `at ${label}` : `on ${label}`;
 }
 
 /**

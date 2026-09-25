@@ -219,3 +219,31 @@ describe("grantStanding", () => {
     expect(cancelled.words).toMatch(/It was cancelled/);
   });
 });
+
+describe("grantStanding on a grant shorter than two days", () => {
+  // Grant 1 on mainnet: 25 Sep 2026 13:15:12 UTC, a 2-minute cliff, 30 minutes long.
+  const opened = 1_790_342_112;
+  const terms = {
+    state: "open" as const,
+    revoked: false,
+    isSealed: false,
+    start: opened,
+    cliffSeconds: 120,
+    durationSeconds: 1_800,
+  };
+
+  it("says the cliff as a clock time, and never opens by repeating its label", () => {
+    const s = grantStanding(terms, opened + 30);
+    expect(s.kind).toBe("before-cliff");
+    expect(s.words).toContain("before the cliff at 13:17 UTC");
+    for (const at of [opened - 10, opened + 30, opened + 600, opened + 1_800]) {
+      const t = grantStanding(terms, at);
+      expect(t.words.startsWith(t.label)).toBe(false);
+    }
+  });
+
+  it("says when it ends as a clock time", () => {
+    expect(grantStanding(terms, opened + 600).words).toContain("fully vested at 13:45 UTC");
+    expect(grantStanding(terms, opened + 1_800).words).toContain("finished vesting at 13:45 UTC");
+  });
+});

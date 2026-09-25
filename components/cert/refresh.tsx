@@ -24,3 +24,20 @@ export function RefreshWhilePending({every = 5000, times = 12}: {every?: number;
   }, [router, every, times]);
   return null;
 }
+
+/**
+ * A grant still changing (vesting, or with something due that the release service is about to
+ * send) asks the server again every so often while its tab is open, so a release shows without
+ * a reload and no button offers what is no longer there. The page stops rendering this once
+ * nothing about the grant can change. Paused while the tab is hidden.
+ */
+export function RefreshWhileLive({every}: {every: number}) {
+  const router = useRouter();
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (!document.hidden) router.refresh();
+    }, every);
+    return () => clearInterval(t);
+  }, [router, every]);
+  return null;
+}

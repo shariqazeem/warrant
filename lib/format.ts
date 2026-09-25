@@ -93,6 +93,27 @@ export const dateUTC = (unixSeconds: number): string => {
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]!} ${d.getUTCFullYear()}`;
 };
 
+/** A grant shorter than two days is told in clock times rather than dates. */
+export function isShortGrant(durationSeconds: number): boolean {
+  return durationSeconds < 2 * 86_400;
+}
+
+/** "14:05 UTC". */
+export function timeUTC(unixSeconds: number): string {
+  const d = new Date(unixSeconds * 1000);
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} UTC`;
+}
+
+/** A moment on a grant's schedule: a date, or a clock time for a short grant. */
+export function whenLabel(unixSeconds: number, durationSeconds: number): string {
+  return isShortGrant(durationSeconds) ? timeUTC(unixSeconds) : dateUTC(unixSeconds);
+}
+
+/** "on 24 Mar 2027" for a date, "at 17:57 UTC" for a time of day: the preposition a label takes. */
+export function onOrAt(label: string): string {
+  return /\d{1,2}:\d{2}/.test(label) ? `at ${label}` : `on ${label}`;
+}
+
 /** "15 Sep 2026, 09:13 UTC". Receipts get the whole truth. */
 export const stampUTC = (unixSeconds: number): string => {
   const d = new Date(unixSeconds * 1000);
