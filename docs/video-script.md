@@ -1,28 +1,74 @@
-# The video: about three minutes
+# The demo video: three minutes, face cam, one live take
 
-> The founder records it on Friday between 18:00 and 21:00 UTC. Check the submission form's
-> length limit first and cut from beat 5 if it is shorter. Issue the video's grant shortly
-> before recording (Custom, 1 hour, a 10-minute cliff, sealed, $3 to $5) so the certificate
-> visibly ticks and the cliff passes during the shoot. Record the screen at 1440 wide and the
-> phone at full resolution. Every figure on screen is live; nothing is staged, and nothing is
-> edited into the frame afterwards.
+> The founder records it and reads it. Everything on screen is live on X Layer mainnet: the
+> grant is issued on camera, and nothing is edited into the frame afterwards. Check the
+> submission form's rules first (length, music, where the video is uploaded).
 >
-> Plain words, spoken slowly. Say "certificate", "grant", "seal", "vest", "release",
-> "claim", "payslip", "your people".
+> Short lines, spoken slowly. **DO** is what your hands do; **SAY** is what you read. Lines in
+> *(brackets)* can be dropped if you are running long.
 
-| # | Time | On screen | Words |
-| --- | --- | --- | --- |
-| 1 | 0:00 to 0:15 | The certificate page of the video's grant, freshly loaded: the guilloche wipes in, the text rises, the seal presses last. Hold on "Vested now" ticking | "This is a stock grant. It's real, it's on X Layer, and it's vesting right now, every second." |
-| 2 | 0:15 to 0:40 | The front page hero, then a slow scroll to the three rules | "If you run a team of twenty people across six countries and pay them in USDT, you can't give them equity. So your best people leave for a raise. Public companies keep people with stock that vests. Warrant gives that to everyone else." |
-| 3 | 0:40 to 1:25 | `/grants`, a stopwatch in the corner. Paste the recipient's address; "They chose NVDAx" appears if they have. Pick the stock, type the value, watch the live OKX DEX quote and the minimum. Pick a schedule, choose Seal it. The specimen certificate follows every choice. Sign in OKX Wallet. The page lands on the new certificate as it engraves in. Stop the stopwatch | "Pick a person, a stock and an amount. The quote comes from OKX DEX, and the contract enforces the minimum. Pick a schedule. Seal it, and nobody can take it back, including me. One signature. And there's the certificate, with its own number, the route it was bought through, and the transaction it's recorded in. Under ninety seconds." |
-| 4 | 1:25 to 2:00 | The phone: open the certificate link with no wallet. It ticks. Connect OKX Wallet by QR, claim what has vested, then "Show SPYx in OKX Wallet" and the stock in the wallet | "My engineer opens a link. No wallet, no account: they see what they own and when the rest arrives. When they want it, they connect OKX Wallet by QR and claim. It's in their wallet, and it's theirs." |
-| 5 | 2:00 to 2:25 | `/run`: a file of people with their choice chips, the totals, one signature, then the run's page with every payslip | "Payroll works the same way. Everyone chooses how they're paid, once, with a free signature. One signature from the company pays the whole team, each in their own split, and everyone gets a payslip." |
-| 6 | 2:25 to 2:45 | GrantEscrow on OKLink, then the contract source with no owner; `forge test` and `npm run test` passing; the fork proof running | "The contracts have no owner, no admin and no upgrade path. The vesting maths is one fixture shared by the contract and the page, and it's proved on a fork of mainnet against real OKX routes." |
-| 7 | 2:45 to 3:00 | The README's proof table, scrolling the transaction links; end on the front page close | "Every claim in this video links to a transaction. Your best people are deciding whether to stay. Give them a reason that vests. Warrant, on X Layer." |
+## Before you press record (10 minutes)
 
-## Before recording
+- **Recorder:** Loom (free, a face bubble in the corner, fine for three minutes) or OBS. Face
+  bubble bottom right, so it never covers the certificate. Download the MP4 afterwards.
+- **Screen:** browser zoom 125%, Do Not Disturb on, every other app closed, no bookmarks bar.
+- **Wallet:** OKX Wallet connected on X Layer as your company wallet, with at least $4 of USD₮0.
+- **The recipient:** your second wallet, and it has already signed a choice at
+  `warrant.world/me` (100% SPYx), so the form shows "They chose".
+- **The keeper** is funded, so certificates say what vests arrives on schedule.
+- **Tabs, left to right:**
+  1. `warrant.world`
+  2. `warrant.world/grants`, with the second wallet's address copied
+  3. the payroll run you made while testing (its payslips page)
+  4. `warrant.world/record`
+- **Rehearse once without recording.** Then record in one take. If a transaction fails, stop and
+  start again; each take costs $3, and the stock comes back to your second wallet ten minutes later.
 
-- The keeper is running, and "Last released" on the certificate is recent.
-- The phone has OKX Wallet with X Layer, and the QR connection works.
-- The browser is signed out of anything personal; notifications are off.
-- The proof table in the README is filled in up to the video's grant.
+## The script
+
+### 0:00 to 0:12: who you are (tab 1, the front page)
+**SAY:** "Hi, I'm Shariq. For OKX Dev Day I built Warrant. It lets a company give its team stock that vests, on X Layer."
+
+### 0:12 to 0:35: the problem (still the front page; scroll slowly)
+**SAY:** "Many small teams pay people in USDT, across many countries. They can't give their people equity, so their best people leave for a raise. Big companies keep people with stock that vests. Warrant gives that to everyone else."
+
+### 0:35 to 1:25: issue a real grant, live (tab 2)
+**DO:** paste the second wallet's address.
+**SAY:** "Let me give a real grant, right now. I paste my teammate's wallet, and Warrant shows the stock they already chose."
+
+**DO:** leave SPYx, type **3** as the value.
+**SAY:** "Three dollars in S&P 500 stock, for the demo. The price is a live quote from OKX DEX, and the contract guarantees a minimum."
+
+**DO:** click **Custom**, type **10**, choose **minutes**, leave the cliff empty.
+**SAY:** "A real grant would vest over four years. For the demo, ten minutes, so you can watch it."
+
+**DO:** choose **Seal it**, tick the review line.
+**SAY:** "And I'll seal it, so nobody can take it back. Not even me."
+
+**DO:** click **Issue certificate for $3.00** and approve in OKX Wallet.
+**SAY:** "One click, approve in OKX Wallet..." *(wait for the page)* "...and here's the certificate. Its own number, the route OKX DEX bought it through, and the transaction."
+
+### 1:25 to 1:45: the seal
+**DO:** click **Seal it now** and approve.
+**SAY:** "Now I seal it." *(the seal lands)* "That's permanent. It says irrevocable, and it means it."
+
+### 1:45 to 2:15: what your people see
+**DO:** point at **Vested now** ticking. Copy the page's link, open a private window
+(Cmd+Shift+N), paste it.
+**SAY:** "This is what my teammate sees. No wallet, no account. It vests every second. A release service sends the stock to their wallet on schedule, so nobody has to remember."
+*(If "Released to them" already shows an amount:)* "It has already sent some."
+
+### 2:15 to 2:35: payroll (tab 3)
+**SAY:** "Payroll works the same way. Earlier today I paid three people with one signature. Each person chose their own split, and each one got a payslip."
+
+### 2:35 to 2:50: why you can trust it (tab 4)
+**SAY:** "Everything is public. The contracts have no owner and no admin, and every number comes from the chain. *(xStocks give economic exposure, with no votes, and every stock shows what its issuer can do.)*"
+
+### 2:50 to 3:00: close (back to tab 1, look at the camera)
+**SAY:** "Your best people are deciding whether to stay. Give them a reason that vests. That's Warrant, on X Layer. Thank you."
+
+## Words to keep, and words to avoid
+
+- Say: certificate, grant, seal, vest, payslip, your people, a stock position.
+- Never say: shareholder, equity ownership, returns, yield.
+- Say only what is on the screen. If a number looks odd, keep talking and point at the page.

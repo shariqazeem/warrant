@@ -96,11 +96,10 @@ The runbook for each row is [`docs/proofs.md`](docs/proofs.md).
 | Claim | Transaction | Block | Time (UTC) |
 | --- | --- | --- | --- |
 | First real payment: $2 paid, 0.0026 SPYx received (Payroll v1) | [`0x9efd0b66…809f64`](https://www.oklink.com/x-layer/tx/0x9efd0b668e6f2c7ff88100163697278b73f53d7f735120d7008720b122809f64) | 71,418,717 | 23 Sep 18:22 |
-| Grant A issued (founder to the founder's second wallet, 2 hours, no cliff) | pending | | |
+| Grant A issued (founder to the founder's second wallet, 10 minutes, sealed) | pending | | |
 | Grant A sealed | pending | | |
 | Grant A released by the keeper | pending | | |
 | Grant A claimed by the recipient | pending | | |
-| Grant A closed | pending | | |
 | Grant B issued, revocable | pending | | |
 | Grant B cancelled: what had vested stayed theirs | pending | | |
 | Grant B claimed, what had vested | pending | | |

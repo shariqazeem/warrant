@@ -20,23 +20,32 @@
 5. Screen recording on (Cmd+Shift+5 on the Mac, screen recording on the phone). Every proof is also
    footage for the video.
 
+## Short schedules, so the money comes back in minutes
+
+Every test grant runs for minutes, not years. A grant's stock goes to the recipient as it
+vests, and the recipient here is the founder's second wallet, so a 10-minute grant has
+delivered everything within about 11 minutes. A cancel returns the unvested stock to the payer
+at once. Payroll lines to the founder's own wallets arrive in the same transaction. What comes
+back is stock (SPYx), which swaps back to USD₮0 in OKX Wallet on X Layer for a small spread.
+Nothing stays locked past 30 minutes.
+
 ## Grant A: the demo grant, every state on camera
 
 | Step | Who | What | Record |
 | --- | --- | --- | --- |
-| 1 | Founder | `/grants`: recipient = second wallet; SPYx; **$3**; Custom schedule **2 hours, no cliff**; "Keep it revocable" (so sealing is its own step); Issue | issue tx, grant id |
-| 2 | Founder | On the certificate: "Seal it now" | seal tx |
-| 3 | Keeper | Within a few minutes the keeper releases what is due; "Released" rows appear on the certificate with the keeper's fee | first release tx |
-| 4 | Founder, second wallet | Open the certificate on the phone, connect by QR, "Claim … now" (no fee for the recipient) | claim tx |
+| 1 | Founder | `/grants`: recipient = second wallet; SPYx; **$3**; Custom schedule **10 minutes, no cliff**; "Seal it"; Issue | issue tx, grant id |
+| 2 | Founder | On the certificate: "Seal it now" (sealing is its own transaction) | seal tx |
+| 3 | Keeper | Within a minute or two the keeper releases what is due, then every two minutes, and the rest the moment it ends; "Released to them" grows on the certificate | first release tx |
+| 4 | Founder, second wallet | Open the certificate on the phone, connect by QR, "Claim … now" if anything is due (no fee for the recipient) | claim tx |
 | 5 | Founder, second wallet | "Show SPYx in OKX Wallet" | screenshot |
-| 6 | Anyone | After 2 hours: the keeper or the founder releases the rest; "Archive" (close) | final release tx, close tx |
+| 6 | Keeper | At 10 minutes the last release; the escrow holds nothing more for it | final release tx |
 
 ## Grant B: revocable, cancelled
 
 | Step | Who | What | Record |
 | --- | --- | --- | --- |
-| 1 | Founder | Recipient = second wallet; SPYx; **$3**; Custom **30 days, 5-minute cliff**; keep revocable; Issue | issue tx |
-| 2 | Wait | Past the cliff (5 min) | — |
+| 1 | Founder | Recipient = second wallet; SPYx; **$2**; Custom **30 minutes, 2-minute cliff**; keep revocable; Issue | issue tx |
+| 2 | Wait | Past the cliff (2 min) | — |
 | 3 | Founder | "Cancel the unvested part"; the confirmation states what returns and what stays theirs | revoke tx |
 | 4 | Second wallet | Claim what had vested | claim tx |
 
@@ -62,8 +71,9 @@ The certificate then shows the revoked state: what vested and stayed theirs, wha
 
 ## The video's grant
 
-- Shortly before recording (Fri 18:00 UTC), issue **one fresh grant** ($3–5, Custom 1 hour, 10-minute
-  cliff, sealed) so the certificate visibly ticks on camera and the cliff passes during the shoot.
+- Issue it **on camera**, as the script does ($3, Custom 10 minutes, no cliff, "Seal it"): over ten
+  minutes the vesting rule visibly fills while you talk, and it has all reached the second wallet
+  a minute after it ends. It can be Grant A itself.
 
 ## Proof table (fill as each lands)
 
@@ -74,7 +84,6 @@ The certificate then shows the revoked state: what vested and stayed theirs, wha
 | Grant A sealed | pending | | |
 | Grant A released by the keeper | pending | | |
 | Grant A claimed by the recipient | pending | | |
-| Grant A closed | pending | | |
 | Grant B issued (revocable) | pending | | |
 | Grant B cancelled | pending | | |
 | Grant B claimed (what had vested) | pending | | |
