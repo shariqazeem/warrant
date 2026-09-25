@@ -21,7 +21,7 @@ X Layer: tokenized stocks and RWA.
 
 - Live app: https://warrant.world
 - Repository (public, full history): https://github.com/shariqazeem/warrant
-- Video: {link, once uploaded}
+- Video: https://youtu.be/zoJZ9jAXkAk
 - The public record: https://warrant.world/record
 - A live certificate: https://warrant.world/g/3 (sealed, vesting every second until 9 October)
 

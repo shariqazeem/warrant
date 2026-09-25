@@ -21,6 +21,7 @@ Built during **OKX Dev Day 2026** on **X Layer mainnet**, with **xStocks** as th
 **OKX DEX aggregator** as the route, **USD₮0** as the money and **OKX Wallet** (by QR,
 through OKX Connect) as the wallet. Track: X Layer, tokenized stocks and RWA.
 
+- **Demo video (4 minutes):** https://youtu.be/zoJZ9jAXkAk
 - **Live on X Layer mainnet:** https://warrant.world
 - **A certificate vesting right now:** [No. 000003](https://warrant.world/g/3), no wallet needed
 - **Every grant and payroll run:** [the public record](https://warrant.world/record)
