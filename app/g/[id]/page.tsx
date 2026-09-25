@@ -38,15 +38,18 @@ type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export async function generateMetadata({params}: Props): Promise<Metadata> {
+export async function generateMetadata({params, searchParams}: Props): Promise<Metadata> {
   const {id} = await params;
   const n = parseGrantId(id);
   if (n === null) return {title: "Not a certificate — Warrant"};
   const no = String(n).padStart(6, "0");
   // A number with no grant behind it yet says so, rather than naming a certificate that
   // does not exist. A read that fails keeps the certificate's title: the page says the rest.
+  // Arriving from issuing (with its transaction), the grant exists even if this server cannot
+  // see it yet, so the title is the certificate's.
+  const tx = one((await searchParams).tx);
   const found = await findGrant(n).catch(() => null);
-  if (found?.ok && found.value === null) return {title: `No grant No. ${no} yet — Warrant`};
+  if (found?.ok && found.value === null && !(tx && HEX_TX.test(tx))) return {title: `No grant No. ${no} yet — Warrant`};
   return {
     title: `Certificate of grant No. ${no} — Warrant`,
     description:
@@ -342,12 +345,42 @@ export default async function CertificatePage({params, searchParams}: Props) {
   const sp = await searchParams;
 
   let found = await readCertificate(id);
-  // Sent here with the opening transaction and not on record yet: record it now, read again.
   const txHint = one(sp.tx);
-  if (found.ok && found.value && !found.value.opening && txHint && HEX_TX.test(txHint)) {
+  const justIssued = Boolean(txHint && HEX_TX.test(txHint));
+  // Sent here the moment the wallet saw the opening confirm, and the escrow does not show the
+  // grant yet: the RPC node this server asks can be a block behind the wallet's. Record the
+  // transaction (which waits on this server's own node) and read again, a few times, before
+  // saying anything. Grant No. 000003 on 25 Sep landed on "nothing at this address" this way.
+  for (let tries = 0; justIssued && found.ok && found.value === null && tries < 4; tries++) {
+    await recordTransaction(txHint as `0x${string}`).catch(() => 0);
+    await new Promise((r) => setTimeout(r, 1500));
+    forgetCertificate(id);
+    found = await readCertificate(id);
+  }
+  // Sent here with the opening transaction and not on record yet: record it now, read again.
+  if (found.ok && found.value && !found.value.opening && justIssued) {
     await recordTransaction(txHint as `0x${string}`).catch(() => 0);
     forgetCertificate(id);
     found = await readCertificate(id);
+  }
+  if (found.ok && found.value === null && justIssued) {
+    // Still not visible: it was issued seconds ago, so say that and keep looking, never 404.
+    return (
+      <Frame>
+        <main id="main" className="wa-cp-main">
+          <div className="wa-cp-held">
+            <div className="wa-nothing" role="status">
+              <strong>Certificate No. {String(id).padStart(6, "0")} is being recorded.</strong> Its transaction
+              confirmed; X Layer is showing it to this page in a moment, and it appears here by itself.
+              <RefreshWhilePending />
+            </div>
+            <p className="wa-fine">
+              <a href={EXPLORER_TX(txHint as `0x${string}`)}>The transaction on OKLink</a>.
+            </p>
+          </div>
+        </main>
+      </Frame>
+    );
   }
 
   if (!found.ok) {

@@ -61,6 +61,7 @@ import {
 import {held, type Outcome} from "@/lib/outcome";
 import {checkAddress, toBase} from "@/lib/payment";
 import {QUOTE_LOST} from "@/lib/quote-age";
+import {STALE_PAGE, isStaleBuild} from "@/components/app/report";
 import {MAX_REASON_LENGTH} from "@/lib/reason";
 import {
   CUSTOM_START,
@@ -351,8 +352,10 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
       let out: Outcome<BuiltGrant>;
       try {
         out = await buildGrant(asked.body);
-      } catch {
-        out = held(QUOTE_LOST);
+      } catch (err) {
+        // A page left open across a deploy calls a server action the new build no longer
+        // has, and every retry fails the same way: say so, and offer the reload that fixes it.
+        out = held(isStaleBuild(err) ? STALE_PAGE : QUOTE_LOST);
       }
       if (mine !== seq.current) return;
       setQuoting(false);
@@ -465,6 +468,7 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
     if (usdtShort > 0n) return `Top up ${ceilCents(usdtShort)} ${STABLE_NAME}`;
     if (okbShort === null) return "Top up a little OKB for the network fee";
     if (okbShort > 0n) return `Top up ${ceilOkb(okbShort)} OKB for the network fee`;
+    if (quoteWhy === STALE_PAGE) return "Reload the page to get a price";
     if (!shown && quoteWhy) return "No live quote yet";
     if (!shown) return "Getting a live quote…";
     return null;
@@ -486,8 +490,8 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
       let out: Outcome<BuiltGrant>;
       try {
         out = await buildGrant(req.body);
-      } catch {
-        out = held(QUOTE_LOST);
+      } catch (err) {
+        out = held(isStaleBuild(err) ? STALE_PAGE : QUOTE_LOST);
       }
       setRequoting(false);
       setAttemptAt(Date.now());
@@ -740,14 +744,30 @@ export function IssueForm({escrow, initialNow}: {escrow: `0x${string}`; initialN
                   About {floorUnits(shownUnits, asset.decimals)} {asset.symbol}. The contract guarantees at least{" "}
                   {floorUnits(shownMin, asset.decimals)}. Quote from <Ago at={shown.at} />
                   {asleep ? ", paused while you're away" : ""}.
-                  {quoteWhy ? <span className="is-warn"> The latest refresh failed: {quoteWhy}</span> : null}
+                  {quoteWhy === STALE_PAGE ? (
+                    <span className="is-warn">
+                      {" "}
+                      {STALE_PAGE}{" "}
+                      <button type="button" className="wa-issue-link" onClick={() => window.location.reload()}>
+                        Reload the page
+                      </button>
+                    </span>
+                  ) : quoteWhy ? (
+                    <span className="is-warn"> The latest refresh failed: {quoteWhy}</span>
+                  ) : null}
                 </p>
               ) : quoteWhy ? (
                 <p className="is-refused">
                   {quoteWhy}{" "}
-                  <button type="button" className="wa-issue-link" onClick={() => setNonce((n) => n + 1)} disabled={quoting}>
-                    {quoting ? "Trying again…" : "Try again"}
-                  </button>
+                  {quoteWhy === STALE_PAGE ? (
+                    <button type="button" className="wa-issue-link" onClick={() => window.location.reload()}>
+                      Reload the page
+                    </button>
+                  ) : (
+                    <button type="button" className="wa-issue-link" onClick={() => setNonce((n) => n + 1)} disabled={quoting}>
+                      {quoting ? "Trying again…" : "Try again"}
+                    </button>
+                  )}
                 </p>
               ) : (
                 <p className="is-waiting">Getting a live quote from OKX DEX…</p>

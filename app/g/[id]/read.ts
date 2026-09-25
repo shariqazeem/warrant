@@ -80,8 +80,9 @@ export function readCertificate(id: number): Promise<Outcome<CertificateRecord |
   const hit = kept.get(id);
   if (hit && Date.now() - hit.at < TTL_MS) return hit.value;
   const value = read(id).then((r) => {
-    // A failed read is not kept: the next visitor asks the chain again.
-    if (!r.ok) kept.delete(id);
+    // A failed read is not kept, and neither is "no such grant": a grant opened a block ago
+    // may simply not be visible to this server yet, and the next visitor asks the chain again.
+    if (!r.ok || r.value === null) kept.delete(id);
     return r;
   });
   kept.set(id, {at: Date.now(), value});
