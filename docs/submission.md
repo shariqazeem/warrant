@@ -23,7 +23,7 @@ X Layer: tokenized stocks and RWA.
 - Repository (public, full history): https://github.com/shariqazeem/warrant
 - Video: {link, once uploaded}
 - The public record: https://warrant.world/record
-- A live certificate: {https://warrant.world/g/{id}, from the proof table}
+- A live certificate: https://warrant.world/g/3 (sealed, vesting every second until 9 October)
 
 ## Description
 
@@ -62,7 +62,7 @@ open.
 
 - `GrantEscrow` `0xB238D76499616377abD4908E46F29C7CE50908D1` and `Payroll`
   `0xD9d06266B9290bA5ee81Cc54657844D4a874431d`: no owner, no admin, no pause, no upgrade
-  path. The deployed bytecode matches the source.
+  path. Both are verified on OKLink as exact matches of the repository's source.
 - The issuer's powers are disclosed on every stock's row: one upgradeable owner can create
   units, destroy units held by any address, replace the code and hand those powers on. An
   xStock is a stock position with economic exposure and no voting rights.
@@ -72,8 +72,7 @@ open.
 
 ## A 60-second path for judges
 
-1. Open a live certificate with no wallet: https://warrant.world/record, then the newest
-   grant.
+1. Open a live certificate with no wallet: https://warrant.world/g/3
 2. Watch it vest: "Vested now" moves every second.
 3. Click its transaction: the opening on OKLink, with the USD₮0 in and the stock bought.
 4. See that the escrow has no owner: GrantEscrow on OKLink, and its source in the repository.
@@ -83,10 +82,16 @@ open.
 
 - On mainnet: both contracts; the first real payment ($2, 0.0026 SPYx, 23 September,
   transaction `0x9efd0b668e6f2c7ff88100163697278b73f53d7f735120d7008720b122809f64`).
-- Grants issued, sealed, released, claimed and cancelled: {from the proof table; pending at
-  the time of drafting}.
-- A grant from a team that is not the founder's: {pending}.
-- Signed choices from real people: {count, from the production database; pending}.
+- On 25 September, from the founder's own wallets: three grants issued through OKX DEX
+  routes; one cancelled after its cliff (the unvested part returned at once, the vested part
+  released to the person 44 seconds later by the keeper); one released by the keeper in six
+  steps and sealed; one sealed and still vesting until 9 October. A payroll run paid three
+  wallets their three different signed choices (100% SPYx, 50% NVDAx, all dollars) in one
+  transaction. Every transaction is in the README's proof table.
+- The release service ran on its own throughout: every release above was sent by it, with
+  nobody pressing anything.
+- A grant from a team that is not the founder's: not yet.
+- Signed choices: three, all the founder's wallets; none yet from other people.
 
 ## The business
 
