@@ -9,20 +9,25 @@
 
 ## Before you press record (10 minutes)
 
-- **Recorder:** Loom (free, a face bubble in the corner, fine for three minutes) or OBS. Face
-  bubble bottom right, so it never covers the certificate. Download the MP4 afterwards.
+- **Recorder:** Loom (free, a face bubble in the corner, fine for three minutes). For the
+  camera, pick your phone (an iPhone next to a Mac shows up as a camera) or the laptop's own.
+  Face bubble bottom right, so it never covers the certificate. Download the MP4 afterwards.
 - **Screen:** browser zoom 125%, Do Not Disturb on, every other app closed, no bookmarks bar.
-- **Wallet:** OKX Wallet connected on X Layer as your company wallet, with at least $4 of USD₮0.
-- **The recipient:** your second wallet, and it has already signed a choice at
-  `warrant.world/me` (100% SPYx), so the form shows "They chose".
-- **The keeper** is funded, so certificates say what vests arrives on schedule.
-- **Tabs, left to right:**
+- **The company's wallet (wallet B, your funded one):** in the OKX Wallet browser extension
+  on the laptop. Import it yourself before recording and never with the recovery phrase on
+  screen. Select wallet B and the X Layer network. It needs at least $6 of USD₮0 and a little OKB.
+- **The teammate (wallet A):** only its address, `0x223ED5D8c837dBDF38391147bB054cE7ce599d11`.
+  It does not need to be in the extension. It already chose 100% SPYx, so the form will say
+  "They chose SPYx."
+- **Connect first:** open `warrant.world/grants` and connect OKX Wallet before you record, so
+  the wallet box already shows wallet B.
+- **Tabs, left to right**, each reloaded (Cmd+Shift+R) just before you start:
   1. `warrant.world`
-  2. `warrant.world/grants`, with the second wallet's address copied
-  3. the payroll run you made while testing (its payslips page)
+  2. `warrant.world/grants`, with wallet A's address copied
+  3. the payroll run: `warrant.world/receipt/0xbe8dd2e473743166420fc54ce48c484c2a3dcc75aa722f4068001a412b9b3e4f`
   4. `warrant.world/record`
 - **Rehearse once without recording.** Then record in one take. If a transaction fails, stop and
-  start again; each take costs $3, and the stock comes back to your second wallet ten minutes later.
+  start again; each take costs $3, and the stock reaches wallet A about eleven minutes later.
 
 ## The script
 
@@ -33,7 +38,7 @@
 **SAY:** "Many small teams pay people in USDT, across many countries. They can't give their people equity, so their best people leave for a raise. Big companies keep people with stock that vests. Warrant gives that to everyone else."
 
 ### 0:35 to 1:25: issue a real grant, live (tab 2)
-**DO:** paste the second wallet's address.
+**DO:** paste wallet A's address. The form says "They chose SPYx."
 **SAY:** "Let me give a real grant, right now. I paste my teammate's wallet, and Warrant shows the stock they already chose."
 
 **DO:** leave SPYx, type **3** as the value.
@@ -45,16 +50,17 @@
 **DO:** choose **Seal it**, tick the review line.
 **SAY:** "And I'll seal it, so nobody can take it back. Not even me."
 
-**DO:** click **Issue certificate for $3.00** and approve in OKX Wallet.
-**SAY:** "One click, approve in OKX Wallet..." *(wait for the page)* "...and here's the certificate. Its own number, the route OKX DEX bought it through, and the transaction."
+**DO:** click **Issue certificate for $3.00**. OKX Wallet asks twice: approve the signature,
+then confirm the transaction.
+**SAY:** "One click, and I approve it in OKX Wallet..." *(wait for the page)* "...and here's the certificate. Its own number, the route OKX DEX bought it through, and the transaction."
 
 ### 1:25 to 1:45: the seal
 **DO:** click **Seal it now** and approve.
 **SAY:** "Now I seal it." *(the seal lands)* "That's permanent. It says irrevocable, and it means it."
 
 ### 1:45 to 2:15: what your people see
-**DO:** point at **Vested now** ticking. Copy the page's link, open a private window
-(Cmd+Shift+N), paste it.
+**DO:** point at **Vested now** ticking. Press **Copy link** under the certificate, open a
+private window (Cmd+Shift+N), paste it. The private window has no wallet, which is the point.
 **SAY:** "This is what my teammate sees. No wallet, no account. It vests every second. A release service sends the stock to their wallet on schedule, so nobody has to remember."
 *(If "Released to them" already shows an amount:)* "It has already sent some."
 
@@ -62,7 +68,7 @@
 **SAY:** "Payroll works the same way. Earlier today I paid three people with one signature. Each person chose their own split, and each one got a payslip."
 
 ### 2:35 to 2:50: why you can trust it (tab 4)
-**SAY:** "Everything is public. The contracts have no owner and no admin, and every number comes from the chain. *(xStocks give economic exposure, with no votes, and every stock shows what its issuer can do.)*"
+**SAY:** "Everything is public. Both contracts are verified on OKLink, with no owner and no admin, and every number comes from the chain. *(xStocks give economic exposure, with no votes, and every stock shows what its issuer can do.)*"
 
 ### 2:50 to 3:00: close (back to tab 1, look at the camera)
 **SAY:** "Your best people are deciding whether to stay. Give them a reason that vests. That's Warrant, on X Layer. Thank you."
