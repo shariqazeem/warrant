@@ -31,10 +31,9 @@ https://github.com/shariqazeem/warrant, with its full history.
 3. **Click its transaction.** "Recorded on X Layer in 0x…" opens the grant's opening on
    OKLink: the USD₮0 that left the company, the OKX DEX route, the stock arriving in escrow.
 4. **See that the escrow has no owner.** Open
-   [GrantEscrow on OKLink](https://www.oklink.com/x-layer/address/0xB238D76499616377abD4908E46F29C7CE50908D1),
-   then its source, [`contracts/src/GrantEscrow.sol`](contracts/src/GrantEscrow.sol): no
-   owner, no admin role, no pause, no setter, no upgrade path. The deployed runtime bytecode
-   matches this source, with immutables masked.
+   [GrantEscrow's source on OKLink](https://www.oklink.com/x-layer/address/0xB238D76499616377abD4908E46F29C7CE50908D1/contract),
+   verified there as an exact match of [`contracts/src/GrantEscrow.sol`](contracts/src/GrantEscrow.sol):
+   no owner, no admin role, no pause, no setter, no upgrade path.
 5. **Open the proof table.** [Below](#proof-table): every claim on this page, linked to the
    transaction that makes it true.
 
@@ -79,7 +78,12 @@ sends nothing. Payroll follows it. Their grants, payslips and choice live on one
 
 Checked against the chain on 24 September in [`docs/state-check.md`](docs/state-check.md):
 both contracts have code at these addresses, their `stable()`, `router()` and
-`routerSpender()` match the table, and their runtime bytecode matches this source.
+`routerSpender()` match the table, and their runtime bytecode matches this source. On 25
+September both were **verified on OKLink** from this source, as exact matches:
+[GrantEscrow](https://www.oklink.com/x-layer/address/0xB238D76499616377abD4908E46F29C7CE50908D1/contract)
+and [Payroll](https://www.oklink.com/x-layer/address/0xD9d06266B9290bA5ee81Cc54657844D4a874431d/contract).
+The compiler input for each is in [`contracts/verify/`](contracts/verify/), so anyone can
+repeat it.
 
 **Earlier deployments.** Payroll v1 `0xBf9C…AE09` (23 September) carried one stock per run;
 it made the first real payment, whose payslip still opens, and is otherwise retired. The
