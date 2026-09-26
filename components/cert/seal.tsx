@@ -1,4 +1,5 @@
 import {SEAL_EDGE, sealEdge} from "@/lib/guilloche";
+import {markPaths} from "../brand/mark-paths";
 import {SEAL_WORDS, type SealState} from "./cert-text";
 
 /**
@@ -26,29 +27,18 @@ export const SEAL_TOKENS: SealPalette = {
   ringFaint: "color-mix(in srgb, var(--surface) 16%, transparent)",
 };
 
-/** The Warrant mark as the seal carries it: a sheet with its corner turned, ruled twice. */
-function Mark({size, stroke}: {size: 118 | 96; stroke: string}) {
+/**
+ * The Warrant mark as the seal carries it: the W that vests, pressed in bond, one colour, so
+ * its second V reads as filled halfway. Drawn from the same geometry as the nav and the icons.
+ */
+function sealMark(size: 118 | 96, stroke: string) {
   const big = size === 118;
+  // The W is 84 wide in its 100 box; on the seal it is 27 (landscape) or 22 (portrait) wide.
+  const k = big ? 27 / 84 : 22 / 84;
+  const [cx, cy] = big ? [59, 50] : [48, 41];
   return (
-    <g
-      transform={big ? "translate(59 49)" : "translate(48 40)"}
-      style={{fill: "none", stroke, strokeWidth: big ? 1.4 : 1.3, strokeLinecap: "round", strokeLinejoin: "round"}}
-    >
-      {big ? (
-        <>
-          <path d="M-10 -13 H4 L10 -7 V13 H-10 Z" />
-          <path d="M4 -13 V-7 H10" />
-          <path d="M-5 -1 H5" />
-          <path d="M-5 4 H2" />
-        </>
-      ) : (
-        <>
-          <path d="M-8 -10.5 H3 L8 -5.5 V10.5 H-8 Z" />
-          <path d="M3 -10.5 V-5.5 H8" />
-          <path d="M-4 -1 H4" />
-          <path d="M-4 3.5 H1.5" />
-        </>
-      )}
+    <g transform={`translate(${cx} ${cy}) scale(${k.toFixed(4)}) translate(-50 -50)`}>
+      {markPaths(stroke, stroke)}
     </g>
   );
 }
@@ -70,7 +60,7 @@ export function SealedSvg({size, no, palette = SEAL_TOKENS, withText = true}: {s
       <circle cx={c} cy={c} r={big ? 52 : 42} style={{fill: "none", stroke: palette.ringFaint, strokeWidth: 1}} />
       <circle cx={c} cy={c} r={big ? 45 : 36} style={{fill: "none", stroke: palette.ring, strokeWidth: 1}} />
       <circle cx={c} cy={c} r={big ? 41 : 32.5} style={{fill: "none", stroke: palette.ringSoft, strokeWidth: 0.6}} />
-      <Mark size={size} stroke={palette.bond} />
+      {sealMark(size, palette.bond)}
       {withText ? (
         <>
           <text

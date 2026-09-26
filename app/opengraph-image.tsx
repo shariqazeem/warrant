@@ -1,4 +1,6 @@
 import {ImageResponse} from "next/og";
+import {MARK_VIEWBOX} from "@/components/brand/mark-geometry";
+import {markPaths} from "@/components/brand/mark-paths";
 import {readOpenedGrants} from "@/lib/company";
 import {lengthWords, short, unitsFromRaw, usdt} from "@/lib/format";
 import {OG, OG_SIZE, OG_TYPE} from "@/lib/og-theme";
@@ -75,14 +77,8 @@ export default async function Image() {
             >
               <div style={{display: "flex", alignItems: "center", justifyContent: "space-between"}}>
                 <div style={{display: "flex", alignItems: "center"}}>
-                  <svg width="44" height="44" viewBox="0 0 30 30">
-                    <g fill="none" stroke={CARD.engrave} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M6 3 H18 L24 9 V19" />
-                      <path d="M6 3 V27 H16" />
-                      <path d="M18 3 V9 H24" />
-                      <path d="M10 13 H19" />
-                    </g>
-                    <circle cx="22" cy="24" r="5.5" fill={CARD.seal} stroke={CARD.bond} strokeWidth="1.4" />
+                  <svg width="48" height="48" viewBox={MARK_VIEWBOX}>
+                    {markPaths(CARD.engrave, CARD.seal)}
                   </svg>
                   <div style={{display: "flex", fontSize: 36, marginLeft: 14, letterSpacing: -0.5}}>Warrant</div>
                 </div>

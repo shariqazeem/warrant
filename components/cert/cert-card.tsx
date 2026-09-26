@@ -1,5 +1,6 @@
 import {certNumber, purchaseLine, routeLine, scheduleLine, sealState, SEAL_WORDS, unitsText, whenLabel} from "./cert-text";
 import type {CertificateData} from "./types";
+import {markPaths} from "../brand/mark-paths";
 import {tickPositions} from "./vesting-rule";
 import {xLayer} from "@/lib/chain";
 import {certificateSeed, guilloche, LANDSCAPE, SEAL_EDGE, sealEdge} from "@/lib/guilloche";
@@ -144,12 +145,8 @@ export function CertificateCard({d, escrow, now}: {d: CertificateData; escrow: s
                 <circle cx={59} cy={59} r={52} fill="none" stroke="#FFFFFF" strokeOpacity={0.16} strokeWidth={1} />
                 <circle cx={59} cy={59} r={45} fill="none" stroke={C.bond} strokeOpacity={0.6} strokeWidth={1} />
                 <circle cx={59} cy={59} r={41} fill="none" stroke={C.bond} strokeOpacity={0.35} strokeWidth={0.6} />
-                <g transform="translate(59 49)" fill="none" stroke={C.bond} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M-10 -13 H4 L10 -7 V13 H-10 Z" />
-                  <path d="M4 -13 V-7 H10" />
-                  <path d="M-5 -1 H5" />
-                  <path d="M-5 4 H2" />
-                </g>
+                {/* The W that vests, as the page's seal presses it (components/cert/seal.tsx). */}
+                <g transform={`translate(59 50) scale(${(27 / 84).toFixed(4)}) translate(-50 -50)`}>{markPaths(C.bond, C.bond)}</g>
               </svg>
             ) : (
               <svg width={px(118)} height={px(118)} viewBox="0 0 118 118" style={{position: "absolute", left: 0, top: 0}}>

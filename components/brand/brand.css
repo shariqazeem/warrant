@@ -7,18 +7,15 @@
   flex: none;
 }
 
-.wa-mark-sheet {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6px;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+/* The W's one accent, how far its second V has filled: the seal's oxblood on a light ground,
+   foil on the vault (where oxblood would not read). */
+.wa-mark-level {
+  fill: var(--seal);
 }
 
-.wa-mark-seal {
-  fill: var(--seal);
-  stroke: var(--on-vault);
-  stroke-width: 1.4px;
+.wa-vault .wa-mark-level,
+.wa-dark .wa-mark-level {
+  fill: var(--foil);
 }
 
 .wa-wordmark {

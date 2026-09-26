@@ -1,33 +1,28 @@
+import {MARK_LEVEL, MARK_VESTED, MARK_VESTING, MARK_VIEWBOX} from "./mark-geometry";
 import "./brand.css";
 
 /**
- * THE MARK. A warrant is a document that grants a right, and it is sealed: a sheet with its
- * corner folded, one ruled line of entitlement, and an oxblood seal pressed over the edge.
+ * THE MARK: the W that vests. A Bodoni W is two Vs; in Warrant's the first is solid (what has
+ * vested, theirs for good) and the second is engraved as an outline still filling from the
+ * bottom (what is vesting, every second). Drawn from components/brand/mark-geometry.ts, which
+ * ~/projects/warrant-brand/mark.py generates, so the site, the X profile and the films match.
  *
- * The sheet is stroked on `currentColor`, so the nav and the footer tint it from their own
- * text colour. The seal is always oxblood, ringed in the vault's light text colour so it
- * cuts cleanly across the sheet's lines. Colours come from tokens, through brand.css.
+ * The W takes `currentColor`, so the nav and the footer tint it from their own text colour.
+ * The fill is the one accent: foil on the vault, the seal's oxblood on a light ground.
  */
 export function WarrantMark({size = 28, className}: {size?: number; className?: string}) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 30 30"
+      viewBox={MARK_VIEWBOX}
       className={className ? `wa-mark ${className}` : "wa-mark"}
       aria-hidden
       focusable="false"
     >
-      <g className="wa-mark-sheet">
-        {/* the sheet, with its corner folded */}
-        <path d="M6 3 H18 L24 9 V19" />
-        <path d="M6 3 V27 H16" />
-        <path d="M18 3 V9 H24" />
-        {/* the right it grants, ruled */}
-        <path d="M10 13 H19" />
-      </g>
-      {/* the seal, pressed over the edge */}
-      <circle className="wa-mark-seal" cx="22" cy="24" r="5.5" />
+      <path d={MARK_VESTING} fill="currentColor" fillRule="evenodd" />
+      <path d={MARK_LEVEL} className="wa-mark-level" />
+      <path d={MARK_VESTED} fill="currentColor" />
     </svg>
   );
 }
