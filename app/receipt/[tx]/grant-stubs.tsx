@@ -4,8 +4,7 @@ import {PrintButton} from "@/components/app/print-button";
 import {EXPLORER_ADDRESS, EXPLORER_TX, STABLE} from "@/lib/chain";
 import {STABLE_NAME} from "@/lib/grant-terms";
 import type {GrantReceipt, Opening} from "@/lib/grant-receipts";
-import {bps, settledUnitPrice, short, stampUTC, unitsFromRaw, usdt} from "@/lib/format";
-import {humanDuration} from "@/lib/schedule";
+import {bps, lengthWords, settledUnitPrice, short, stampUTC, unitsFromRaw, usdt} from "@/lib/format";
 import {Address, AssetIdentity, Line, Note, Sheet, ShortAddress} from "./parts";
 
 /**
@@ -92,10 +91,10 @@ export function GrantTerms({
       <Line k="Cliff">
         {o.cliffSeconds === 0
           ? "none: it vests from the start"
-          : `${stampUTC(cliffAt)}, after ${humanDuration(o.cliffSeconds)}`}
+          : `${stampUTC(cliffAt)}, after ${lengthWords(o.cliffSeconds)}`}
       </Line>
       <Line k="Fully vested">
-        {stampUTC(endsAt)}, after {humanDuration(o.durationSeconds)}
+        {stampUTC(endsAt)}, after {lengthWords(o.durationSeconds)}
       </Line>
       <Line k="Release fee">
         {o.tipBps === 0 ? "none" : `${bps(o.tipBps)} of each release, to whoever releases it`}

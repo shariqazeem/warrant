@@ -22,6 +22,23 @@
 }
 
 /* The one line that invites the owner of this wallet to make it a pay link. */
+/* One of Warrant's own wallets: said above its figures, so no count reads as someone else's use. */
+.wa-co-team {
+  margin: var(--s-4) 0 0;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-panel);
+  background: var(--surface);
+  color: var(--ink);
+  max-width: 720px;
+}
+
+.wa-co-fig-note {
+  margin: var(--s-1) 0 0;
+  font-size: var(--fs-caption);
+  color: var(--muted);
+}
+
 .wa-co-invite {
   max-width: 62ch;
   margin-top: var(--s-3);

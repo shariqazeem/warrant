@@ -5,13 +5,14 @@ import {VestingRule} from "@/components/cert/vesting-rule";
 import {AssetNote} from "@/components/pay/asset-note";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {ASSETS, ELIGIBILITY_NOTE, ISSUER, ISSUER_NOTE_SHORT, ISSUER_POWERS, defaultAsset} from "@/lib/assets";
-import {certificateDataFor, stockName} from "@/lib/certificate-data";
+import {certificateDataFor, openingExtras, stockName} from "@/lib/certificate-data";
 import {EXPLORER_ADDRESS, STABLE} from "@/lib/chain";
 import {readEscrowPool, readFeaturedGrant, readRecord, routeOfGrant, type LiveGrant} from "@/lib/company";
 import {short} from "@/lib/format";
 import {escrowAddress} from "@/lib/grants";
 import {catchUp} from "@/lib/indexer";
 import {payrollAddress} from "@/lib/receipts";
+import {allTeam} from "@/lib/team";
 import {RecordRows, certificateNumber} from "./record/rows";
 import "./home.css";
 
@@ -41,12 +42,7 @@ export const metadata: Metadata = {
 /** The featured grant, as its certificate prints it, with its pool read so units are exact. */
 async function certificateOf(l: LiveGrant): Promise<CertificateData> {
   const pool = await readEscrowPool(l.grant.asset);
-  return certificateDataFor(l.grant, {
-    tx: l.opened.txHash,
-    openedUnits: l.opened.units,
-    route: routeOfGrant(l.grant.id),
-    ...(pool.ok ? pool.value : {}),
-  });
+  return certificateDataFor(l.grant, openingExtras(l.opened, routeOfGrant(l.grant.id), pool.ok ? pool.value : null));
 }
 
 export default async function Home() {
@@ -98,7 +94,8 @@ export default async function Home() {
                 <>
                   <Certificate data={cert} variant="landscape" engrave />
                   <p className="wa-home-cert-caption">
-                    Grant No. {certificateNumber(cert.id)}, read from X Layer.{" "}
+                    Grant No. {certificateNumber(cert.id)}, read from X Layer
+                    {allTeam([cert.grantor ?? "", cert.recipient ?? ""]) ? ": a test between two of Warrant’s own wallets." : "."}{" "}
                     {cert.sealed
                       ? "Sealed: nobody can take it back, including the company."
                       : cert.revoked

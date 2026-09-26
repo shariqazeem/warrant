@@ -2,9 +2,8 @@ import {ImageResponse} from "next/og";
 import {assetByAddress} from "@/lib/assets";
 import {readGrantMoments, type GrantReceipt} from "@/lib/grant-receipts";
 import {paidInTransaction} from "@/lib/receipts";
-import {humanDuration} from "@/lib/schedule";
 import {reasonFor} from "@/lib/db";
-import {settledUnitPrice, short, unitsFromRaw, usdt} from "@/lib/format";
+import {lengthWords, settledUnitPrice, short, unitsFromRaw, usdt} from "@/lib/format";
 import {OG, OG_SIZE, OG_TYPE} from "@/lib/og-theme";
 import {ogOptions} from "@/lib/og-fonts";
 import {DISPLAY, UI} from "@/components/cert/cert-card";
@@ -202,8 +201,8 @@ function GrantCard({g, many, tx}: {g: GrantReceipt; many: number; tx: string}) {
           "Grant opened",
           `${usdt(m.stableCost)} bought, held in escrow`,
           `${unitsFromRaw(m.units, decimals)} ${symbol}`,
-          `for ${short(m.beneficiary)}, vesting over ${humanDuration(m.durationSeconds)}` +
-            (m.cliffSeconds > 0 ? ` after a ${humanDuration(m.cliffSeconds)} cliff` : ""),
+          `for ${short(m.beneficiary)}, vesting over ${lengthWords(m.durationSeconds)}` +
+            (m.cliffSeconds > 0 ? ` after a cliff of ${lengthWords(m.cliffSeconds)}` : ""),
         ]
       : m.kind === "vested"
         ? [

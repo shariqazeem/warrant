@@ -54,6 +54,14 @@
   color: var(--ink);
 }
 
+/* A test between the team's own wallets, said on the row itself so no count hides it. */
+.wa-rec-team {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
 .wa-rec-when {
   margin: 0;
   font-size: 14px;

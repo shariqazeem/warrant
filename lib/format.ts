@@ -52,15 +52,46 @@ export const usdtAligned = (base: bigint | number): string => usdAligned(Number(
  * column is how a reader misreads a balance.
  */
 export const UNIT_DP = 4;
+/** The most places a holding is ever printed at; below this it is dust. */
+export const UNIT_DP_MAX = 8;
 export const units = (n: number, dp = UNIT_DP): string => group(n, dp, dp);
 
 /** Raw token units → a display number at the MINT's decimals. */
 export const fromBase = (base: bigint | number, decimals: number): number =>
   Number(base) / 10 ** decimals;
 
-/** Raw units at the mint's decimals → "0.0262". */
-export const unitsFromRaw = (raw: bigint | number, decimals: number, dp = UNIT_DP): string =>
-  units(fromBase(raw, decimals), dp);
+/**
+ * The places a holding needs: four, or as many as it takes to show four significant
+ * figures, up to eight. At four places a small grant prints fewer digits than its own
+ * vesting counter, and "0.0038873 vested of 0.0038" reads as more vested than was granted.
+ */
+export function unitPlaces(raw: bigint, decimals: number): number {
+  const abs = raw < 0n ? -raw : raw;
+  const base = 10n ** BigInt(decimals);
+  if (abs === 0n || abs >= base) return UNIT_DP;
+  const leadingZeros = decimals - abs.toString().length;
+  return Math.min(UNIT_DP_MAX, Math.max(UNIT_DP, leadingZeros + UNIT_DP));
+}
+
+/**
+ * Raw units at the mint's decimals → "0.6516", "0.003887". ONE RULE WHEREVER A HOLDING IS
+ * PRINTED, on a certificate, a payslip or the public record: ROUNDED DOWN, never up, because
+ * each of them says what someone holds and a figure rounded up is one the chain does not
+ * agree with. (Grant No. 000004 held 0.003887 SPYx. Rounding printed 0.0039 on the record
+ * while its certificate said 0.0038: two figures for one grant, on one page.)
+ */
+export const unitsFromRaw = (raw: bigint | number, decimals: number, dp?: number): string => {
+  const exact = typeof raw === "bigint" ? raw : BigInt(Math.trunc(raw));
+  const places = dp ?? unitPlaces(exact, decimals);
+  const negative = exact < 0n;
+  const abs = negative ? -exact : exact;
+  const base = 10n ** BigInt(decimals);
+  const whole = (abs / base).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const sign = negative ? "-" : "";
+  if (places <= 0) return `${sign}${whole}`;
+  const fraction = (abs % base).toString().padStart(decimals, "0").padEnd(places, "0").slice(0, places);
+  return `${sign}${whole}.${fraction}`;
+};
 
 /** Basis points as a percentage: 1000 → "10%", 2550 → "25.5%". */
 export const bps = (n: number): string => `${group(n / 100, 0, 2)}%`;
@@ -107,6 +138,36 @@ export function timeUTC(unixSeconds: number): string {
 /** A moment on a grant's schedule: a date, or a clock time for a short grant. */
 export function whenLabel(unixSeconds: number, durationSeconds: number): string {
   return isShortGrant(durationSeconds) ? timeUTC(unixSeconds) : dateUTC(unixSeconds);
+}
+
+const DAY = 86_400;
+/** Average Gregorian month, in days. */
+const MONTH = 30.436875;
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+/**
+ * A schedule's length in the words a person uses: "2 years", "6 months", "45 days",
+ * "2 hours", "90 minutes". Words, not a figure: the exact dates sit on the rule beside it.
+ *
+ * THE ONLY ONE. The certificate, the public record, a company's page and the share cards
+ * all say a grant's length with this; an older copy that rounded to whole days printed a
+ * 10-minute grant as "vesting over immediately" on the record while its certificate said
+ * "over 10 minutes".
+ */
+export function lengthWords(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds));
+  if (s < 2 * DAY) {
+    if (s % 3600 === 0 && s > 0) return plural(s / 3600, "hour");
+    if (s % 60 === 0 && s > 0) return plural(s / 60, "minute");
+    return plural(s, "second");
+  }
+  const days = s / DAY;
+  const months = Math.round(days / MONTH);
+  if (months >= 1 && Math.abs(days - months * MONTH) <= Math.min(3, months * 0.5)) {
+    return months % 12 === 0 ? plural(months / 12, "year") : plural(months, "month");
+  }
+  if (Number.isInteger(days)) return plural(days, "day");
+  return plural(Math.floor(s / 3600), "hour");
 }
 
 /** "on 24 Mar 2027" for a date, "at 17:57 UTC" for a time of day: the preposition a label takes. */

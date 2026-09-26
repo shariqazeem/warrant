@@ -259,6 +259,14 @@
 .wa-cert.is-portrait .wa-cert-units-sym {
   font-size: calc(21 * var(--u));
 }
+/* A small grant prints four significant figures ("0.005939"), which at full size runs the
+   symbol over the portrait's engraved border. Still the largest thing on the page. */
+.wa-cert.is-portrait .wa-cert-units[data-long] .wa-cert-units-n {
+  font-size: calc(40 * var(--u));
+}
+.wa-cert.is-portrait .wa-cert-units[data-long] .wa-cert-units-sym {
+  font-size: calc(18 * var(--u));
+}
 .wa-cert.is-portrait .wa-cert-line {
   font-size: calc(12.5 * var(--u));
   line-height: 1.4;

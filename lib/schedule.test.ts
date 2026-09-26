@@ -4,7 +4,7 @@
  */
 import {readFileSync} from "node:fs";
 import {describe, expect, it} from "vitest";
-import {humanDuration, progress, vestedSharesAt, type Schedule} from "./schedule";
+import {progress, vestedSharesAt, type Schedule} from "./schedule";
 
 type Fixture = {
   shares: string;
@@ -92,16 +92,5 @@ describe("what the bar draws", () => {
     const p = progress(empty, 0n, 50);
     expect(Number.isFinite(p.vestedFraction)).toBe(true);
     expect(p.vestedFraction).toBe(0);
-  });
-});
-
-describe("a duration, as a person says it", () => {
-  it("prefers years, then months, then days", () => {
-    expect(humanDuration(4 * 365 * 86_400)).toBe("4 years");
-    expect(humanDuration(365 * 86_400)).toBe("1 year");
-    expect(humanDuration(180 * 86_400)).toBe("6 months");
-    expect(humanDuration(90 * 86_400)).toBe("3 months");
-    expect(humanDuration(45 * 86_400)).toBe("45 days");
-    expect(humanDuration(0)).toBe("immediately");
   });
 });

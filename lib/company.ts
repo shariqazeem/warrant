@@ -524,6 +524,8 @@ export type RecordRun = {
   blockNumber: number;
   blockTime: number | null;
   people: number;
+  /** Everyone it paid, lower case, so a page can tell a test from someone else's payroll. */
+  recipients: `0x${string}`[];
   payments: number;
   totalStable: bigint;
   /** The part that arrived as USDT, over every payslip in the run. */
@@ -580,7 +582,7 @@ export function readRecord(limit = 200): Outcome<PublicRecord> {
     .all() as RunRow[];
 
   type Building = {
-    run: Omit<RecordRun, "delivered" | "people" | "transactions">;
+    run: Omit<RecordRun, "delivered" | "people" | "recipients" | "transactions">;
     recipients: Set<string>;
     txs: Set<string>;
     byAsset: Map<string, bigint>;
@@ -622,6 +624,7 @@ export function readRecord(limit = 200): Outcome<PublicRecord> {
   const runEntries: RecordRun[] = [...runs.values()].map((b) => ({
     ...b.run,
     people: b.recipients.size,
+    recipients: [...b.recipients] as `0x${string}`[],
     transactions: b.txs.size,
     delivered: [...b.byAsset.entries()].map(([asset, units]) => {
       const facts = assetFacts(asset);

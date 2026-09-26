@@ -9,7 +9,7 @@
  */
 import {revalidatePath} from "next/cache";
 import type {CertificateData} from "@/components/cert/certificate";
-import {certificateDataFor, stockName} from "@/lib/certificate-data";
+import {certificateDataFor, openingExtras, stockName} from "@/lib/certificate-data";
 import {verifyChoice, type ChoiceMessage, type StoredChoice} from "@/lib/choice";
 import {readEscrowPool, routeOfGrant, type CompanyReceipt} from "@/lib/company";
 import {rememberChoice} from "@/lib/db";
@@ -84,13 +84,7 @@ export async function readYours(person: string): Promise<Outcome<Yours>> {
     const now = Math.floor(Date.now() / 1000);
     const grants: YourGrant[] = mine.value.grants.map((l) => {
       const pool = pools.get(l.grant.asset.toLowerCase() as `0x${string}`);
-      const data = certificateDataFor(l.grant, {
-        tx: l.opened.txHash,
-        openedUnits: l.opened.units,
-        openedShares: l.opened.shares,
-        route: routeOfGrant(l.grant.id),
-        ...(pool?.ok ? pool.value : {}),
-      });
+      const data = certificateDataFor(l.grant, openingExtras(l.opened, routeOfGrant(l.grant.id), pool?.ok ? pool.value : null));
       const s = grantStanding(l.grant, now);
       return {
         data,

@@ -139,7 +139,7 @@ function Landscape(p: CertificateProps & {now: number}) {
             <span className="wa-cert-kicker">This certifies that</span>
             <span className="wa-cert-to">{d.recipient ? checksummed(d.recipient) : "Their wallet address"}</span>
             <span className="wa-cert-kicker">is granted</span>
-            <span className="wa-cert-units">
+            <span className="wa-cert-units" data-long={unitsText(d).length >= 7 ? "" : undefined}>
               <span className="wa-cert-units-n">{unitsText(d)}</span>
               <span className="wa-cert-units-sym">{d.asset.symbol}</span>
             </span>
@@ -225,7 +225,7 @@ function Portrait(p: CertificateProps & {now: number}) {
               {d.recipient ? <Both full={checksummed(d.recipient)} short={shortAddress(checksummed(d.recipient))} /> : "Their wallet address"}
             </span>
             <span className="wa-cert-kicker">is granted</span>
-            <span className="wa-cert-units">
+            <span className="wa-cert-units" data-long={unitsText(d).length >= 7 ? "" : undefined}>
               <span className="wa-cert-units-n">{unitsText(d)}</span>
               <span className="wa-cert-units-sym">{d.asset.symbol}</span>
             </span>

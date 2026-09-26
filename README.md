@@ -26,6 +26,10 @@ through OKX Connect) as the wallet. Track: X Layer, tokenized stocks and RWA.
 - **A certificate vesting right now:** [No. 000003](https://warrant.world/g/3), no wallet needed
 - **Every grant and payroll run:** [the public record](https://warrant.world/record)
 - **The code, with its full history:** https://github.com/shariqazeem/warrant
+- **Exactly what was submitted:** the tag
+  [`okx-dev-day-submission`](https://github.com/shariqazeem/warrant/tree/okx-dev-day-submission)
+  (commit `d4951d6`, 25 September). Later commits are fixes made after the deadline, each
+  saying what it fixed.
 
 ---
 

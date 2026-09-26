@@ -6,6 +6,7 @@ import {readRecord} from "@/lib/company";
 import {escrowAddress} from "@/lib/grants";
 import {catchUp} from "@/lib/indexer";
 import {payrollAddress} from "@/lib/receipts";
+import {allTeam} from "@/lib/team";
 import {RecordRows} from "./rows";
 import "@/app/home.css";
 import "./record.css";
@@ -65,6 +66,9 @@ export default async function RecordPage() {
             <p className="wa-record-counts">
               {record.value.grantCount} {record.value.grantCount === 1 ? "grant" : "grants"} and{" "}
               {record.value.runCount} payroll {record.value.runCount === 1 ? "run" : "runs"} on the record.
+              {record.value.entries.some((e) => allTeam(e.kind === "grant" ? [e.payer, e.beneficiary] : [e.payer, ...e.recipients]))
+                ? " The ones marked as tests went between Warrant’s own wallets, with real money, and count nobody else."
+                : null}
             </p>
             <RecordRows entries={record.value.entries} />
             {record.value.entries.length < record.value.grantCount + record.value.runCount ? (

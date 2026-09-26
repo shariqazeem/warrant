@@ -2,6 +2,7 @@ import Link from "next/link";
 import {dateUTC, runLabel, short, unitsFromRaw, usdt} from "@/lib/format";
 import type {Outcome} from "@/lib/outcome";
 import type {PaidTo} from "@/lib/person";
+import {received} from "@/lib/received";
 import "./record.css";
 
 /**
@@ -90,12 +91,8 @@ export function PaidToWallet({paid, hasChoice}: {paid: Outcome<PaidTo>; hasChoic
             <span className="wa-co-why">{r.reason ?? <em>note not available</em>}</span>
             <span className="wa-co-paid wa-mono">{usdt(r.stableAmount)}</span>
             <span className="wa-co-got wa-mono">
-              {r.assetAmount > 0n
-                ? `${unitsFromRaw(r.assetAmount, r.assetDecimals)} ${r.assetSymbol}`
-                : `${usdt(r.cashAmount)} USD₮0`}
-              {r.assetAmount > 0n && r.cashAmount > 0n ? (
-                <span className="wa-paid-cash">+ {usdt(r.cashAmount)} USD₮0</span>
-              ) : null}
+              {received(r).main}
+              {received(r).plus ? <span className="wa-paid-cash">{received(r).plus}</span> : null}
             </span>
             <Link href={`/run/${r.runId}`} className="wa-co-run wa-mono">
               {runLabel(r.runId)}

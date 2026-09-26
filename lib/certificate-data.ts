@@ -75,6 +75,25 @@ export function stockName(name: string): string {
  * those are known; otherwise null. The price is always the opening's own arithmetic: what
  * was paid, over what it bought.
  */
+/** What a grant's opening says about it: its GrantOpened event, as lib/company reads it. */
+export type Opening = {txHash: `0x${string}`; units: bigint; shares: bigint};
+
+/**
+ * THE EXTRAS FOR A GRANT WHOSE OPENING IS KNOWN, in one place. The front page and /me each
+ * spelled them out by hand, and the front page's copy left out the opening shares: its
+ * certificate then priced the units already paid out against a pool nearly emptied by those
+ * payouts, and printed grant No. 000004 (0.003887 SPYx) as "fully vested 0.0054422870".
+ */
+export function openingExtras(opened: Opening, route: string[], pool: PoolFacts | null): CertificateExtras {
+  return {
+    tx: opened.txHash,
+    openedUnits: opened.units,
+    openedShares: opened.shares,
+    route,
+    ...(pool ?? {}),
+  };
+}
+
 export function certificateDataFor(grant: Grant, extras: CertificateExtras = {}): CertificateData {
   const known = assetByAddress(grant.asset);
   const pool =

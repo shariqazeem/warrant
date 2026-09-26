@@ -23,11 +23,12 @@ import {assetByAddress} from "@/lib/assets";
 import {EXPLORER_ADDRESS} from "@/lib/chain";
 import {readCompany, type Company} from "@/lib/company";
 import {choiceFor, readPaidTo} from "@/lib/person";
-import {readGrant, type Grant} from "@/lib/grants";
+import {grantStanding, readGrant, type Grant} from "@/lib/grants";
 import {catchUp} from "@/lib/indexer";
-import {dateUTC, runLabel, short, since as sinceWords, unitsFromRaw, usdt} from "@/lib/format";
+import {dateUTC, lengthWords, runLabel, short, since as sinceWords, unitsFromRaw, usdt} from "@/lib/format";
 import {payrollAddress} from "@/lib/receipts";
-import {humanDuration} from "@/lib/schedule";
+import {received} from "@/lib/received";
+import {isTeam} from "@/lib/team";
 import {siteUrl} from "@/lib/site";
 import "@/app/landing.css";
 import "@/components/grants/grants.css";
@@ -169,6 +170,12 @@ export default async function WalletPage({params}: Params) {
         </a>
         .
       </p>
+      {isTeam(address) ? (
+        <p className="wa-co-team">
+          This is one of Warrant&rsquo;s own wallets. Everything below is the team testing on X Layer
+          mainnet with real money, paying its own wallets.
+        </p>
+      ) : null}
       <p className="wa-co-invite">
         Is this your company&rsquo;s wallet? <Link href="/grants">Grant stock</Link> or{" "}
         <Link href="/run">run payroll</Link> from it, and every grant and payslip appears here.
@@ -207,6 +214,18 @@ function Frame({children}: {children: ReactNode}) {
 }
 
 /**
+ * Who among the people paid is the team's own. Said only when every payslip is listed, so
+ * the note can never describe people it has not seen.
+ */
+function teamNote(c: Company): string | null {
+  if (c.receipts.length === 0 || c.receipts.length < c.paymentCount) return null;
+  const people = new Set(c.receipts.map((r) => r.recipient.toLowerCase()));
+  const team = [...people].filter((a) => isTeam(a)).length;
+  if (team === 0) return null;
+  return team === people.size ? "all Warrant’s own wallets" : `${team} of them Warrant’s own wallets`;
+}
+
+/**
  * WHAT THIS WALLET HAS PAID OTHERS: the figures, the stock delivered, its grants and every
  * payment with its note. The whole page for a company; below its own pay link for a person
  * who also pays people.
@@ -218,6 +237,7 @@ function CompanyRecord({c, live, now}: {c: Company; live: Map<number, Grant>; no
         <div>
           <p className="k">People paid</p>
           <p className="wa-units-sm">{c.peoplePaid}</p>
+          {teamNote(c) ? <p className="wa-co-fig-note">{teamNote(c)}</p> : null}
         </div>
         <div>
           <p className="k">Payments</p>
@@ -272,15 +292,22 @@ function CompanyRecord({c, live, now}: {c: Company; live: Map<number, Grant>; no
           <p className="wa-kicker">Grants</p>
           {c.grants.map((g) => {
             const now_ = live.get(g.id);
-            const status = !now_
+            const standing = now_ ? grantStanding(now_, now) : null;
+            // The same standing every other page shows, so a grant that has finished vesting
+            // is never listed as "Vesting" here while its certificate says "Fully vested".
+            const status = !now_ || !standing
               ? "Current state could not be read"
-              : now_.state === "closed"
+              : standing.kind === "closed"
                 ? "Fully released"
-                : now_.revoked
+                : standing.kind === "cancelled"
                   ? "Cancelled: what had vested stays theirs"
-                  : now_.isSealed
-                    ? "Vesting, sealed"
-                    : "Vesting, revocable until sealed";
+                  : standing.kind === "fully-vested"
+                    ? now_.heldUnits === 0n
+                      ? "Fully vested and released"
+                      : "Fully vested"
+                    : now_.isSealed
+                      ? `${standing.label}, sealed`
+                      : `${standing.label}, revocable until sealed`;
             return (
               <article className="wa-grant" key={g.id}>
                 <div className="wa-grant-head">
@@ -306,10 +333,10 @@ function CompanyRecord({c, live, now}: {c: Company; live: Map<number, Grant>; no
                 />
                 <div className="wa-grant-rows">
                   <span>
-                    Term<b>{humanDuration(g.durationSeconds)}</b>
+                    Term<b>{lengthWords(g.durationSeconds)}</b>
                   </span>
                   <span>
-                    Cliff<b>{g.cliffSeconds === 0 ? "none" : humanDuration(g.cliffSeconds)}</b>
+                    Cliff<b>{g.cliffSeconds === 0 ? "none" : lengthWords(g.cliffSeconds)}</b>
                   </span>
                   <span>
                     Cost<b>{usdt(g.stableCost)}</b>
@@ -338,7 +365,8 @@ function CompanyRecord({c, live, now}: {c: Company; live: Map<number, Grant>; no
                 <span className="wa-co-why">{r.reason ?? <em>note not available</em>}</span>
                 <span className="wa-co-paid wa-mono">{usdt(r.stableAmount)}</span>
                 <span className="wa-co-got wa-mono">
-                  {unitsFromRaw(r.assetAmount, r.assetDecimals)} {r.assetSymbol}
+                  {received(r).main}
+                  {received(r).plus ? <span className="wa-paid-cash">{received(r).plus}</span> : null}
                 </span>
                 <Link href={`/run/${r.runId}`} className="wa-co-run wa-mono">
                   {runLabel(r.runId)}

@@ -10,6 +10,7 @@ import {paidInTransaction, type Receipt} from "@/lib/receipts";
 import {readGrantMoments} from "@/lib/grant-receipts";
 import {escrowAddress} from "@/lib/grants";
 import {runLabel, settledUnitPrice, short, stampUTC, unitsFromRaw, usdt} from "@/lib/format";
+import {isTeam} from "@/lib/team";
 import {reasonFor, routeFor} from "@/lib/db";
 import {GrantMomentReceipt} from "./grant-stubs";
 import {Address, AssetIdentity, Line, Note, Sheet} from "./parts";
@@ -86,10 +87,12 @@ function DollarsOnly({r}: {r: Receipt}) {
         </Line>
         <Line k="Paid to">
           <Address value={r.recipient} />
+          {isTeam(r.recipient) ? <span className="wa-r-aside">one of Warrant&rsquo;s own wallets</span> : null}
         </Line>
         <Line k="Paid by">
           <Address value={r.payer} />
           <span className="wa-r-aside">
+            {isTeam(r.payer) ? "One of Warrant’s own wallets. " : null}
             <Link href={`/@${r.payer}`}>Everything this wallet has paid through Warrant</Link>
           </span>
         </Line>
@@ -162,10 +165,12 @@ function One({r, symbol, decimals}: {r: Receipt; symbol: string; decimals: numbe
         </Line>
         <Line k="Paid to">
           <Address value={r.recipient} />
+          {isTeam(r.recipient) ? <span className="wa-r-aside">one of Warrant&rsquo;s own wallets</span> : null}
         </Line>
         <Line k="Paid by">
           <Address value={r.payer} />
           <span className="wa-r-aside">
+            {isTeam(r.payer) ? "One of Warrant’s own wallets. " : null}
             <Link href={`/@${r.payer}`}>Everything this wallet has paid through Warrant</Link>
           </span>
         </Line>

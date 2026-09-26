@@ -10,7 +10,8 @@ import {VestingRule} from "@/components/cert/vesting-rule";
 import {AssetNote} from "@/components/pay/asset-note";
 import {SiteFoot, SiteNav} from "@/components/site/site-frame";
 import {EXPLORER_ADDRESS, EXPLORER_TX} from "@/lib/chain";
-import {bps, isShortGrant, stampUTC} from "@/lib/format";
+import {bps, isShortGrant, stampUTC, unitsFromRaw} from "@/lib/format";
+import {isTeam} from "@/lib/team";
 import {parseGrantId, findGrant} from "@/lib/grants";
 import {recordTransaction} from "@/lib/indexer";
 import {formatUnitsFixed, releasableUnits, sharesToUnits, vestingPhase} from "@/lib/vesting";
@@ -124,7 +125,8 @@ function Tx({hash}: {hash: `0x${string}`}) {
 function Facts({r, now}: {r: CertificateRecord; now: number}) {
   const d = r.data;
   const sym = d.asset.symbol;
-  const u = (v: bigint, dp = 4) => `${formatUnitsFixed(v, d.asset.decimals, dp)} ${sym}`;
+  // Holdings by the site's one rule (lib/format): rounded down, four significant figures at least.
+  const u = (v: bigint, dp?: number) => `${unitsFromRaw(v, d.asset.decimals, dp)} ${sym}`;
   // A release fee on a small grant can be under a millionth of a unit: widen it, never 0.000000.
   const uFine = (v: bigint) => {
     const six = formatUnitsFixed(v, d.asset.decimals, 6);
@@ -185,13 +187,19 @@ function Facts({r, now}: {r: CertificateRecord; now: number}) {
       <dl className="wa-cp-facts">
         <div>
           <dt>Granted by</dt>
-          <dd>{d.grantor ? <Addr a={d.grantor} /> : "—"}</dd>
+          <dd>
+            {d.grantor ? <Addr a={d.grantor} /> : "—"}
+            {isTeam(d.grantor) ? <span className="wa-cp-aside">One of Warrant&rsquo;s own wallets: this grant is the team&rsquo;s test, with real money.</span> : null}
+          </dd>
         </div>
         <div>
           <dt>Granted to</dt>
           <dd>
             {d.recipient ? <Addr a={d.recipient} /> : "—"}
-            <span className="wa-cp-aside">What vests goes to this wallet and nowhere else.</span>
+            <span className="wa-cp-aside">
+              What vests goes to this wallet and nowhere else.
+              {isTeam(d.recipient) ? " It is one of Warrant’s own wallets." : ""}
+            </span>
           </dd>
         </div>
         <div>

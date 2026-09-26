@@ -7,7 +7,7 @@
 import {readFileSync} from "node:fs";
 import {describe, expect, it} from "vitest";
 import {ASSETS} from "./assets";
-import {SHARE_OFFSET, certificateDataFor, stockName, unitPrice, unitsOfShares} from "./certificate-data";
+import {SHARE_OFFSET, certificateDataFor, openingExtras, stockName, unitPrice, unitsOfShares} from "./certificate-data";
 import type {Grant} from "./grants";
 
 const source = readFileSync("contracts/src/GrantEscrow.sol", "utf8");
@@ -116,6 +116,21 @@ describe("a grant as the certificate prints it", () => {
     expect(unknown.unitPriceUsd).toBeNull();
     expect(unknown.route).toEqual([]);
     expect(unknown.tx).toBeNull();
+  });
+
+  it("carries a grant's opening into its certificate, on every page that has it", () => {
+    // The front page built these by hand and left out the opening shares, so grant No. 000004
+    // (0.003887 SPYx) printed as "fully vested 0.0054422870" there and 0.0038873479 on its
+    // own page.
+    const g = grant({shares: 3_887_347_900_000_000_000_000n, sharesReleased: 3_887_347_900_000_000_000_000n});
+    const opened = {txHash: `0x${"cd".repeat(32)}` as const, units: 3_887_347_900_000_000n, shares: g.shares};
+    const dust = {poolShares: 0n, escrowBalance: 4n};
+    const d = certificateDataFor(g, openingExtras(opened, ["USD₮0", "SPYx"], dust));
+    expect(d.openedShares).toBe(opened.shares);
+    expect(d.units).toBe(opened.units);
+    expect(d.tx).toBe(opened.txHash);
+    expect(d.route).toEqual(["USD₮0", "SPYx"]);
+    expect(d.poolShares).toBe(0n);
   });
 
   it("names a stock the way people say it", () => {

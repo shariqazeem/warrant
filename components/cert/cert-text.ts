@@ -5,14 +5,13 @@
  * each state's wording is checked (components/cert/cert-text.test.ts). Every number in these
  * sentences is a field of the data; nothing is estimated here.
  */
-import {dateUTC, isShortGrant, onOrAt, timeUTC, whenLabel} from "../../lib/format";
+import {dateUTC, isShortGrant, lengthWords, onOrAt, timeUTC, unitsFromRaw, whenLabel} from "../../lib/format";
 import {formatUnitsFixed, type PoolState, type VestingTerms} from "../../lib/vesting";
 import type {CertificateData} from "./types";
 
-const DAY = 86_400;
-
-// The schedule's clock-or-date rule lives in lib/format, where lib/grants reads it too.
-export {isShortGrant, onOrAt, timeUTC, whenLabel};
+// The schedule's clock-or-date rule and its length in words live in lib/format, where the
+// record, a company's page and the share cards read them too.
+export {isShortGrant, lengthWords, onOrAt, timeUTC, whenLabel};
 
 /** "000001": the grant id, six digits. A specimen is 000000. */
 export function certNumber(id: number, specimen = false): string {
@@ -25,34 +24,9 @@ export function shortAddress(a: string): string {
   return a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;
 }
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-
-/** Average Gregorian month, in days. */
-const MONTH = 30.436875;
-
-/**
- * A schedule's length in the words a person uses: "2 years", "6 months", "45 days",
- * "2 hours", "90 minutes". Words, not a figure: the exact dates sit on the rule beside it.
- */
-export function lengthWords(seconds: number): string {
-  const s = Math.max(0, Math.floor(seconds));
-  if (s < 2 * DAY) {
-    if (s % 3600 === 0 && s > 0) return plural(s / 3600, "hour");
-    if (s % 60 === 0 && s > 0) return plural(s / 60, "minute");
-    return plural(s, "second");
-  }
-  const days = s / DAY;
-  const months = Math.round(days / MONTH);
-  if (months >= 1 && Math.abs(days - months * MONTH) <= Math.min(3, months * 0.5)) {
-    return months % 12 === 0 ? plural(months / 12, "year") : plural(months, "month");
-  }
-  if (Number.isInteger(days)) return plural(days, "day");
-  return plural(Math.floor(s / 3600), "hour");
-}
-
-/** "0.6516": units at four places, rounded down; "—" while unknown. */
-export function unitsText(d: Pick<CertificateData, "units" | "asset">, dp = 4): string {
-  return d.units === null ? "—" : formatUnitsFixed(d.units, d.asset.decimals, dp);
+/** "0.6516", "0.003887": units by the one rule in lib/format, rounded down; "—" while unknown. */
+export function unitsText(d: Pick<CertificateData, "units" | "asset">, dp?: number): string {
+  return d.units === null ? "—" : unitsFromRaw(d.units, d.asset.decimals, dp);
 }
 
 /** "$1,000.00": USD₮0 base units, rounded down to the cent. */

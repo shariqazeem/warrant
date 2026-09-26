@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type {RecordEntry} from "@/lib/company";
-import {dateUTC, runLabel, short, unitsFromRaw, usdt} from "@/lib/format";
-import {humanDuration} from "@/lib/schedule";
+import {dateUTC, lengthWords, runLabel, short, unitsFromRaw, usdt} from "@/lib/format";
+import {allTeam} from "@/lib/team";
 import "./record.css";
 
 /** A grant's number as its certificate prints it: the id, zero-padded to six digits. */
@@ -24,9 +24,12 @@ export function RecordRows({entries}: {entries: readonly RecordEntry[]}) {
             <p className="wa-rec-body">
               <span className="wa-rec-units">{unitsFromRaw(e.units, e.assetDecimals)}</span>{" "}
               {e.assetSymbol} to <span className="wa-rec-mono">{short(e.beneficiary)}</span>, bought for{" "}
-              {usdt(e.stableCost)} and vesting over {humanDuration(e.durationSeconds)}
-              {e.cliffSeconds > 0 ? `, with a ${humanDuration(e.cliffSeconds)} cliff` : ""}. Granted by{" "}
+              {usdt(e.stableCost)} and vesting over {lengthWords(e.durationSeconds)}
+              {e.cliffSeconds > 0 ? `, with a cliff of ${lengthWords(e.cliffSeconds)}` : ""}. Granted by{" "}
               <span className="wa-rec-mono">{short(e.payer)}</span>.
+              {allTeam([e.payer, e.beneficiary]) ? (
+                <span className="wa-rec-team">A test between Warrant&rsquo;s own wallets.</span>
+              ) : null}
             </p>
             <p className="wa-rec-when">{e.blockTime === null ? `Block ${e.blockNumber}` : dateUTC(e.blockTime)}</p>
           </li>
@@ -54,6 +57,9 @@ export function RecordRows({entries}: {entries: readonly RecordEntry[]}) {
                   , run <span className="wa-rec-mono">{runLabel(e.runId)}</span>.
                 </>
               )}
+              {allTeam([e.payer, ...e.recipients]) ? (
+                <span className="wa-rec-team">A test: every wallet in it is one of Warrant&rsquo;s own.</span>
+              ) : null}
             </p>
             <p className="wa-rec-when">{e.blockTime === null ? `Block ${e.blockNumber}` : dateUTC(e.blockTime)}</p>
           </li>

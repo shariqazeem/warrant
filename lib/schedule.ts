@@ -59,18 +59,3 @@ export function progress(s: Schedule, releasedShares: bigint, at: number): Progr
     endsAt: s.start + s.durationSeconds,
   };
 }
-
-/** "4 years", "90 days", "18 months" — a duration as a person would say it. */
-export function humanDuration(seconds: number): string {
-  const days = Math.round(seconds / 86_400);
-  if (days === 0) return "immediately";
-  if (days % 365 === 0) {
-    const years = days / 365;
-    return `${years} year${years === 1 ? "" : "s"}`;
-  }
-  if (days >= 60 && days % 30 === 0) {
-    const months = days / 30;
-    return `${months} month${months === 1 ? "" : "s"}`;
-  }
-  return `${days} day${days === 1 ? "" : "s"}`;
-}

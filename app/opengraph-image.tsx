@@ -1,7 +1,6 @@
 import {ImageResponse} from "next/og";
 import {readOpenedGrants} from "@/lib/company";
-import {humanDuration} from "@/lib/schedule";
-import {short, unitsFromRaw, usdt} from "@/lib/format";
+import {lengthWords, short, unitsFromRaw, usdt} from "@/lib/format";
 import {OG, OG_SIZE, OG_TYPE} from "@/lib/og-theme";
 import {ogOptions} from "@/lib/og-fonts";
 import {DISPLAY, UI} from "@/components/cert/cert-card";
@@ -127,7 +126,7 @@ export default async function Image() {
                 >
                   {`${unitsFromRaw(newest.units, newest.assetDecimals)} ${newest.assetSymbol} granted to ` +
                     `${short(newest.beneficiary)}, bought for ${usdt(newest.stableCost)} in USD₮0 through OKX DEX, ` +
-                    `vesting over ${humanDuration(newest.durationSeconds)}.`}
+                    `vesting over ${lengthWords(newest.durationSeconds)}.`}
                 </div>
               ) : null}
 
