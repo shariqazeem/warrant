@@ -459,6 +459,25 @@ describe("the grant the front page shows", () => {
     expect(asked).toEqual([unsealedNewest.id, sealed.id]);
   });
 
+  it("passes over a sealed grant that has finished vesting for one still ticking", async () => {
+    // Grant No. 000004 (10 minutes, sealed, all released) kept No. 000003 (14 days, vesting)
+    // off the front page, because a finished grant stays "open" until someone closes it.
+    const ticking = opened();
+    const finished = opened({start_at: 1_700_000_000, cliff_seconds: 0, duration_secs: 600});
+    const {read} = escrow(
+      new Map([
+        [ticking.id, {ok: true, value: live(ticking, {isSealed: true})}],
+        [finished.id, {ok: true, value: live(finished, {isSealed: true})}],
+      ]),
+    );
+    const got = await company.readFeaturedGrant({read, now: 1_790_400_000});
+    expect(got.ok && got.value?.grant.id).toBe(ticking.id);
+
+    // With nothing still vesting, the newest sealed grant is still the one shown.
+    const alone = await company.readFeaturedGrant({read, now: 1_900_000_000});
+    expect(alone.ok && alone.value?.grant.id).toBe(finished.id);
+  });
+
   it("falls back to the newest open grant, then to any it could read", async () => {
     const closedSealed = opened();
     const open = opened();

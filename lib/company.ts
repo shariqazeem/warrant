@@ -459,12 +459,16 @@ export function sameGrant(g: Pick<Grant, "payer" | "beneficiary" | "asset">, o: 
  * against an endpoint that throttles at two or three a second.
  */
 export async function readFeaturedGrant(
-  options: {tries?: number; read?: GrantReader} = {},
+  options: {tries?: number; read?: GrantReader; now?: number} = {},
 ): Promise<Outcome<LiveGrant | null>> {
   const read = options.read ?? readGrant;
+  const now = options.now ?? Math.floor(Date.now() / 1000);
   const rows = readOpenedGrants({}, options.tries ?? 6);
   if (rows.length === 0) return ok(null);
 
+  // A sealed grant that has finished vesting stays "open" until someone closes it, so the
+  // clock is asked too: the front page shows a certificate still ticking when there is one.
+  const vesting = (g: Grant) => now < g.start + g.durationSeconds;
   const seen: LiveGrant[] = [];
   let why: string | null = null;
   for (const opened of rows) {
@@ -475,10 +479,11 @@ export async function readFeaturedGrant(
     }
     if (!sameGrant(r.value, opened)) continue;
     const live = {opened, grant: r.value};
-    if (r.value.isSealed && r.value.state === "open" && !r.value.revoked) return ok(live);
+    if (r.value.isSealed && r.value.state === "open" && !r.value.revoked && vesting(r.value)) return ok(live);
     seen.push(live);
   }
   const pick =
+    seen.find((l) => l.grant.isSealed && l.grant.state === "open" && !l.grant.revoked) ??
     seen.find((l) => l.grant.state === "open" && !l.grant.revoked) ??
     seen.find((l) => l.grant.state === "open") ??
     seen[0];
